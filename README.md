@@ -1,4 +1,3 @@
-xcopy "G:\MySpace\VVVV\SiYuan\sy-f-misc\dist" "C:\Users\24218\Documents\SiYuan\data\plugins\sy-f-misc" /E /H /C /I /Y
 
 ## Preliminary
 
@@ -20,8 +19,8 @@ xcopy "G:\MySpace\VVVV\SiYuan\sy-f-misc\dist" "C:\Users\24218\Documents\SiYuan\d
 
   - 社区有个帖子对对话功能的介绍还算全面，**可以参考**：
 
-    - [思源 GPT 对话插件推荐：f-misc 插件](https://ld246.com/article/1737626817055)
-    - [更新一下 fmisc GPT 对话的功能 - 链滴](https://ld246.com/article/1738242585053)
+    - [思源 GPT 对话插件推荐：trex-toolbox 插件](https://ld246.com/article/1737626817055)
+    - [更新一下 trex-toolbox GPT 对话的功能 - 链滴](https://ld246.com/article/1738242585053)
   - 在思源内创建独立的对话界面
 
     - 右上角按钮创建对话

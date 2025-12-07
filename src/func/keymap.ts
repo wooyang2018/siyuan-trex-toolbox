@@ -88,7 +88,7 @@ const keymapStyle = `
     right: 4px;
 }
 `
-updateStyleDom('f-misc-keymap-style', keymapStyle);
+updateStyleDom('trex-toolbox-keymap-style', keymapStyle);
 
 let searchInput = '';
 

@@ -15,7 +15,7 @@
 ### 1. 创建脚本
 
 将 Python 脚本（`.py` 文件）放入脚本目录：
-- 思源笔记数据目录 `/snippets/fmisc-custom-toolscripts/`
+- 思源笔记数据目录 `/snippets/trex-toolbox-custom-toolscripts/`
 - 可以通过设置页面的「打开脚本目录」按钮快速打开
 
 ### 2. 编写工具函数

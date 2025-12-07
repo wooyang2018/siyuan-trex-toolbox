@@ -13,7 +13,7 @@ const childProcess = window?.require?.('child_process');
 const os = window?.require?.('os');
 
 const SIYUAN_DATA_DIR = window.siyuan.config.system.dataDir;
-const CUSTOM_SCRIPTS_DIR = path?.join(SIYUAN_DATA_DIR, 'snippets', 'fmisc-custom-toolscripts');
+const CUSTOM_SCRIPTS_DIR = path?.join(SIYUAN_DATA_DIR, 'snippets', 'trex-toolbox-custom-toolscripts');
 
 /**
  * 获取自定义脚本目录路径

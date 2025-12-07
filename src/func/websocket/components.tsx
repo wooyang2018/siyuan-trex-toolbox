@@ -38,7 +38,7 @@ export const WebSocketStatus: Component = () => {
 }
 
 const example = `{
-    channel: "sy-f-misc",
+    channel: "siyuan-trex-toolbox",
     message: { command: "<command-name>", body: "<command-argument>" }
 }`.trim();
 export const Configs = () => {

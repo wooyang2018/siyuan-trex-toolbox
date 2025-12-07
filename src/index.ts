@@ -189,7 +189,7 @@ export default class FMiscPlugin extends Plugin {
 
     private initTopBar() {
         const showMenu = () => {
-            let menu = new Menu("f-misc-topbar");
+            let menu = new Menu("trex-toolbox-topbar");
             let menuItems: IMenu[] = [
                 electron ? {
                     label: '打开思源目录',

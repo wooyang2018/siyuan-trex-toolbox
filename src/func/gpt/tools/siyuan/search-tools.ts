@@ -95,7 +95,7 @@ export const sqlUsageHelperTool: Tool = {
     },
 
     execute: async (): Promise<ToolExecuteResult> => {
-        const file = await fetch('/plugins/sy-f-misc/prompt/sql-helper.md')
+        const file = await fetch('/plugins/siyuan-trex-toolbox/prompt/sql-helper.md')
         const text = await file.text()
         return {
             status: ToolExecuteStatus.SUCCESS,

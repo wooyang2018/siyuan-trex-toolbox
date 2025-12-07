@@ -1,9 +1,9 @@
 {
-  "name": "sy-f-misc",
+  "name": "siyuan-trex-toolbox",
   "version": "7.3.6",
   "type": "module",
   "description": "Frostime 自动工具代码",
-  "repository": "https://github.com/frostime/sy-f-misc",
+  "repository": "https://github.com/frostime/siyuan-trex-toolbox",
   "homepage": "",
   "author": "frostime",
   "license": "GPL-3.0-only",

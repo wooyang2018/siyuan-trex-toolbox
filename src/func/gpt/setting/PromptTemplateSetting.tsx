@@ -1,4 +1,4 @@
-// h:\SrcCode\SiYuanDevelopment\sy-f-misc\src\func\gpt\setting\PromptTemplateSetting.tsx
+// h:\SrcCode\SiYuanDevelopment\siyuan-trex-toolbox\src\func\gpt\setting\PromptTemplateSetting.tsx
 import { Accessor, Component, For, createSignal, createMemo } from "solid-js";
 import Form from "@/libs/components/Form";
 import { globalMiscConfigs, promptTemplates } from "./store";

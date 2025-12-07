@@ -1,7 +1,7 @@
 {
-  "name": "sy-f-misc",
+  "name": "siyuan-trex-toolbox",
   "author": "frostime",
-  "url": "https://github.com/frostime/sy-f-misc",
+  "url": "https://github.com/frostime/siyuan-trex-toolbox",
   "version": "7.3.6",
   "minAppVersion": "3.1.20",
   "backends": [
@@ -35,6 +35,6 @@
     "ai",
     "toggl",
     "fs",
-    "fmisc"
+    "trex-toolbox"
   ]
 }

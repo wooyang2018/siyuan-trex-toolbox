@@ -44,7 +44,7 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
         type: 'button',
         title: '自定义URL列表',
         key: 'customUrlsButton',
-        description: `编辑 /data/storage/petal/sy-f-misc/${customUrlConfig} 配置文件`,
+        description: `编辑 /data/storage/petal/siyuan-trex-toolbox/${customUrlConfig} 配置文件`,
         get: () => customUrls,
         set: (urls: CustomUrl[]) => {
             customUrls = urls;

@@ -31,7 +31,7 @@ export const load = async (plugin: FMiscPlugin) => {
     //检查 body class 中是否有 body--window
     const body = document.body;
     if (body.classList.contains('body--window')) {
-        console.warn(`F-Misc::WebSocket 不在 SiYuan mini windows 中运行.`);
+        console.warn(`Trex-Toolbox::WebSocket 不在 SiYuan mini windows 中运行.`);
         return;
     }
 

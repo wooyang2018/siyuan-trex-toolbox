@@ -53,7 +53,7 @@ const openSiyuanWindow = (
     });
 }
 
-const id = 'f-misc__min-win';
+const id = 'trex-toolbox__min-win';
 const StyleHide = `
 .fn__flex.layout-tab-bar {
     display: none;

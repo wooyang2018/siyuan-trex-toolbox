@@ -558,7 +558,7 @@ async function handleHtmlResponse(response: Response, url: string, options?: Fet
     const text = await response.text();
 
     if (!globalThis.TurndownService) {
-        await addScript('/plugins/sy-f-misc/scripts/turndown.js', 'turndown-js');
+        await addScript('/plugins/siyuan-trex-toolbox/scripts/turndown.js', 'turndown-js');
     }
 
     const doc = html2Document(text, url);

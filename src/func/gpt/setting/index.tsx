@@ -382,7 +382,7 @@ const GlobalSetting = () => {
                             description="从脚本目录重新加载工具定义，如果修改了脚本需要重新导入。注意：需要重启插件或刷新页面才能生效。"
                         >
                             <LoadModuleFileButtonGroup
-                                moduleFilePath={`${dataDir}/snippets/fmisc-custom-toolscripts/`}
+                                moduleFilePath={`${dataDir}/snippets/trex-toolbox-custom-toolscripts/`}
                                 reloadModule={async () => {
                                     return store.loadCustomScriptTools();
                                 }}

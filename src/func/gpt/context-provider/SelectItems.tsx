@@ -1,4 +1,4 @@
-// h:\SrcCode\SiYuanDevelopment\sy-f-misc\src\func\gpt\context-provider\SelectItems.tsx
+// h:\SrcCode\SiYuanDevelopment\siyuan-trex-toolbox\src\func\gpt\context-provider\SelectItems.tsx
 // 多选ContextSubmenuItem
 
 import { solidDialog } from "@/libs/dialog";

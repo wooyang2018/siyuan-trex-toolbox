@@ -77,8 +77,8 @@ const getPy2ToolPath = (): string => {
 export const checkSyncIgnore = async () => {
     const syncignorePath = '.siyuan/syncignore';
     const requiredIgnores = [
-        'snippets/fmisc-custom-toolscripts/__pycache__/**',
-        // 'snippets/fmisc-custom-toolscripts/.git/**'
+        'snippets/trex-toolbox-custom-toolscripts/__pycache__/**',
+        // 'snippets/trex-toolbox-custom-toolscripts/.git/**'
     ];
 
     const ignoreFilePath = path.join(window.siyuan.config.system.dataDir, syncignorePath);

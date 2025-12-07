@@ -465,7 +465,7 @@ export const load = (plugin: FMiscPlugin) => {
     plugin_ = plugin;
     plugin.addCommand({
         langKey: 'fmisc::DocContext',
-        langText: `F-misc ${I18n.name}`,
+        langText: `Trex-Toolbox ${I18n.name}`,
         hotkey: Keymap,
         callback: async () => {
             if (document.querySelector('.doc-context')) return;

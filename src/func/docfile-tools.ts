@@ -75,7 +75,7 @@ const useDocItemSelection = () => {
 
         // 创建面板元素
         panelElement = document.createElement('div');
-        panelElement.className = 'f-misc-fileitem-selection-panel b3-menu';
+        panelElement.className = 'trex-toolbox-fileitem-selection-panel b3-menu';
         panelElement.style.maxHeight = '300px';
         panelElement.style.overflowY = 'auto';
         panelElement.style.minWidth = '250px';
@@ -115,7 +115,7 @@ const useDocItemSelection = () => {
 
         // 创建按钮容器
         const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'f-misc-action-buttons';
+        buttonContainer.className = 'trex-toolbox-action-buttons';
         buttonContainer.style.display = 'flex';
         buttonContainer.style.justifyContent = 'space-between';
         buttonContainer.style.marginBottom = '10px';
@@ -212,7 +212,7 @@ const useDocItemSelection = () => {
             if (!panelElement) return;
 
             const itemElement = document.createElement('div');
-            itemElement.className = 'f-misc-selection-item b3-menu__item';
+            itemElement.className = 'trex-toolbox-selection-item b3-menu__item';
             itemElement.style.display = 'flex';
             itemElement.style.justifyContent = 'space-between';
             itemElement.style.alignItems = 'center';
@@ -232,7 +232,7 @@ const useDocItemSelection = () => {
 
             // 创建删除按钮
             const removeButton = document.createElement('span');
-            removeButton.className = 'f-misc-selection-remove';
+            removeButton.className = 'trex-toolbox-selection-remove';
             removeButton.dataset.id = item.id;
             removeButton.style.cursor = 'pointer';
             removeButton.style.color = 'var(--b3-theme-on-surface)';

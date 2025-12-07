@@ -71,7 +71,7 @@ docs/
 
 ## 使用流程
 
-1. **准备脚本**：编写 Python 脚本，放入 `/snippets/fmisc-custom-toolscripts/`
+1. **准备脚本**：编写 Python 脚本，放入 `/snippets/trex-toolbox-custom-toolscripts/`
 2. **解析导入**：在设置页面点击「重新解析并导入」
 3. **启用工具**：在「工具」标签页启用自定义工具组
 4. **开始使用**：GPT 可以在对话中调用这些工具
