@@ -1,0 +1,40 @@
+{
+  "name": "sy-f-misc",
+  "author": "frostime",
+  "url": "https://github.com/frostime/sy-f-misc",
+  "version": "7.3.6",
+  "minAppVersion": "3.1.20",
+  "backends": [
+    "all"
+  ],
+  "frontends": [
+    "all"
+  ],
+  "displayName": {
+    "en_US": "Tyrannosaurus Toolbox",
+    "zh_CN": "霸王龙工具箱"
+  },
+  "description": {
+    "en_US": "Personal tools. GPT Chat (API Key) | Toggl | Reference | Md Process | Zotero...",
+    "zh_CN": "个人插件合集. GPT 对话 (API Key) | Toggl | 引用管理 | Md 处理 | Zotero..."
+  },
+  "readme": {
+    "default": "README.md"
+  },
+  "funding": {
+    "custom": [
+      "https://afdian.com/a/frostime"
+    ]
+  },
+  "keywords": [
+    "frostime",
+    "toolbox",
+    "misc",
+    "gpt",
+    "chat",
+    "ai",
+    "toggl",
+    "fs",
+    "fmisc"
+  ]
+}

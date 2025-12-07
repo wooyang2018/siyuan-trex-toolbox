@@ -1,0 +1,231 @@
+/*
+ * Copyright (c) 2023 by Roy. All Rights Reserved.
+ * @Author       : Roy; frostime
+ * @Source       : https://github.com/royc01/notion-theme
+ * @Date         : 2023-10-02 20:30:13
+ * @FilePath     : /src/index.scss
+ * @LastEditTime : 2024-12-30 12:35:35
+ * @Description  : 迁移自 Savor 主题的 callout 功能
+ */
+/* Callout Style Start */
+:root {
+    // Styles applied as default
+    // Styles applied as default
+    --callout-default-icon-top: 0.35em;
+    --callout-default-icon-left: 0.1em;
+    --callout-default-icon-font-size: 1.4em;
+    --callout-default-fc-font-size: 1.3em;
+    --callout-default-fc-padding: 1.7em;
+    --callout-default-fc-font-weight: 700;
+
+    //Style applied for big mode callout
+    --callout-big-icon-top: 0.35em;
+    --callout-big-icon-left: 0.1em;
+    --callout-big-icon-font-size: 1.4em;
+    --callout-big-fc-font-size: 1.3em;
+    --callout-big-fc-padding: 1.7em;
+    --callout-big-fc-font-weight: 700;
+
+    //Style applied for small mode callout
+    --callout-small-icon-top: 0.45em;
+    --callout-small-icon-left: 0.2em;
+    --callout-small-icon-font-size: 1em;
+    --callout-small-fc-font-size: 1em;
+    --callout-small-fc-padding: 2.2em;
+    --callout-small-fc-font-weight: inherit;
+
+    //Style applied for folded callout
+    --callout-fold-height: 34px;
+    --callout-fold-icon-top: 10px;
+    --callout-fold-font-size: 19px;
+    --callout-fold-icon: "⤴";
+}
+
+
+/*Folded callout style*/
+.protyle-wysiwyg [data-node-id][fold="1"].bq {
+    &[custom-b], &[custom-callout] {
+        opacity: 1 !important;
+        height: var(--callout-fold-height) !important;
+
+        &>div[data-node-id]:first-child {
+            display: block;
+            font-size: var(--callout-fold-font-size) !important;
+            // 有些主题会擅自显示一个“blockquote”
+            &::before, &::after {
+                display: none;
+            }
+
+            & > * {
+                display: initial;
+            }
+        }
+
+        &::after {
+            top: var(--callout-fold-icon-top);
+            font-size: var(--callout-fold-font-size);
+        }
+        &::before {
+            display: inline-block;
+            content: var(--callout-fold-icon);
+            position: absolute;
+            border: none;
+            transform: none;
+            opacity: 0.25;
+            margin-right: 10px;
+            top: var(--callout-fold-icon-top);
+            right: var(--callout-default-icon-left);
+            font-size: var(--callout-fold-font-size);
+            left: unset !important; // 覆盖思源默认样式
+            bottom: unset !important;
+            width: unset !important;
+        }
+    }
+}
+
+
+/**
+ * 避免覆盖默认的高亮样式
+ * https://github.com/frostime/sy-bq-callout/issues/13
+ * https://github.com/frostime/sy-bq-callout/issues/14
+*/
+html[data-theme-mode] .protyle-wysiwyg [data-node-id][custom-b].bq {
+    &.protyle-wysiwyg--hl, &.protyle-wysiwyg--select {
+        background-color: var(--b3-theme-primary-lightest) !important;
+        // border: 2px solid var(--b3-theme-primary-light) !important;
+    }
+}
+
+/*列表里代码块对齐*/
+/*引述callout第一行样式, 用作 Callout 的标题 */
+.bq[custom-b]:not([custom-callout-mode]),
+.bq[custom-callout]:not([custom-callout-mode]) {
+
+    >.p:first-child,
+    >[data-type="NodeHeading"]:first-child {
+        font-weight: var(--callout-default-fc-font-weight) !important;
+        font-size: var(--callout-default-fc-font-size) !important;
+        padding: 0 0 0 var(--callout-default-fc-padding) !important;
+    }
+}
+
+.bq[custom-b][custom-callout-mode="big"],
+.bq[custom-callout][custom-callout-mode="big"] {
+
+    >.p:first-child,
+    >[data-type="NodeHeading"]:first-child {
+        font-weight: var(--callout-big-fc-font-weight) !important;
+        font-size: var(--callout-big-fc-font-size) !important;
+        padding: 0 0 0 var(--callout-big-fc-padding) !important;
+    }
+}
+
+.bq[custom-b][custom-callout-mode="small"],
+.bq[custom-callout][custom-callout-mode="small"] {
+
+    >.p:first-child,
+    >[data-type="NodeHeading"]:first-child {
+        font-weight: var(--callout-small-fc-font-weight) !important;
+        font-size: var(--callout-small-fc-font-size) !important;
+        padding: 0 0 0 var(--callout-small-fc-padding) !important;
+    }
+}
+
+
+/* 引述callout段落的内边距 */
+.protyle-wysiwyg .bq[custom-b],
+.protyle-wysiwyg .bq[custom-callout] {
+    padding: 4px;
+    padding-left: 8px !important;
+    color: var(--b3-theme-on-background);
+
+    // > [data-node-id].p {
+    //     margin-left: unset !important;
+    //     padding-left: 2.2rem !important;
+    // }
+
+    // > .list {
+    //     padding-left: 1.6em !important;
+
+    //     // .p {
+    //     //     padding-left: 0em !important;
+    //     // }
+    // }
+
+    > [data-node-id]:not(:first-child) {
+        margin-left: 2.2em !important;
+        padding-left: 0px !important;
+
+        &[data-type="NodeList"] {
+            margin-left: 2.0em !important;
+        }
+
+        &[data-type="NodeHeading"] {
+            // 不太好解决啊, 上面的都用了 em，这里很难完美对齐, 后面有空看看怎么办
+            // margin-left: 2.2rem !important;
+            margin-left: var(--callout-big-fc-padding) !important;
+            font-size: var(--callout-big-fc-font-size) !important;
+        }
+
+    }
+
+}
+
+/* 引述callout列表的内边距 */
+
+.protyle-wysiwyg div[data-node-id][custom-b].bq,
+.protyle-wysiwyg div[data-node-id][custom-callout].bq {
+    border: none !important;
+    border-radius: 5px;
+    background-image: none; //兼容 zhang-ligth 主题的样式
+    line-height: normal !important; //保持在容器块内 icon 位置的重要样式
+}
+
+
+/*********** Before & After 伪元素 ***********/
+
+.protyle-wysiwyg div.bq[custom-b]::before,
+.protyle-wysiwyg div.bq[custom-callout]::before {
+    content: "";
+    border: none;
+    display: none;
+}
+
+.protyle-wysiwyg .bq[custom-b]::after,
+.protyle-wysiwyg .bq[custom-callout]::after {
+    content: "";
+    position: absolute;
+    border: none;
+    transform: none;
+    margin-left: 10px;
+}
+
+.protyle-wysiwyg {
+    .bq[custom-b]:not([custom-callout-mode])::after,
+    .bq[custom-callout]:not([custom-callout-mode])::after {
+        top: var(--callout-default-icon-top);
+        left: var(--callout-default-icon-left);
+        font-size: var(--callout-default-icon-font-size);
+    }
+}
+
+
+.protyle-wysiwyg {
+    .bq[custom-b][custom-callout-mode="big"]::after,
+    .bq[custom-callout][custom-callout-mode="big"]::after {
+        top: var(--callout-big-icon-top);
+        left: var(--callout-big-icon-left);
+        font-size: var(--callout-big-icon-font-size);
+    }
+}
+
+.protyle-wysiwyg {
+    .bq[custom-b][custom-callout-mode="small"]::after,
+    .bq[custom-callout][custom-callout-mode="small"]::after {
+        top: var(--callout-small-icon-top);
+        left: var(--callout-small-icon-left);
+        font-size: var(--callout-small-icon-font-size);
+    }
+}
+
+/* Callout Style End */

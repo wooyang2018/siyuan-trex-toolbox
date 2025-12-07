@@ -1,0 +1,50 @@
+{
+  "name": "sy-f-misc",
+  "version": "7.3.6",
+  "type": "module",
+  "description": "Frostime 自动工具代码",
+  "repository": "https://github.com/frostime/sy-f-misc",
+  "homepage": "",
+  "author": "frostime",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "dev": "pnpm run dev:full",
+    "dev:full": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",
+    "build": "pnpm run build:publish",
+    "build:publish": "cross-env NODE_ENV=production vite build",
+    "build:private": "cross-env NODE_ENV=production PRIVATE_ADD=true PRIVATE_REMOVE=true vite build",
+    "build:srcmap": "cross-env NODE_ENV=production PRIVATE_ADD=true VITE_SOURCEMAP=inline PRIVATE_REMOVE=true vite build",
+    "build:analyze": "cross-env ANALYZE_BUNDLE=true NODE_ENV=production vite build",
+    "make-link": "npx make-link-win",
+    "update-version": "npx update-version",
+    "make-install": "pnpm run build && npx make-install",
+    "make-install:srcmap": "pnpm run build:srcmap && npx make-install",
+    "make-install:private": "pnpm run build:private && npx make-install"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.1.0",
+    "@tsconfig/svelte": "^4.0.1",
+    "@types/node": "^20.3.0",
+    "cross-env": "^7.0.3",
+    "fast-glob": "^3.3.2",
+    "glob": "^10.4.1",
+    "minimist": "^1.2.8",
+    "rollup-plugin-livereload": "^2.0.5",
+    "rollup-plugin-visualizer": "^5.14.0",
+    "sass": "^1.83.4",
+    "siyuan": "^1.1.1",
+    "solid-js": "^1.9.3",
+    "svelte": "^4.2.19",
+    "svelte-preprocess": "^6.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2",
+    "vite": "^5.2.13",
+    "vite-plugin-solid": "^2.11.0",
+    "vite-plugin-static-copy": "^1.0.5",
+    "vite-plugin-zip-pack": "^1.2.2"
+  },
+  "dependencies": {
+    "@frostime/siyuan-plugin-kits": "^1.5.14",
+    "@frostime/solid-signal-ref": "^2.1.0"
+  }
+}

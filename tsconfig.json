@@ -1,0 +1,61 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "useDefineForClassFields": true,
+        "module": "ESNext",
+        "lib": [
+            "ESNext",
+            "DOM",
+            "DOM.Iterable"
+        ],
+        "skipLibCheck": true,
+        /* Bundler mode */
+        "moduleResolution": "bundler",
+        // "allowImportingTsExtensions": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "preserve",
+        "jsxImportSource": "solid-js",
+        /* Linting */
+        "strict": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "allowJs": true,
+        "checkJs": true,
+        "types": [
+            "node",
+            "vite/client",
+            "solid-js",
+            "svelte"
+        ],
+        // "baseUrl": "./src",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ],
+            "@/libs/*": [
+                "./src/libs/*"
+            ],
+            "@gpt/*": [
+                "./src/func/gpt/*"
+            ]
+        }
+    },
+    "include": [
+        "tools/**/*.ts",
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "src/**/*.svelte"
+    ],
+    "references": [
+        {
+            "path": "./tsconfig.node.json"
+        }
+    ],
+    "root": "."
+}
