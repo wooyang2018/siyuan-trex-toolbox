@@ -1,6 +1,5 @@
 import { createMemo, JSX } from "solid-js";
 
-
 interface ICheckboxInputProps {
     checked?: boolean;
     changed?: (value: boolean) => void;

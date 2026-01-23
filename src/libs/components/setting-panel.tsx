@@ -11,13 +11,11 @@ import Form from "./Form";
 interface SettingPanelProps {
     group: string;
     settingItems: ISettingItem[];
-    // display: boolean;
     onChanged: (e: { group: string, key: string, value: any }) => void;
     children?: JSXElement
 }
 
 const SettingPanel: Component<SettingPanelProps> = (props) => {
-    // const fn__none = createMemo(() => props.display === true ? "" : "fn__none");
     const useChildren = children(() => props.children);
 
     return (

@@ -10,8 +10,6 @@ import { formatDateTime } from "@frostime/siyuan-plugin-kits";
 import { getNotebookConf, renderSprig } from "@/api";
 
 export const getPastDNHPath = async (boxId: NotebookId, date: Date): Promise<string> => {
-
-
     const notebookConf = await getNotebookConf(boxId);
 
     if (notebookConf === undefined) {
@@ -20,11 +18,9 @@ export const getPastDNHPath = async (boxId: NotebookId, date: Date): Promise<str
 
     let dnSprig = notebookConf.conf?.dailyNoteSavePath;
     if (dnSprig === undefined) {
-        // throw new Error('DailyNoteToday: 请先设置日记本');
         return null;
     }
 
-    // let dateStr = formatDate(date, '-');
     let dateStr = formatDateTime('yyyy-MM-dd', date);
     let sprig = `toDate "2006-01-02" "${dateStr}"`;
 

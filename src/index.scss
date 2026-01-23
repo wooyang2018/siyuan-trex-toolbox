@@ -35,13 +35,10 @@ svg.highlight-icon~span.b3-menu__label {
 }
 
 
-// 转移引用插件
 
 $table-border-color: var(--b3-theme-surface-light);
 
 main.transfer-ref#main {
-    // display: flex;
-    // flex-direction: row;
     font-size: 1rem;
 
     #refs {

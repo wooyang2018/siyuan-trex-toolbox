@@ -6,16 +6,13 @@ $table-row-odd-bg: var(--b3-theme-surface-light);
 $table-row-even-bg: var(--b3-theme-surface-lighter);
 
 $table-text-color: var(--b3-theme-on-surface);
-// $table-font-family: 'Arial', sans-serif;
 
 .table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     border: 2px solid $table-border-color;
-    // border-radius: 8px;
     overflow: hidden;
-    // font-family: $table-font-family;
     color: $table-text-color;
 
     th,
@@ -28,7 +25,6 @@ $table-text-color: var(--b3-theme-on-surface);
     th {
         background-color: $table-header-bg;
         font-weight: bold;
-        // font-size: 1rem;
         border-bottom: 2px solid $table-border-color;
     }
 

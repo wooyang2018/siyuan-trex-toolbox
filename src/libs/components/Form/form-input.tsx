@@ -11,9 +11,7 @@ interface IProps extends Partial<ISettingItemCore> {
 }
 
 export default function FormInput(props: IProps) {
-
     const fn_size = props.fn_size ?? true;
-
     const value = createSignalRef(props.value);
 
     function click() {
@@ -70,7 +68,6 @@ export default function FormInput(props: IProps) {
             return (
                 <textarea
                     class="b3-text-field fn__block"
-                    // style="resize: vertical; height: 10em; white-space: nowrap;"
                     {...attrStyle()}
                     value={props.value}
                     spellcheck={props?.spellcheck}

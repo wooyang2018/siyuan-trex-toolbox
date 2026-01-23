@@ -33,8 +33,6 @@ export default class FMiscPlugin extends Plugin {
 
     isMobile: boolean;
 
-    // private globalContextMenuHandler: (event: MouseEvent) => void;
-
     private callbacksOnLayoutReady: ((p: FMiscPlugin) => void)[] = [];
 
     declare data: {
@@ -53,8 +51,6 @@ export default class FMiscPlugin extends Plugin {
             };
         };
     }
-
-    // eb: EventBusSync;
 
     deviceStorage: Awaited<ReturnType<typeof useLocalDeviceStorage>>;
 
@@ -90,9 +86,7 @@ export default class FMiscPlugin extends Plugin {
         });
     }
 
-    /**
-     * 不需要开关，默认启用的功能
-     */
+    // 不需要开关，默认启用的功能
     private initDefaultFunctions() {
         this.initTopBar();
 
@@ -163,16 +157,9 @@ export default class FMiscPlugin extends Plugin {
     }
 
     async saveConfigs() {
-        //本地的不同步保存的项目
-        // await this.deviceStorage.set('zoteroDir', this.data[StorageNameConfigs].Misc.zoteroDir);
-        // await this.deviceStorage.set('codeEditor', this.data[StorageNameConfigs].Misc.codeEditor);
-
-        // 创建 this.data[StorageNameConfigs] 的副本，并去掉 zoteroDir
         let s = JSON.stringify(this.data[StorageNameConfigs]);
         console.debug('SaveConfigs', s);
         let dataToSave: any = JSON.parse(s);
-        // dataToSave.Misc.zoteroDir = "/";
-        // dataToSave.Misc.codeEditor = "";
         this.saveData(StorageNameConfigs + '.json', dataToSave);
     }
 
@@ -190,8 +177,10 @@ export default class FMiscPlugin extends Plugin {
     private initTopBar() {
         const showMenu = () => {
             let menu = new Menu("trex-toolbox-topbar");
-            let menuItems: IMenu[] = [
-                electron ? {
+            let menuItems: IMenu[] = [];
+
+            if (electron) {
+                menuItems.push({
                     label: '打开思源目录',
                     icon: 'iconFolder',
                     type: 'submenu',
@@ -221,8 +210,8 @@ export default class FMiscPlugin extends Plugin {
                             }
                         }
                     ]
-                } : null,
-            ];
+                });
+            }
 
             for (let key in this.customMenuItems) {
                 let menuItems = this.customMenuItems[key];
@@ -230,7 +219,6 @@ export default class FMiscPlugin extends Plugin {
                     menu.addItem(item);
                 }
             }
-            menuItems = menuItems.filter(item => item !== null);
             for (let item of menuItems) {
                 menu.addItem(item);
             }
@@ -240,7 +228,6 @@ export default class FMiscPlugin extends Plugin {
                 label: '重载',
                 icon: 'iconRefresh',
                 click: () => {
-                    // window.location.reload();
                     fetch('/api/ui/reloadUI', { method: 'POST' });
                 }
             });
@@ -286,9 +273,6 @@ export default class FMiscPlugin extends Plugin {
         this.protyleSlash = this.protyleSlash.filter(slash => slash.id !== id);
     }
 
-    /**
-     * 添加命令; 与 addCommand 不同的是，addCommandV2 会自动处理重复命令的检查
-     */
     addCommandV2(options: ICommand): void {
         if (this.commands.find(command => command.langKey === options.langKey)) {
             return;
