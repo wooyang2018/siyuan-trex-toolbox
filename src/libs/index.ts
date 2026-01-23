@@ -110,5 +110,3 @@ export const fb2p = async (inputs: Block[], enable?: { heading?: boolean, doc?: 
 export const windowRequire = (name: string) => {
     return window?.require?.(name);
 }
-
-export { useCollectedMessages } from './collected-messages';
