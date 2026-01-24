@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2025 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2025-01-02 21:39:30
- * @FilePath     : /src/func/types.d.ts
- * @LastEditTime : 2025-01-05 21:03:26
- * @Description  : 
+/**
+ * 配置项接口（扩展自 ISettingItem）
  */
 interface IConfigItem<T> extends Omit<ISettingItem, 'value'> {
     get: () => T;
     set: (value: T) => void;
 }
 
+/**
+ * 功能模块接口
+ */
 interface IFuncModule {
     name: string;
     enabled: boolean;
@@ -18,19 +16,22 @@ interface IFuncModule {
 
     load: (plugin: FMiscPlugin) => void;
     unload: (plugin?: FMiscPlugin) => void;
-    // 如果声明了, 在会在设置面板中显示启用的按钮
+    
+    /** 启用切换配置 */
     declareToggleEnabled?: {
         title: string;
         description: string;
         defaultEnabled?: boolean;
-    },
-    // 放入 Setting 面板中的界面, 如果模块的设置比较复杂, 可以单独声明一个 Setting 面板
+    };
+    
+    /** 自定义设置面板 */
     declareSettingPanel?: {
         key: string;
         title: string;
         element: () => JSX.Element;
     }[];
-    //如果模块的配置比较简单，可以用这个
+    
+    /** 简单模块配置 */
     declareModuleConfig?: {
         key: string;
         title?: string;
@@ -40,3 +41,4 @@ interface IFuncModule {
         customPanel?: () => JSX.Element;
     };
 }
+

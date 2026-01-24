@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-06-10 14:55:35
- * @FilePath     : /src/func/doc-context.tsx
- * @LastEditTime : 2025-08-23 15:08:34
- * @Description  : 
+/**
+ * Doc Context - 文档上下文导航
+ * 
+ * @description 提供文档上下文查看和导航功能，支持父子文档和同级文档切换
+ * @author frostime
  */
 import { createSignal, For, JSXElement, Match, onMount, Show, Switch } from 'solid-js';
 import { render } from 'solid-js/web';
@@ -30,7 +28,7 @@ export let enabled = false;
 
 export const declareToggleEnabled = {
     title: '📑 文档上下文',
-    description: '启用文档上下文功能<br/>⚠️ 注意本功能可能会覆盖思源默认的 Ctrl+上下键的快捷键，你可以选择独立插件“文档上下文”来实现更加精细的控制',
+    description: '启用文档上下文功能<br/>⚠️ 注意本功能可能会覆盖思源默认的 Ctrl+上下键的快捷键，你可以选择独立插件"文档上下文"来实现更加精细的控制',
     defaultEnabled: true
 };
 
@@ -56,7 +54,6 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
             type: 'checkbox' as const,
             title: '启用切换父子文档快捷键',
             description: `开启后，使用快捷键 Ctrl+↑ 跳转到父文档，Ctrl+↓ 跳转到子文档</br>默认会屏蔽这两个快捷键在思源中的默认功能，如果你想要换成别的快捷键，请关闭下方的选项然后在思源「快捷键」设置中自行更改`,
-            // direction: 'row',
             get: () => config.parentChildCommand,
             set: (value: boolean) => {
                 config.parentChildCommand = value;
@@ -69,7 +66,6 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
             description: `
             默认的 Ctrl+↑ 和 Ctrl+↓ 为思源内置快捷键（展开和折叠），插件提供的切换父子文档功能想要生效，会强制覆盖思源的默认快捷键。<br/>如果你依赖于这两个快捷键的默认功能，可以: 1) 关掉这个选项; 2) 在思源的快捷键配置中自行更改 "文档上下文" 中 "父文档" 和 "子文档" 快捷键。
             `,
-            // direction: 'row',
             get: () => config.overwriteCtrlUpDownKey,
             set: (value: boolean) => {
                 config.overwriteCtrlUpDownKey = value;
@@ -78,23 +74,30 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
     ],
 };
 
+/**
+ * 获取父文档
+ */
 async function getParentDocument(path: string) {
-    let pathArr = path.split("/").filter((item) => item != "");
+    const pathArr = path.split("/").filter((item) => item);
     pathArr.pop();
-    if (pathArr.length == 0) {
-        return null;
-    } else {
-        let id = pathArr[pathArr.length - 1];
-        return getBlockByID(id);
-    }
+    
+    if (pathArr.length === 0) return null;
+    
+    const id = pathArr[pathArr.length - 1];
+    return getBlockByID(id);
 }
 
+/**
+ * 列出子文档
+ */
 const listChildDocs = async (doc: any) => {
-    let data = await listDocsByPath(doc.box, doc.path);
-    // console.log(data);
+    const data = await listDocsByPath(doc.box, doc.path);
     return data?.files;
 }
 
+/**
+ * 获取同级文档
+ */
 const getSibling = async (path: string, box: string) => {
     path = path.replace('.sy', '');
     const parts = path.split('/');
@@ -103,49 +106,57 @@ const getSibling = async (path: string, box: string) => {
         parts.pop();
     }
 
-    let parentPath = parts.join('/');
-    parentPath = parentPath || '/';
-
-    let siblings = await listChildDocs({ path: parentPath, box });
-    return siblings;
+    const parentPath = parts.join('/') || '/';
+    return await listChildDocs({ path: parentPath, box });
 }
 
+/**
+ * 创建文档上下文数据
+ */
 const createContext = async (docId?: string) => {
     if (!docId) {
         docId = getActiveDoc();
-        if (!docId) {
-            return null;
-        }
+        if (!docId) return null;
     }
-    let doc = await getBlockByID(docId);
+    
+    const doc = await getBlockByID(docId);
     let parent = await getParentDocument(doc.path);
-    let childrenPromise = listChildDocs(doc);
+    
     parent = parent ?? {
         box: doc.box,
         path: '/',
         hpath: ''
     } as Block;
-    let siblingsPromise = listChildDocs(parent);
-    let _ = await Promise.all([childrenPromise, siblingsPromise]);
-    let children = _[0];
-    let siblings = _[1];
+    
+    const [children, siblings] = await Promise.all([
+        listChildDocs(doc),
+        listChildDocs(parent)
+    ]);
 
-    let hpaths = doc.hpath.slice(1).split('/');
-    let paths = doc.path.slice(1).split('/');
-    //将 hpaths 和 paths 做 zip 操作
-    let docPaths = hpaths.map((title, index) => {
-        return {
-            title: title,
-            id: paths[index],
-        }
-    });
+    const hpaths = doc.hpath.slice(1).split('/');
+    const paths = doc.path.slice(1).split('/');
+    
+    // 将 hpaths 和 paths 做 zip 操作
+    const docPaths = hpaths.map((title, index) => ({
+        title,
+        id: paths[index],
+    }));
 
     return { doc, parent, children, siblings, docPaths };
 }
 
 
-const A = (props: { id: string, hightlight?: boolean, children: any, dialog: Dialog, actions?: any, updateDoc?: (docId: string) => void }) => {
-
+/**
+ * 链接组件，用于文档导航
+ */
+const A = (props: { 
+    id: string, 
+    hightlight?: boolean, 
+    children: any, 
+    dialog: Dialog, 
+    actions?: any, 
+    updateDoc?: (docId: string) => void 
+}) => {
     const open = (e: MouseEvent) => {
         // 如果按下了 Alt 键，则不跳转，而是更新当前面板的内容
         if (e.altKey && props.updateDoc) {
@@ -162,25 +173,34 @@ const A = (props: { id: string, hightlight?: boolean, children: any, dialog: Dia
             }
         });
         props.dialog.destroy();
+        
         const ele = document.querySelector(`div[data-node-id="${props.id}"]`);
-        if (ele) {
-            ele.scrollIntoView();
-        }
+        ele?.scrollIntoView();
     }
 
     return (
-        <>
-            <span class="anchor" data-id={props.id} onClick={(e) => open(e)} style={{
+        <span 
+            class="anchor" 
+            data-id={props.id} 
+            onClick={(e) => open(e)} 
+            style={{
                 outline: props?.hightlight ? 'solid var(--b3-theme-primary-light)' : 0,
                 'font-weight': props?.hightlight ? 'bold' : 'inherit',
-            }}>
-                {props.children}
-            </span>
-        </>
-    )
+            }}
+        >
+            {props.children}
+        </span>
+    );
 }
 
-const OutlineComponent = (props: { docId: string, dialog: Dialog, updateDoc?: (docId: string) => void }) => {
+/**
+ * 大纲组件
+ */
+const OutlineComponent = (props: { 
+    docId: string, 
+    dialog: Dialog, 
+    updateDoc?: (docId: string) => void 
+}) => {
     const [outline, setOutline] = createSignal([]);
 
     // 转换数据结构，保留层级关系
@@ -195,27 +215,25 @@ const OutlineComponent = (props: { docId: string, dialog: Dialog, updateDoc?: (d
     }
 
     // 递归渲染组件
-    const RenderItem = (propsRi: { items: any[] }) => {
-        return (
-            <ul style={{ "list-style-type": "disc", "margin": "0.5em 0" }}>
-                <For each={propsRi.items}>
-                    {(item) => (
-                        <li>
-                            <A id={item.id} dialog={props.dialog} updateDoc={(docId) => props.updateDoc?.(docId)}>
-                                <span innerHTML={item.name} />
-                            </A>
-                            <Show when={item.children.length > 0}>
-                                <RenderItem items={item.children} />
-                            </Show>
-                        </li>
-                    )}
-                </For>
-            </ul>
-        );
-    }
+    const RenderItem = (propsRi: { items: any[] }) => (
+        <ul style={{ "list-style-type": "disc", "margin": "0.5em 0" }}>
+            <For each={propsRi.items}>
+                {(item) => (
+                    <li>
+                        <A id={item.id} dialog={props.dialog} updateDoc={(docId) => props.updateDoc?.(docId)}>
+                            <span innerHTML={item.name} />
+                        </A>
+                        <Show when={item.children.length > 0}>
+                            <RenderItem items={item.children} />
+                        </Show>
+                    </li>
+                )}
+            </For>
+        </ul>
+    );
 
     onMount(async () => {
-        let ans = await request('/api/outline/getDocOutline', {
+        const ans = await request('/api/outline/getDocOutline', {
             id: props.docId
         });
         setOutline(iterate(ans));
@@ -223,10 +241,7 @@ const OutlineComponent = (props: { docId: string, dialog: Dialog, updateDoc?: (d
 
     return (
         <Show when={outline().length > 0} fallback={<p>{I18n.no}</p>}>
-            <div class="outline-container" style={{
-                // "padding-left": "1em",
-                // "border-left": "2px solid var(--b3-border-color)"
-            }}>
+            <div class="outline-container">
                 <RenderItem items={outline()} />
             </div>
         </Show>
@@ -295,8 +310,6 @@ const DocContextComponent = (props: {
         siblings: props.siblings,
         docPaths: props.docPaths
     });
-
-    // 不使用解构赋值，直接通过信号函数访问属性以保持响应性
 
     const focus = () => {
         let dock = document.querySelector(`.dock__items>span[data-type="file"]`) as HTMLElement;
@@ -454,7 +467,6 @@ const DocContextComponent = (props: {
 
 
 let plugin_: FMiscPlugin;
-// const keymapTag = window.siyuan.config.keymap.general.tag;
 const Keymap = '⌥S';
 
 const KeymapConfig = window.siyuan.config.keymap;
@@ -599,7 +611,6 @@ export const load = (plugin: FMiscPlugin) => {
             callback: async () => goToChild()
         });
 
-        // 🔥 根据配置决定是否覆盖默认快捷键
         if (config.overwriteCtrlUpDownKey) {
             KeymapConfig.editor.general.collapse.custom = '';
             KeymapConfig.editor.general.expand.custom = '';
@@ -618,7 +629,6 @@ export const unload = (plugin: FMiscPlugin) => {
     plugin.delCommand('fmisc::parent-doc');
     plugin.delCommand('fmisc::child-doc');
 
-    // 🔥 根据配置决定是否覆盖默认快捷键
     if (config.overwriteCtrlUpDownKey) {
         KeymapConfig.editor.general.collapse.custom = KeymapConfig.editor.general.collapse.default;
         KeymapConfig.editor.general.expand.custom = KeymapConfig.editor.general.expand.default;

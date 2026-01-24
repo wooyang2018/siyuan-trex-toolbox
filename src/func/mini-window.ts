@@ -1,21 +1,10 @@
-/*
- * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-04-04 21:23:19
- * @FilePath     : /src/func/mini-window.ts
- * @LastEditTime : 2024-10-20 16:59:24
- * @Description  : 
+/**
+ * Mini Window - 中键点击打开小窗功能
+ * 
+ * @description 「网页视图」插件中打开小窗口的功能
+ * @open_source 摘抄自「网页视图」插件
+ * @author frostime
  */
-/*
- * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-04-04 21:23:19
- * @FilePath     : /src/func/mini-window.ts
- * @LastEditTime : 2024-06-23 18:23:27
- * @Description  : 「网页视图」插件中打开小窗口的功能
- * @Open Source  : 摘抄自「网页视图」插件
- */
-// import type FMiscPlugin from '@/index';
 import { openWindow } from "siyuan";
 import { updateStyleDom } from "@frostime/siyuan-plugin-kits";
 
@@ -27,19 +16,22 @@ export const declareToggleEnabled = {
 };
 
 
-const InMiniWindow = () => {
-    const body: HTMLElement = document.querySelector('body');
-    return body.classList.contains('body--window');
-}
+/**
+ * 检查当前是否在小窗模式
+ */
+const InMiniWindow = () => document.querySelector('body')?.classList.contains('body--window');
 
-const pos = (loc: number, size: number) => {
-    return Math.max(loc - size / 2, 0);
-}
+/**
+ * 计算窗口居中位置
+ */
+const pos = (loc: number, size: number) => Math.max(loc - size / 2, 0);
 
-const openSiyuanWindow = (
-    id: BlockId,
-    e?: MouseEvent
-): void => {
+/**
+ * 打开思源小窗
+ * @param id 块ID
+ * @param e 鼠标事件
+ */
+const openSiyuanWindow = (id: BlockId, e?: MouseEvent): void => {
     openWindow({
         position: {
             x: pos(e?.x || 0, 750),
@@ -47,56 +39,12 @@ const openSiyuanWindow = (
         },
         height: 500,
         width: 750,
-        doc: {
-            id: id
-        }
+        doc: { id }
     });
 }
 
 const id = 'trex-toolbox__min-win';
-const StyleHide = `
-.fn__flex.layout-tab-bar {
-    display: none;
-}
-#status {
-    display: none;
-}
-.item--readonly > span.block__icon[data-type] {
-    display: none;
-}
-.protyle-breadcrumb, .protyle-top {
-    display: none;
-}
-.layout-tab-bar--readonly {
-    height: 30px;
-}
-.toolbar__window {
-    zoom: 0.75;
-    opacity: 0;
-}
-#tooltip {
-    transform: scale(0.5);
-}
-.toolbar__window:hover {
-    opacity: 1;
-}
 
-.layout-tab-bar {
-    border-bottom: unset;
-}
-
-[data-type="wnd"]>div.fn__flex::before {
-    content: "{{title}}";
-    font-size: 17px;
-    font-weight: bold;
-    opacity: 0.4;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 5;
-}
-
-`;
 
 const StyleHideAtFullscreen = `
 .protyle.fullscreen {
@@ -119,44 +67,37 @@ const StyleHideAtFullscreen = `
 export let name = 'MiniWindow';
 export let enabled = false;
 
+/**
+ * 加载小窗功能
+ */
 export function load() {
-
     if (enabled) return;
-
+    
     document.addEventListener('mousedown', onMouseClick);
     enabled = true;
 
     if (InMiniWindow()) {
         updateStyleDom(id, StyleHideAtFullscreen);
-        // plugin.addCommand({
-        //     langKey: 'fmisc::hidebar',
-        //     langText: `Toggle 小窗隐藏模式`,
-        //     hotkey: '⌥⇧H',
-        //     callback: () => {
-        //         if (document.getElementById(id)) {
-        //             removeStyleDom(id);
-        //         } else {
-        //             let title = document.querySelector('.layout-tab-bar li.item--focus>.item__text').textContent;
-        //             updateStyleDom(id, StyleHide.replace('{{title}}', title));
-        //         }
-        //     }
-        // })
     }
 }
 
+/**
+ * 卸载小窗功能
+ */
 export function unload() {
     if (!enabled) return;
+    
     document.removeEventListener('mousedown', onMouseClick);
     enabled = false;
-    // plugin.delCommand('fmisc::hidebar');
 }
 
 
+/**
+ * 鼠标点击事件处理
+ */
 const onMouseClick = (e: MouseEvent) => {
-    //中键点击
-    if (e.button !== 1) {
-        return;
-    }
+    if (e.button !== 1) return; // 仅处理中键点击
+    
     const blockId = getBlockID(e);
     if (blockId) {
         e.preventDefault();
@@ -165,41 +106,32 @@ const onMouseClick = (e: MouseEvent) => {
     }
 }
 
-// Frome https://github.com/Zuoqiu-Yingyi/siyuan-packages-monorepo/blob/main/workspace/packages/utils/regexp/index.ts
+// 块ID和URL正则表达式 (From Zuoqiu-Yingyi)
 const Regex = {
-    id: /^\d{14}-[0-9a-z]{7}$/, // 块 ID 正则表达式
-    url: /^siyuan:\/\/blocks\/(\d{14}-[0-9a-z]{7})/, // 思源 URL Scheme 正则表达式
+    id: /^\d{14}-[0-9a-z]{7}$/,
+    url: /^siyuan:\/\/blocks\/(\d{14}-[0-9a-z]{7})/,
 }
 
 /**
- * From https://github.com/Zuoqiu-Yingyi/siyuan-packages-monorepo/blob/main/workspace/packages/utils/siyuan/dom.ts
- * 查询块 ID
- * @param e: 事件
- * @return: 块 ID
+ * 从事件中查询块ID
+ * @param e 事件对象
+ * @returns 块ID或undefined
+ * @see https://github.com/Zuoqiu-Yingyi/siyuan-packages-monorepo
  */
 export function getBlockID(e: Event): BlockId | void {
     const path = e.composedPath();
-    for (let i = 0; i < path.length; ++i) {
-        const dataset = (path[i] as HTMLElement).dataset;
-        if (dataset) {
-            switch (true) {
-                case dataset.nodeId && Regex.id.test(dataset.nodeId):
-                    return dataset.nodeId;
-                case dataset.id && Regex.id.test(dataset.id):
-                    return dataset.id;
-                case dataset.oid && Regex.id.test(dataset.oid):
-                    return dataset.oid;
-                case dataset.avId && Regex.id.test(dataset.avId):
-                    return dataset.avId;
-                case dataset.colId && Regex.id.test(dataset.colId):
-                    return dataset.colId;
-                case dataset.rootId && Regex.id.test(dataset.rootId):
-                    return dataset.rootId;
-
-                default:
-                    break
+    
+    for (const element of path) {
+        const dataset = (element as HTMLElement).dataset;
+        if (!dataset) continue;
+        
+        // 按优先级检查各种可能的ID字段
+        const idFields = ['nodeId', 'id', 'oid', 'avId', 'colId', 'rootId'];
+        for (const field of idFields) {
+            const value = dataset[field];
+            if (value && Regex.id.test(value)) {
+                return value;
             }
         }
     }
-    return;
 }
