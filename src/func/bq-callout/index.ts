@@ -1,27 +1,24 @@
-/*
- * Copyright (c) 2023 by Yp Z (frostime). All Rights Reserved.
- * @Author       : Yp Z
- * @Date         : 2023-10-02 20:30:13
- * @FilePath     : /src/index.ts
- * @LastEditTime : 2025-03-14 19:00:44
- * @Description  : 
+/**
+ * BQ Callout - 引用块美化插件
+ * 
+ * @description 为引用块添加自定义样式和图标
+ * @author Yp Z (frostime)
  */
-import {
-    Menu,
-    Protyle,
-} from "siyuan";
+import { Menu, Protyle } from "siyuan";
 import "./index.scss";
 import FMiscPlugin from "@/index";
 import { setBlockAttrs } from "./api"
 import * as callout from "./callout";
 import { DynamicStyle } from "./style";
 
-
 let pluginInstance: BqCalloutPlugin | null = null;
 const SettingName = 'setting.json';
 export let name = "BQCallout";
 export let enabled = false;
 
+/**
+ * 加载 Callout 插件
+ */
 export const load = (plugin_: FMiscPlugin) => {
     if (enabled) return;
     enabled = true;
@@ -29,13 +26,14 @@ export const load = (plugin_: FMiscPlugin) => {
     pluginInstance.onload();
 }
 
+/**
+ * 卸载 Callout 插件
+ */
 export const unload = (plugin_: FMiscPlugin) => {
     if (!enabled) return;
     enabled = false;
-    if (pluginInstance) {
-        pluginInstance.onunload();
-        pluginInstance = null;
-    }
+    pluginInstance?.onunload();
+    pluginInstance = null;
 }
 
 export default class BqCalloutPlugin {
@@ -64,12 +62,13 @@ export default class BqCalloutPlugin {
         this.dynamicStyle = new DynamicStyle(this);
         this.siyuanPlugin.eventBus.on("click-blockicon", this.blockIconEventBindThis);
 
-        let configs = await this.siyuanPlugin.loadData(SettingName);
-        for (let key in configs) {
+        const configs = await this.siyuanPlugin.loadData(SettingName);
+        Object.keys(configs).forEach(key => {
             if (key in this.configs) {
                 this.configs[key] = configs[key];
             }
-        }
+        });
+        
         if (this.configs.DefaultCallout.length === 0) {
             this.configs.DefaultCallout = JSON.parse(JSON.stringify(callout.DefaultCallouts));
         }
@@ -83,13 +82,16 @@ export default class BqCalloutPlugin {
         this.siyuanPlugin.eventBus.off("click-blockicon", this.blockIconEventBindThis);
     }
 
+    /**
+     * 重置斜杠命令
+     */
     private resetSlash() {
         const addSlash = (
             ct: ICallout, calloutAttr: 'b' | 'callout', mode?: 'big' | 'small'
         ) => {
-            let modeName = mode == "big" ? "标题模式" : "段落模式";
-            let filterSuffix = mode ? `-${mode}` : "";
-            let modenameSuffix = mode ? ` | ${modeName}` : "";
+            const modeName = mode === "big" ? "标题模式" : "段落模式";
+            const filterSuffix = mode ? `-${mode}` : "";
+            const modenameSuffix = mode ? ` | ${modeName}` : "";
 
             // Default filters
             const defaultFilters = [
@@ -101,7 +103,8 @@ export default class BqCalloutPlugin {
             // Add custom slash filters if available
             let filters = [...defaultFilters];
             if (ct.customSlash) {
-                const customFilters = ct.customSlash.split(',')
+                const customFilters = ct.customSlash
+                    .split(',')
                     .map(filter => filter.trim())
                     .filter(filter => filter.length > 0)
                     .map(filter => filter + filterSuffix);
@@ -113,26 +116,24 @@ export default class BqCalloutPlugin {
                 html: `<span class="b3-menu__label">${ct.icon}${callout.calloutName(ct)}${modenameSuffix}</span>`,
                 id: ct.id + filterSuffix,
                 callback: (protyle: Protyle) => {
-                    console.log('Insert', ct.id, mode);
-                    let toInsert = "";
-                    if (mode === undefined) {
-                        toInsert = `>\n{: custom-${calloutAttr}="${ct.id}" }`;
-                    } else {
-                        toInsert = `>\n{: custom-${calloutAttr}="${ct.id}" custom-callout-mode="${mode}" }`;
-                    }
+                    const toInsert = mode === undefined
+                        ? `>\n{: custom-${calloutAttr}="${ct.id}" }`
+                        : `>\n{: custom-${calloutAttr}="${ct.id}" custom-callout-mode="${mode}" }`;
                     protyle.insert(toInsert);
                 }
             });
         }
 
         this.siyuanPlugin.protyleSlash = [];
-        for (let ct of this.configs.DefaultCallout) {
+        
+        for (const ct of this.configs.DefaultCallout) {
             if (ct?.hide) continue;
             addSlash(ct, 'b');
             if (ct.slash?.big) addSlash(ct, 'b', 'big');
             if (ct.slash?.small) addSlash(ct, 'b', 'small');
         }
-        for (let ct of this.configs.CustomCallout) {
+        
+        for (const ct of this.configs.CustomCallout) {
             if (ct?.hide) continue;
             addSlash(ct, 'callout');
             if (ct.slash?.big) addSlash(ct, 'callout', 'big');
@@ -140,67 +141,62 @@ export default class BqCalloutPlugin {
         }
     }
 
+    /**
+     * 块图标点击事件处理
+     */
     private blockIconEvent({ detail }: any) {
-        console.log(detail);
-        if (detail.blockElements.length > 1) {
-            return;
-        }
-        let ele: HTMLDivElement = detail.blockElements[0];
-        if (!ele.classList.contains("bq")) {
-            return;
-        }
+        if (detail.blockElements.length > 1) return;
+        
+        const ele: HTMLDivElement = detail.blockElements[0];
+        if (!ele.classList.contains("bq")) return;
 
-        let menu: Menu = detail.menu;
-        let submenus = [];
-        const allCallout = this.configs.DefaultCallout.concat(this.configs.CustomCallout).filter((item) => !item.hide);
-        for (let icallout of allCallout) {
-            if (icallout.hide) continue;
-            let btn = callout.createCalloutButton(ele.getAttribute("data-node-id"), icallout);
+        const menu: Menu = detail.menu;
+        const allCallout = [...this.configs.DefaultCallout, ...this.configs.CustomCallout]
+            .filter(item => !item.hide);
+        
+        const submenus = allCallout.map(icallout => {
+            const btn = callout.createCalloutButton(ele.getAttribute("data-node-id"), icallout);
             btn.onclick = () => {
-                let payload = {
+                const payload = {
                     'custom-callout': '',
                     'custom-b': ''
                 };
-                let key = icallout.custom ? 'custom-callout' : 'custom-b';
+                const key = icallout.custom ? 'custom-callout' : 'custom-b';
                 payload[key] = icallout.id;
                 setBlockAttrs(ele.getAttribute("data-node-id"), payload);
-            }
-            submenus.push({
-                element: btn,
-            })
-        }
-        submenus.push({
-            type: 'separator'
-        });
-        let big = "标题模式"
-        let small = "段落模式"
-        submenus.push({
-            element: callout.createCalloutButton("", { id: big, icon: '🇹' }),
-            click: () => {
-                setBlockAttrs(ele.getAttribute("data-node-id"), {
-                    'custom-callout-mode': 'big',
-                });
-            }
-        });
-        submenus.push({
-            element: callout.createCalloutButton("", { id: small, icon: '🇵' }),
-            click: () => {
-                setBlockAttrs(ele.getAttribute("data-node-id"), {
-                    'custom-callout-mode': 'small',
-                });
-            }
+            };
+            return { element: btn };
         });
 
-        let btn = callout.createRestoreButton(ele.getAttribute("data-node-id"));
-        btn.onclick = () => {
+        submenus.push({ type: 'separator' });
+
+        // 添加模式切换按钮
+        const modeButtons = [
+            { mode: 'big', label: '标题模式', icon: '🇹' },
+            { mode: 'small', label: '段落模式', icon: '🇵' }
+        ];
+        
+        modeButtons.forEach(({ mode, label, icon }) => {
+            submenus.push({
+                element: callout.createCalloutButton("", { id: label, icon }),
+                click: () => {
+                    setBlockAttrs(ele.getAttribute("data-node-id"), {
+                        'custom-callout-mode': mode,
+                    });
+                }
+            });
+        });
+
+        // 添加恢复按钮
+        const restoreBtn = callout.createRestoreButton(ele.getAttribute("data-node-id"));
+        restoreBtn.onclick = () => {
             setBlockAttrs(ele.getAttribute("data-node-id"), {
                 'custom-callout': '',
                 'custom-b': ''
             });
-        }
-        submenus.push({
-            element: btn
-        });
+        };
+        submenus.push({ element: restoreBtn });
+
         menu.addItem({
             icon: "iconInfo",
             label: "Savor Callout",

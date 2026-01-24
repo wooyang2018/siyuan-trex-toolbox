@@ -1,14 +1,11 @@
-/*
- * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-08-14 22:02:49
- * @FilePath     : /src/func/webview/index.ts
- * @LastEditTime : 2025-01-02 19:28:14
- * @Description  : 
+/**
+ * WebView - 网页视图
+ * 
+ * @description 在思源笔记中打开网页视图
+ * @author frostime
  */
 import type FMiscPlugin from "@/index";
 import { IMenu, IMenuBaseDetail, Plugin } from "siyuan";
-
 import { openCustomTab } from "@frostime/siyuan-plugin-kits";
 import { getCustomUrls } from "./config";
 import { renderView } from "./render";
@@ -29,53 +26,54 @@ export const declareToggleEnabled = {
     defaultEnabled: false
 };
 
-const createAppTemplate = (url: string): IWebApp => {
-    return {
-        name: "WebView",
-        iconName: "iconLink",
-        iconSvg: "",
-        iconSymbolSize: 16,
-        title: "WebView",
-        url: url,
-        debug: false,
-        proxy: "",
-        referer: "",
-        script: "",
-        css: "",
-        internal: false,
-        isTopBar: false,
-        topBarPostion: "left",
-        openTab: () => { }
-    };
-}
+/**
+ * 创建应用模板
+ */
+const createAppTemplate = (url: string): IWebApp => ({
+    name: "WebView",
+    iconName: "iconLink",
+    iconSvg: "",
+    iconSymbolSize: 16,
+    title: "WebView",
+    url,
+    debug: false,
+    proxy: "",
+    referer: "",
+    script: "",
+    css: "",
+    internal: false,
+    isTopBar: false,
+    topBarPostion: "left",
+    openTab: () => { }
+});
 
+/**
+ * 打开URL
+ */
 const openUrl = (app: IWebApp) => {
-    let uri = encodeURI(app.url);
+    const uri = encodeURI(app.url);
     let destroy: () => void = () => { };
+    
     openCustomTab({
         tabId: "webview" + uri,
         icon: app.iconName || undefined,
         title: app.title ?? 'Webview',
         render: (container: HTMLElement) => {
             container.style.backgroundColor = 'white';
-            destroy = renderView({
-                element: container,
-                data: app
-            }, plugin_);
+            destroy = renderView({ element: container, data: app }, plugin_);
         },
-        beforeDestroy: () => {
-            destroy();
-        },
+        beforeDestroy: () => destroy(),
         plugin: plugin_
     });
 }
 
+/**
+ * 打开URL标签页事件处理
+ */
 const openUrlTab = (e: CustomEvent<IMenuBaseDetail>) => {
-    let detail = e.detail;
-    let menu = detail.menu;
-    const hrefSpan = detail.element;
-
-    let dataHref = hrefSpan.getAttribute("data-href");
+    const { menu, element } = e.detail;
+    const dataHref = element.getAttribute("data-href");
+    
     if (!dataHref?.startsWith("http") && !dataHref?.startsWith("www.")) {
         return;
     }
@@ -87,8 +85,12 @@ const openUrlTab = (e: CustomEvent<IMenuBaseDetail>) => {
     });
 }
 
+/**
+ * 加载WebView功能
+ */
 export const load = async (plugin: FMiscPlugin) => {
     if (enabled) return;
+    
     const electron = window?.require?.('electron');
     if (!electron) return;
 
@@ -96,43 +98,43 @@ export const load = async (plugin: FMiscPlugin) => {
     plugin_ = plugin;
     plugin.eventBus.on('open-menu-link', openUrlTab);
 
-    // Load and merge configurations
+    // 加载并合并配置
     const mergedApps = await loadStorage();
-    CustomApps.length = 0;  // Clear existing apps
-    CustomApps.push(...mergedApps);  // Replace with merged apps
+    CustomApps.length = 0;
+    CustomApps.push(...mergedApps);
 
-    let menus: IMenu[] = CustomApps.map((app => {
-        return {
-            icon: app.iconName,
-            label: app.title,
-            click: () => openUrl(app)
-        }
+    const menus: IMenu[] = CustomApps.map(app => ({
+        icon: app.iconName,
+        label: app.title,
+        click: () => openUrl(app)
     }));
 
+    // 添加自定义URL
     const urls = await getCustomUrls();
-    for (let i = 0; i < urls.length; i++) {
-        let app = createAppTemplate(urls[i].url);
-        app.title = urls[i].name;
+    urls.forEach(({ url, name, icon }) => {
+        const app = createAppTemplate(url);
+        app.title = name;
         menus.push({
-            icon: urls[i].icon || 'iconLink',
-            label: urls[i].name,
+            icon: icon || 'iconLink',
+            label: name,
             click: () => openUrl(app)
-        })
-    }
+        });
+    });
 
-    plugin.registerMenuTopMenu('webview', [
-        {
-            icon: "iconLink",
-            label: '打开新标签页',
-            type: 'submenu',
-            submenu: menus
-        }
-    ])
+    plugin.registerMenuTopMenu('webview', [{
+        icon: "iconLink",
+        label: '打开新标签页',
+        type: 'submenu',
+        submenu: menus
+    }]);
 
     const targetTexts = menus.map(menu => menu.label);
     MonitorTabUpdates(targetTexts);
 }
 
+/**
+ * 卸载WebView功能
+ */
 export const unload = (plugin: FMiscPlugin) => {
     if (!enabled) return;
     enabled = false;

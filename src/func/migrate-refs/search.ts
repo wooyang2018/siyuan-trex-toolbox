@@ -1,105 +1,100 @@
-/*
- * Copyright (c) 2025 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2025-01-03 12:47:18
- * @FilePath     : /src/func/migrate-refs/search.ts
- * @LastEditTime : 2025-01-03 12:48:46
- * @Description  : 
+/**
+ * First Block to Parent - 引用搜索优化
+ * 
+ * @description 将段落块引用转换为父块引用（标题、文档等）
+ * @author frostime
  */
-
 import { request } from "@/api";
 import { id2block } from "@frostime/siyuan-plugin-kits";
 
-export const fb2p = async (inputs: Block[], enable?: { heading?: boolean, doc?: boolean }) => {
-    /**
-     * 处理输入参数
-     */
-    let types = typeof inputs[0] === 'string' ? 'id' : 'block';
-    let ids = types === 'id' ? inputs : (inputs as Block[]).map(b => b.id);
-    let blocks: Block[] = inputs as Block[];
-    enable = { heading: true, doc: true, ...(enable ?? {}) };
+/**
+ * First Block to Parent
+ * 将段落块的引用转换为其父块（标题/文档/容器块）的引用
+ * 
+ * @param inputs 输入的块数组或ID数组
+ * @param enable 启用选项：heading-标题, doc-文档
+ */
+export const fb2p = async (
+    inputs: Block[], 
+    enable?: { heading?: boolean, doc?: boolean }
+) => {
+    // 处理输入参数
+    const types = typeof inputs[0] === 'string' ? 'id' : 'block';
+    const ids = types === 'id' ? inputs : (inputs as Block[]).map(b => b.id);
+    let blocks: Block[] = types === 'id' 
+        ? (inputs as any).map(id => ({ id }))
+        : inputs as Block[];
+    
+    enable = { heading: true, doc: true, ...enable };
 
-    if (types == 'id') {
-        //@ts-ignore
-        blocks = blocks.map(id => ({ id: id }));
-    }
+    // 获取块的上下文关系
+    const data: Record<BlockId, any> = await request('/api/block/getBlockTreeInfos', { ids });
+    const result: Block[] = [];
 
-    /**
-     * 获取块的上下文关系
-     */
-    let data: { [key: BlockId]: any } = await request('/api/block/getBlockTreeInfos', {
-        ids: ids
-    });
-    let result: Block[] = [];
-
-    /**
-     * 处理标题、文档块这种特殊情况；在执行 fb2p 后需要使用新的 ID 块的 content 替换旧的 ID 块的 content
-     */
-    let ReplaceContentTask = {
+    // 内容替换任务管理器
+    const ReplaceContentTask = {
         blocks: {} as Record<BlockId, Block>,
-        addTask: (block: Block) => {
-            ReplaceContentTask.blocks[block.id] = block;
+        addTask(block: Block) {
+            this.blocks[block.id] = block;
         },
-        run: async () => {
-            let blocks = await id2block(Object.keys(ReplaceContentTask.blocks));
-            for (let block of blocks) {
-                if (ReplaceContentTask.blocks[block.id]) {
-                    // replaceContentTask.blocks[block.id].content = block.content;
-                    Object.assign(ReplaceContentTask.blocks[block.id], block);
+        async run() {
+            const blocks = await id2block(Object.keys(this.blocks));
+            blocks.forEach(block => {
+                if (this.blocks[block.id]) {
+                    Object.assign(this.blocks[block.id], block);
                 }
-            }
+            });
         }
     };
 
-    /**
-     * 执行 fb2p
-     */
-    for (let block of blocks) {
+    // 文档引用标识正则
+    const REF_PATTERN = /#(文档引用|DOCREF)#/;
+    
+    // 块类型映射
+    const BLOCK_TYPE_MAP = {
+        'NodeBlockquote': 'b',
+        'NodeListItem': 'i'
+    } as const;
+
+    // 执行 fb2p 转换
+    for (const block of blocks) {
         result.push(block);
-        let info = data[block.id];
+        const info = data[block.id];
+        
         if (info.type !== 'NodeParagraph') continue;
 
-        /**
-         * 特殊处理：文档引用标识
-         * 由于「文献引用」插件的文档第一行被强行占用不能改；再考虑到确实存在在文档中进行引用的情况
-         * 所以规定：如果段落中含有标签 '文档引用' 或者 'DOCREF'，则认定为文档级引用
-         */
-        const content = block.content.trim();
-        const refPattern = /#(文档引用|DOCREF)#/;
-        if (refPattern.test(content)) {
+        // 特殊处理：文档引用标识
+        if (REF_PATTERN.test(block.content.trim())) {
             console.debug('发现文档引用', block.id);
-            let resultp = result[result.length - 1];
+            const resultp = result[result.length - 1];
             resultp.id = block.root_id;
             resultp.type = 'd';
             ReplaceContentTask.addTask(resultp);
             continue;
         }
 
-        // ---------- 以下为常规的 fb2p 处理逻辑 ----------
-
-        if (
-            info.previousID === '' &&
-            ['NodeBlockquote', 'NodeListItem'].includes(info.parentType) // 容器块的第一个段落块
-        ) {
-            let resultp = result[result.length - 1];
+        // 常规 fb2p 处理逻辑
+        const resultp = result[result.length - 1];
+        
+        // 容器块的第一个段落
+        if (info.previousID === '' && BLOCK_TYPE_MAP[info.parentType]) {
             resultp.id = info.parentID;
-            resultp.type = { 'NodeBlockquote': 'b', 'NodeListItem': 'i' }[info.parentType];
-        } else if (enable.heading && info.previousType === "NodeHeading") { // 标题块下方第一个段落
-            let resultp = result[result.length - 1];
+            resultp.type = BLOCK_TYPE_MAP[info.parentType];
+        } 
+        // 标题块下方第一个段落
+        else if (enable.heading && info.previousType === "NodeHeading") {
             resultp.id = info.previousID;
             resultp.type = 'h';
-            ReplaceContentTask.addTask(resultp); // 对标题下方的段落块，执行替换 content 的任务
-        } else if (
-            enable.doc &&
-            info.previousID === '' &&
-            info.parentType === "NodeDocument"
-        ) { // 文档下第一个段落
-            let resultp = result[result.length - 1];
+            ReplaceContentTask.addTask(resultp);
+        } 
+        // 文档下第一个段落
+        else if (enable.doc && info.previousID === '' && info.parentType === "NodeDocument") {
             resultp.id = info.parentID;
             resultp.type = 'd';
-            ReplaceContentTask.addTask(resultp); // 对文档下面的段落块，执行替换 content 的任务
+            ReplaceContentTask.addTask(resultp);
         }
     }
+
     await ReplaceContentTask.run();
     return result;
 }
