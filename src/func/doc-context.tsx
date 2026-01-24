@@ -6,7 +6,7 @@
  */
 import { createSignal, For, JSXElement, Match, onMount, Show, Switch } from 'solid-js';
 import { render } from 'solid-js/web';
-import { deepMerge, simpleDialog } from "@frostime/siyuan-plugin-kits";
+import { simpleDialog } from "@frostime/siyuan-plugin-kits";
 
 import { type Dialog, openTab, showMessage, confirm } from "siyuan";
 import { createDocWithMd, getBlockByID, listDocsByPath, request } from "@/api";

@@ -127,15 +127,12 @@ export const saveToJson = async (history: IChatSessionHistory, updateSnapshot: b
 
 
 export const tryRecoverFromJson = async (filePath: string) => {
-    // const plugin = thisPlugin();
     const blob = await api.getFileBlob(filePath);
-    // 空?
     if (!blob) {
         return null;
     }
     // 解析json
     try {
-        //application json
         let text = await blob.text();
         return JSON.parse(text);
     } catch (e) {

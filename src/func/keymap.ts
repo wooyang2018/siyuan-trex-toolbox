@@ -270,7 +270,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         }
     }
     
-    const dialog = new Dialog({
+    new Dialog({
         width: "1360px",
         title: "快捷键",
         content,

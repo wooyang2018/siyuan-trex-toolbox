@@ -3,7 +3,7 @@
  * 提供文档管理相关的工具功能
  */
 import type FMiscPlugin from "@/index";
-import { getActiveDoc, openBlock } from "@frostime/siyuan-plugin-kits";
+import { getActiveDoc, openBlock, thisPlugin } from "@frostime/siyuan-plugin-kits";
 import { getBlockByID, moveDocsByID } from "@frostime/siyuan-plugin-kits/api";
 import { floatingContainer } from "@/libs/components/floating-container";
 
