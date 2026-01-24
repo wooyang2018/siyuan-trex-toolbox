@@ -254,7 +254,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             innerHTML += `
             <div class="keymap-plugin-header">${window.siyuan.languages["plugin"]}</div>
             ${Object.keys(plugin).map((v) => `
-                <div class="keymap-plugin-header-2">${pluginNames[v] || v}</div>
+                <div class="keymap-plugin-header-2">${window.siyuan.languages[v] || v}</div>
                 ${plugin[v].map((v1) => `
                     <div class="keymap-plugin-item" data-keymap="${v1.value}">
                         <div class="keymap-plugin-title" title="${v1.key}">${v1.key}</div>
