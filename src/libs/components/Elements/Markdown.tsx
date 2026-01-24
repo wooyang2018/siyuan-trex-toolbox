@@ -9,7 +9,6 @@
 
 import { getLute } from "@frostime/siyuan-plugin-kits";
 import { createEffect, createMemo } from "solid-js";
-import { runMarkdownPostRender } from "@/func/gpt/chat/MessageItem.helper";
 
 
 const Markdown = (props: {
@@ -24,11 +23,7 @@ const Markdown = (props: {
     let font = () => props.fontSize ? `${props.fontSize} !important;` : 'initial';
 
     let eleRef: HTMLDivElement | undefined = undefined;
-    createEffect(() => {
-        if (eleRef) {
-            runMarkdownPostRender(eleRef);
-        }
-    });
+    createEffect(() => {});
 
     return (
         <div

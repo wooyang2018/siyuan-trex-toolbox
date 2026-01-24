@@ -24,8 +24,7 @@ console.log("outputDir=>", outputDir);
 export default defineConfig({
     resolve: {
         alias: {
-            "@": resolve(__dirname, "src"),
-            "@gpt": resolve(__dirname, "src/func/gpt")
+            "@": resolve(__dirname, "src")
         }
     },
 

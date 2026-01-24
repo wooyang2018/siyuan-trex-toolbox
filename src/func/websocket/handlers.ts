@@ -6,7 +6,6 @@ import { searchAttr, formatDateTime, thisPlugin, api } from "@frostime/siyuan-pl
 import { showMessage } from "siyuan";
 import { importJavascriptFile, createJavascriptFile } from "@frostime/siyuan-plugin-kits";
 import { getBlockByID, insertBlock, prependBlock, saveBlob } from "@frostime/siyuan-plugin-kits/api";
-import { openai } from "../gpt";
 
 const { request } = api;
 
@@ -109,34 +108,12 @@ const saveExcerpt = async (content: string) => {
         showMessage('WS: 添加了新的摘录' + time);
     } else {
         // 太大了就不放入文档中，而是保存为附件
-        const SEGMENT_LENGTH = 1250;
-        const formerPart = content.slice(0, SEGMENT_LENGTH);
-        const latterPartLength = Math.min(SEGMENT_LENGTH, length - SEGMENT_LENGTH);
-        const latterPart = content.slice(-latterPartLength);
-        const response = await openai.complete(`<RAW_EXCERPT>${formerPart}\n[中间部分省略]\n${latterPart}</RAW_EXCERPT>`, {
-            systemPrompt: `Please extract the main idea of the content within the <RAW_EXCERPT> tags, and generate a title and a summary for it.
-- You MUST ONLY output two seperate lines, the first line is the title, the second line is the summary, no other text.
-- The title must be accurate and concise, about 15 ~ 70 characters.
-- The summary must be accurate and logical, about 200 ~ 600 characters.
-- 必须使用中文作为输出!
-`,
-            stream: false
-        });
-        let title = '';
-        let summary = '';
-        if (response?.ok !== false) {
-            const lines = response.content.split('\n');
-            title = lines[0].trim();
-            summary = lines.slice(1).join('\n').trim();
-        } else {
-            const firstLine = content.trim().split('\n')[0];
-            title = firstLine.replace(/\s/g, '').slice(0, 25) + '...';
-        }
-        // replace invalid file name
-        title = title.replace(/[/\\:*?"<>|]/g, '');
-        const path = `assets/user/excerpt/${time.replaceAll(':', '_')}-${title}.md`;
+        const firstLine = content.trim().split('\n')[0];
+        const title = firstLine.replace(/\s/g, '').slice(0, 25) + '...';
+        const titleSafe = title.replace(/[/\\:*?"<>|]/g, '');
+        const path = `assets/user/excerpt/${time.replaceAll(':', '_')}-${titleSafe}.md`;
         await saveBlob('/data/' + path, `# ${time} - ${title}\n\n${content}`);
-        await addContent(superBlock(`[${time}] | [${title}](${path})\n\n> ${summary}`));
+        await addContent(superBlock(`[${time}] | [${title}](${path})\n\n> ${content.slice(0, 200)}...`));
         showMessage('WS: 添加了新的摘录' + title);
     }
 };

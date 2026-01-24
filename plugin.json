@@ -15,8 +15,8 @@
     "zh_CN": "霸王龙工具箱"
   },
   "description": {
-    "en_US": "Personal tools. GPT Chat (API Key) | Toggl | Reference | Md Process | Zotero...",
-    "zh_CN": "个人插件合集. GPT 对话 (API Key) | Toggl | 引用管理 | Md 处理 | Zotero..."
+    "en_US": "Personal tools. Toggl | Reference | Md Process | Zotero...",
+    "zh_CN": "个人插件合集. Toggl | 引用管理 | Md 处理 | Zotero..."
   },
   "readme": {
     "default": "README.md"
@@ -30,9 +30,6 @@
     "frostime",
     "toolbox",
     "misc",
-    "gpt",
-    "chat",
-    "ai",
     "toggl",
     "fs",
     "trex-toolbox"
