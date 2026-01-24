@@ -8,32 +8,34 @@ import type FMiscPlugin from "@/index";
 import TextInput from "@/libs/components/text-input";
 import { fb2p } from "@/libs";
 
-function isnot(value: any) {
-    if (value === undefined || value === null) {
-        return true;
-    } else if (value === false) {
-        return true;
-    } else if (typeof value === 'string' && value.trim() === '') {
-        return true;
-    } else if (value?.length === 0) {
-        return true;
-    }
+/**
+ * 检查值是否为空
+ */
+const isnot = (value: any) => {
+    if (value === undefined || value === null) return true;
+    if (value === false) return true;
+    if (typeof value === 'string' && value.trim() === '') return true;
+    if (value?.length === 0) return true;
     return false;
-}
+};
 
+/** 块链接组件 */
 const A = (props: { id: string, children: any }) => (
     <a class="popover__block" data-id={props.id} href={`siyuan://blocks/${props.id}`}>
         {props.children}
     </a>
 );
 
-async function getChildDocs(block: BlockId, limit = 64) {
-    let sqlCode = `select * from blocks where path regexp '.*/${block}/[0-9a-z\-]+\.sy' and type='d'
+/**
+ * 获取子文档
+ */
+const getChildDocs = async (block: BlockId, limit = 64) => {
+    const sqlCode = `select * from blocks where path regexp '.*/${block}/[0-9a-z\-]+\.sy' and type='d'
     order by hpath desc limit ${limit};`;
-    let childDocs = await api.sql(sqlCode);
-    return childDocs;
-}
+    return await api.sql(sqlCode);
+};
 
+/** 目标选择组件 */
 const DestinationSelect = (props: { srcBlock: BlockId, onSelect: (id: BlockId) => void }) => {
     const parent = createSignalRef<Block>(null);
     const siblings = createSignalRef<Block[]>([]);
@@ -55,14 +57,12 @@ const DestinationSelect = (props: { srcBlock: BlockId, onSelect: (id: BlockId) =
         }
 
         if (parentId) {
-            let sibs = await getChildDocs(parentId);
-            sibs = sibs ?? [];
-            siblings(sibs);
+            const sibs = await getChildDocs(parentId);
+            siblings(sibs ?? []);
         }
 
-        let childs: Block[] | undefined = await getChildDocs(srcBlock.root_id);
-        childs = childs ?? [];
-        children(childs);
+        const childs = await getChildDocs(srcBlock.root_id);
+        children(childs ?? []);
 
         console.log(parent(), siblings(), children());
     });
@@ -133,24 +133,22 @@ const DestinationSelect = (props: { srcBlock: BlockId, onSelect: (id: BlockId) =
     );
 };
 
+/** 引用转移主组件 */
 const TransferRefs: Component<{
     plugin: FMiscPlugin,
     srcBlockID: BlockId
 }> = (props) => {
-    // const refBlocks = createSignalRef<Block[]>([]);
-    // const selectedRefs = createSignalRef<BlockId[]>([]);
     const selectedRefs = createStoreRef<{ block: Block, checked: boolean, redirected: Block }[]>([]);
-
     const selectedDst = createSignalRef<BlockId>("");
-    // const allChecked = createSignalRef(false);
+    
     const allChecked = () => {
         const checked = selectedRefs().filter(ref => ref.checked);
         return checked.length === selectedRefs().length;
-    }
+    };
 
-    const checkedRefs: Accessor<BlockId[]> = createMemo(() => {
-        return selectedRefs().filter(ref => ref.checked).map(ref => ref.block.id);
-    })
+    const checkedRefs: Accessor<BlockId[]> = createMemo(() => 
+        selectedRefs().filter(ref => ref.checked).map(ref => ref.block.id)
+    );
 
     onMount(async () => {
         const sqlQuery = `select * from blocks where id in (
@@ -170,8 +168,8 @@ const TransferRefs: Component<{
             return;
         }
 
-        let sql = `select * from blocks where id = "${selectedDst()}" limit 1`;
-        let result: Block[] = await api.sql(sql);
+        const sql = `select * from blocks where id = "${selectedDst()}" limit 1`;
+        const result: Block[] = await api.sql(sql);
         if (isnot(result)) {
             showMessage(`目标块 ${selectedDst()} 不存在`);
             return;

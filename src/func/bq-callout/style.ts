@@ -1,21 +1,18 @@
-/*
+/**
  * Copyright (c) 2023 by Yp Z (frostime). All Rights Reserved.
- * @Author       : Yp Z
- * @Date         : 2023-10-02 22:15:03
- * @FilePath     : /src/style.ts
- * @LastEditTime : 2024-08-02 18:37:22
- * @Description  : 
+ * @description Callout 样式管理
  */
 import type BqCalloutPlugin from ".";
 
 export const StyleDOMId = 'snippetCSS-BqCallout';
+
 const TemplateEmojiFont = `.protyle-wysiwyg .bq[custom-b]::after,
 .protyle-wysiwyg .bq[custom-callout]::after {
   font-family: {{var}} !important; 
 }`;
 
-const defaultDbCallout = (callout: ICallout) => {
-    return `
+/** 默认数据库 Callout 样式 */
+const defaultDbCallout = (callout: ICallout) => `
 .protyle-wysiwyg div[data-node-id].bq[custom-b="${callout.id}"]::after {
     content: "${callout.icon}" !important;
 }
@@ -30,9 +27,9 @@ html[data-theme-mode="dark"] .protyle-wysiwyg [data-node-id].bq[custom-b="${call
     box-shadow: 0 0 0 2px ${callout.box.dark} inset;
 }
 `;
-}
-const customCallout = (callout: ICallout) => {
-    return `
+
+/** 自定义 Callout 样式 */
+const customCallout = (callout: ICallout) => `
 .protyle-wysiwyg div[data-node-id].bq[custom-callout="${callout.id}"]::after {
     content: "${callout.icon}" !important;
 }
@@ -47,11 +44,9 @@ html[data-theme-mode="dark"] .protyle-wysiwyg [data-node-id].bq[custom-callout="
     box-shadow: 0 0 0 2px ${callout.box.dark} inset;
 }
 `;
-}
-
 
 /**
- * 设置全局默认的 Callout 显示模式；通过更改 default css 变量来实现
+ * 设置全局默认的 Callout 显示模式
  * @param mode big 模式或者 small 模式
  * @returns 返回 root 变量定义
  */
@@ -62,20 +57,21 @@ const toggleVarsByMode = (mode: 'big' | 'small') => {
         'icon-font-size',
         'fc-font-size',
         'fc-padding',
-        "fc-font-weight"
+        'fc-font-weight'
     ];
-    let css = '';
-    for (let v of StyleVars) {
-        css += `\t--callout-default-${v}: var(--callout-${mode}-${v});\n`
-    }
+    
+    const css = StyleVars.map(v => 
+        `\t--callout-default-${v}: var(--callout-${mode}-${v});`
+    ).join('\n');
 
     return `
     :root {
     ${css}
     }
     `;
-}
+};
 
+/** 动态样式管理类 */
 export class DynamicStyle {
     private css: string;
     plugin: BqCalloutPlugin;
@@ -89,11 +85,11 @@ export class DynamicStyle {
 
     update() {
         this.buildStyle();
-        this.updateStyleDom()
+        this.updateStyleDom();
     }
 
     /**
-     * 根据 this.css 更新 style 标签内容, #snippetCSS-BqCallout
+     * 根据 this.css 更新 style 标签内容
      */
     updateStyleDom() {
         let style: HTMLStyleElement = document.getElementById(StyleDOMId) as HTMLStyleElement;
@@ -106,37 +102,38 @@ export class DynamicStyle {
     }
 
     /**
-     * 移除 style 标签, #snippetCSS-BqCallout
+     * 移除 style 标签
      */
     removeStyleDom() {
-        const style = document.getElementById(StyleDOMId);
-        style?.remove();
+        document.getElementById(StyleDOMId)?.remove();
     }
 
     private buildStyle() {
         this.css = "";
-        let styles = [];
-        styles.push(this.configs.CustomCSS);
-        styles.push(TemplateEmojiFont.replace("{{var}}", this.configs.EmojiFont));
+        const styles = [
+            this.configs.CustomCSS,
+            TemplateEmojiFont.replace("{{var}}", this.configs.EmojiFont)
+        ];
 
-        //合并样式
-        this.css = Object.values(styles).join("\n");
-        //合并自定义 callout 样式
-        let customCallouts = this.configs.CustomCallout ?? [];
+        // 合并样式
+        this.css = styles.join("\n");
+        
+        // 合并自定义 callout 样式
+        const customCallouts = this.configs.CustomCallout ?? [];
         customCallouts.forEach(callout => {
             this.css += customCallout(callout);
-        })
-        //修改默认 callout 样式
+        });
+        
+        // 修改默认 callout 样式
         this.plugin.configs.DefaultCallout.forEach(callout => {
             this.css += defaultDbCallout(callout);
         });
 
-        //设置全局 callout 模式
+        // 设置全局 callout 模式
         this.css += toggleVarsByMode(this.plugin.configs.DefaultMode);
 
-        //设置动态 css 变量
+        // 设置动态 css 变量
         document.documentElement.style.setProperty('--callout-big-icon-top', this.configs.VarIconTop.Big);
         document.documentElement.style.setProperty('--callout-small-icon-top', this.configs.VarIconTop.Small);
     }
 }
-

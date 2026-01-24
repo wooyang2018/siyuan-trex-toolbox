@@ -1,11 +1,7 @@
 import { Component, createMemo, For, onMount } from "solid-js";
 import Table from "@/libs/components/Table";
 import { SimpleContextProvider, useSimpleContext } from "@/libs/simple-context";
-
-// import { BlockTypeShort } from "@/utils/const";
-// import { getNotebook } from "@/utils";
 import { getNotebook, BlockTypeShort } from "@frostime/siyuan-plugin-kits";
-
 import { FormInput, FormWrap } from "@/libs/components/Form";
 import { createSignalRef } from "@frostime/solid-signal-ref";
 import { doMove } from "./move";
@@ -13,31 +9,31 @@ import { getBlockByID } from "@/api";
 import { showMessage } from "siyuan";
 import { fb2p } from "./search";
 
-
+/** 块链接组件 */
 const A = (props: { id: string, children: any }) => (
     <a class="popover__block" data-id={props.id} href={`siyuan://blocks/${props.id}`}>
         {props.children}
     </a>
 );
 
+/** 引用表格行组件 */
 const Row = (props: { refBlock: Block, doMigrate: (id: BlockId, action: TMigrate) => void }) => {
+    const { defBlock } = useSimpleContext() as { defBlock: Block };
+    const action = createSignalRef<TMigrate>('no');
 
-    let { defBlock } = useSimpleContext() as {
-        defBlock: Block
-    };
-
-    let action = createSignalRef<TMigrate>('no');
-
-    let notebookName = createMemo(() => {
-        let notebook = getNotebook(props.refBlock.box);
+    const notebookName = createMemo(() => {
+        const notebook = getNotebook(props.refBlock.box);
         return notebook.name;
     });
 
-    let boxWarn = () => {
-        if (props.refBlock.box !== defBlock.box) return { background: 'var(--b3-card-warning-background)' };
-        else if (props.refBlock.root_id === defBlock.root_id) return { opacity: 0.2 };
-        else return {};
-    }
+    const boxWarn = () => {
+        if (props.refBlock.box !== defBlock.box) {
+            return { background: 'var(--b3-card-warning-background)' };
+        } else if (props.refBlock.root_id === defBlock.root_id) {
+            return { opacity: 0.2 };
+        }
+        return {};
+    };
 
 
     return (
@@ -97,13 +93,10 @@ const RefsTable: Component<{
     const inboxHpath = createSignalRef('/Inbox');
 
     const updateRefBlocks = async () => {
-        props.queryRefBlocks().then(async (blocks) => {
-            if (ifFb2p()) {
-                blocks = await fb2p(blocks);
-            }
-            refBlocks(blocks);
-        });
-    }
+        const blocks = await props.queryRefBlocks();
+        const processedBlocks = ifFb2p() ? await fb2p(blocks) : blocks;
+        refBlocks(processedBlocks);
+    };
 
     onMount(async () => {
         updateRefBlocks();
@@ -120,14 +113,14 @@ const RefsTable: Component<{
             showMessage(`引用块 ${refBlockId} 不存在`, 3000, 'error');
             return;
         }
-        let result = await doMove(refBlock, props.defBlock, action, {
+        const result = await doMove(refBlock, props.defBlock, action, {
             inboxHpath: inboxHpath()
         });
         if (result) {
-            showMessage("迁移完成!")
+            showMessage("迁移完成!");
             setTimeout(updateRefBlocks, 1000);
         }
-    }
+    };
 
     return (
         <SimpleContextProvider state={{

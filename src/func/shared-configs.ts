@@ -1,18 +1,17 @@
 /**
  * 全局共享配置模块
- * 管理全局配置项和用户自定义常量
+ * @description 管理全局配置项和用户自定义常量
  */
-import { createSettingAdapter } from "@frostime/siyuan-plugin-kits";
-import { importJavascriptFile, createJavascriptFile } from "@frostime/siyuan-plugin-kits";
+import { createSettingAdapter, importJavascriptFile, createJavascriptFile } from "@frostime/siyuan-plugin-kits";
 
-export let name = "global-configs";
-export let enabled = true;
+export const name = "global-configs";
+export const enabled = true;
 
 interface IDefaultConfigs {
     codeEditor: string;
 }
 
-// ============ 配置定义 ============
+/** 配置定义 */
 const configDefinitions = [
     {
         key: 'codeEditor',
@@ -40,10 +39,10 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
 
 export const sharedConfigs = (key: keyof IDefaultConfigs) => configAdapter.get(key);
 
-// ============ 用户自定义常量 ============
+/** 用户自定义常量文件名 */
 export const userConstJsName = 'custom.user-constants.js';
 
-// 默认用户常量文件内容
+/** 默认用户常量文件内容 */
 const DEFAULT_USER_CONST_CODE = `
 /**
  * 用户自定义常量
@@ -56,21 +55,21 @@ const userConstants = {
 export default userConstants;
 `.trimStart();
 
-// 默认常量（会与用户常量合并）
+/** 默认常量（会与用户常量合并） */
 export const defaultConstants = {
-    promptSummarize: ``,
+    promptSummarize: '',
     quickDraftWinSize: {
         width: 1000,
         height: 600
     }
 };
 
-// 合并后的常量（在整个应用中使用）
+/** 合并后的常量（在整个应用中使用） */
 export let userConst: typeof defaultConstants = { ...defaultConstants };
 
 /**
  * 从 JS 文件加载用户自定义常量
- * 如果文件不存在，创建默认文件
+ * @description 如果文件不存在，创建默认文件
  */
 const reloadUserConstants = async (): Promise<void> => {
     try {
@@ -98,13 +97,11 @@ export const unload = () => {
     userConst = { ...defaultConstants };
 };
 
-// ============ 标签页更新监控 ============
-
 /**
  * 监控标签页更新并应用自定义样式
  * @param targetTexts 需要监控的标签文本数组
  */
-export function MonitorTabUpdates(targetTexts: string[]) {
+export const MonitorTabUpdates = (targetTexts: string[]) => {
     const observer = new MutationObserver((mutationsList) => {
         for (const mutation of mutationsList) {
             if (mutation.type !== 'childList') continue;
@@ -117,13 +114,11 @@ export function MonitorTabUpdates(targetTexts: string[]) {
                 );
                 
                 targetElements.forEach((element) => {
-                    const children = element.children;
-                    for (let i = 0; i < children.length; i++) {
-                        const child = children[i];
+                    Array.from(element.children).forEach((child) => {
                         if (child.tagName === 'SPAN' && targetTexts.includes(child.textContent || '')) {
                             element.setAttribute('data-content', child.textContent || '');
                         }
-                    }
+                    });
                 });
             }
         }
@@ -146,4 +141,4 @@ export function MonitorTabUpdates(targetTexts: string[]) {
             }
         }`;
     document.head.appendChild(style);
-}
+};

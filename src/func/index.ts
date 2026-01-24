@@ -1,6 +1,6 @@
 /**
  * 功能模块管理
- * 负责加载、卸载和切换各个功能模块
+ * @description 负责加载、卸载和切换各个功能模块
  */
 import type FMiscPlugin from "@/index";
 import * as mw from './mini-window';
@@ -17,13 +17,13 @@ import * as li from './link-icon';
 import * as pi from './pin-image';
 import * as bq from './bq-callout';
 
-// 可切换的功能模块列表
+/** 可切换的功能模块列表 */
 const _ModulesToEnable: IFuncModule[] = [gpt, mw, dft, dc, wb, tr, mr, ws];
 
-// 始终启用的功能模块列表
+/** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
 
-// 过滤出可用的模块
+/** 过滤出可用的模块 */
 export const ModulesToEnable = _ModulesToEnable.filter(
     module => !module.allowToUse || module.allowToUse()
 );
@@ -31,7 +31,7 @@ export const ModulesAlwaysEnable = _ModulesAlwaysEnable.filter(
     module => !module.allowToUse || module.allowToUse()
 );
 
-// EnableKey 到模块的映射表
+/** EnableKey 到模块的映射表 */
 const EnableKey2Module = Object.fromEntries(
     ModulesToEnable.map(module => [`Enable${module.name}`, module])
 );
@@ -78,4 +78,3 @@ export const toggleEnable = (plugin: FMiscPlugin, key: EnableKey, enable: boolea
     console.debug(`Toggle ${key} to ${enable}`);
     enable ? module.load(plugin) : module.unload(plugin);
 };
-

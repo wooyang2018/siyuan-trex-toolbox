@@ -2,34 +2,31 @@
  * Copyright (c) 2023 frostime. All rights reserved.
  * https://github.com/frostime/sy-plugin-template-vite
  * 
- * See API Document in [API.md](https://github.com/siyuan-note/siyuan/blob/master/API.md)
- * API 文档见 [API_zh_CN.md](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
+ * @description API 接口封装
+ * @see API.md https://github.com/siyuan-note/siyuan/blob/master/API.md
+ * @see API_zh_CN.md https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md
  */
 
-import { fetchSyncPost, fetchPost, IWebSocketData } from "siyuan";
+import { fetchSyncPost, IWebSocketData } from "siyuan";
 
+/**
+ * 通用请求封装
+ */
+const request = async (url: string, data: any) => {
+    const response: IWebSocketData = await fetchSyncPost(url, data);
+    return response.code === 0 ? response.data : null;
+};
 
-async function request(url: string, data: any) {
-    let response: IWebSocketData = await fetchSyncPost(url, data);
-    let res = response.code === 0 ? response.data : null;
-    return res;
-}
+/**
+ * 设置块属性
+ */
+export const setBlockAttrs = async (id: BlockId, attrs: { [key: string]: string }) => {
+    return request('/api/attr/setBlockAttrs', { id, attrs });
+};
 
-
-export async function setBlockAttrs(id: BlockId, attrs: { [key: string]: string }) {
-    let data = {
-        id: id,
-        attrs: attrs
-    }
-    let url = '/api/attr/setBlockAttrs';
-    return request(url, data);
-}
-
-
-export async function sql(sql: string): Promise<any[]> {
-    let sqldata = {
-        stmt: sql,
-    };
-    let url = '/api/query/sql';
-    return request(url, sqldata);
-}
+/**
+ * 执行 SQL 查询
+ */
+export const sql = async (sql: string): Promise<any[]> => {
+    return request('/api/query/sql', { stmt: sql });
+};
