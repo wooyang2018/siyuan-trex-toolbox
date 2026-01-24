@@ -70,7 +70,7 @@ export default class BqCalloutPlugin {
         });
         
         if (this.configs.DefaultCallout.length === 0) {
-            this.configs.DefaultCallout = JSON.parse(JSON.stringify(callout.DefaultCallouts));
+            this.configs.DefaultCallout = structuredClone(callout.DefaultCallouts);
         }
 
         this.dynamicStyle.update();

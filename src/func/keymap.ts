@@ -1,7 +1,8 @@
 /**
  * Keymap - 快捷键查看器
  * 
- * @description 提供快捷键管理和查看功能，支持搜索和重复快捷键检测
+ * @description 提供快捷键管理和查看功能,支持搜索和重复快捷键检测
+ * @author frostime
  */
 import { Dialog } from "siyuan";
 import { updateHotkeyTip } from "@/libs/hotkey";
@@ -44,7 +45,6 @@ const keymapStyle = `
     margin-bottom: 6px;
     border-bottom: 1px solid var(--b3-theme-background-light);
     padding-bottom: 2px;
-
 }
 
 .keymap-plugin-header-2 {
@@ -92,7 +92,8 @@ const keymapStyle = `
     position: absolute;
     right: 4px;
 }
-`
+`;
+
 updateStyleDom('trex-toolbox-keymap-style', keymapStyle);
 
 let searchInput = '';
@@ -114,7 +115,6 @@ export const addStatus = (plugin: FMiscPlugin) => {
     const spanEl = rootEl.querySelector("span");
 
     plugin.addStatusBar({ element: rootEl });
-
     spanEl?.addEventListener("click", () => showDialog(plugin));
 };
 
@@ -124,15 +124,14 @@ export const addStatus = (plugin: FMiscPlugin) => {
 const showDialog = (fmiscPlugin: FMiscPlugin) => {
     const keys = window.siyuan.config.keymap;
     const { general, editor, plugin } = keys;
-    const keyCount = {};
+    const keyCount: Record<string, string[]> = {};
     const types = {
-        general: [],
-        editor: {},
-        plugin: {},
+        general: [] as Array<{ key: string; value: string }>,
+        editor: {} as Record<string, Array<{ key: string; value: string }>>,
+        plugin: {} as Record<string, Array<{ key: string; value: string }>>,
     };
-    const pluginNames = {};
+    const pluginNames: Record<string, string> = {};
 
-    // 收集通用快捷键
     for (const k in general) {
         const key = window.siyuan.languages[k] || k;
         const value = updateHotkeyTip(general[k]?.custom);
@@ -140,7 +139,6 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         types.general.push({ key, value });
     }
 
-    // 收集编辑器快捷键
     for (const k in editor) {
         types.editor[k] = [];
         for (const j in editor[k]) {
@@ -151,7 +149,6 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         }
     }
 
-    // 收集插件快捷键
     for (const k in plugin) {
         types.plugin[k] = [];
         const p = fmiscPlugin.app.plugins.find((n) => n.name === k);
@@ -166,9 +163,8 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         }
     }
 
-    // 查找重复的快捷键
     const repeatedkeys = Object.entries(keyCount)
-        .filter(([key, value]) => key && (value as string[]).length > 1)
+        .filter(([key, value]) => key && value.length > 1)
         .map(([key]) => key);
 
     const content = `
@@ -184,7 +180,6 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         <div id="keymap-plugin-content"></div>
     </div>`;
 
-    // 渲染函数
     const render = () => {
         const generals = types.general.filter((v) => 
             !searchInput || v.key.includes(searchInput)
@@ -192,7 +187,6 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         
         let innerHTML = '';
         
-        // 渲染通用快捷键
         if (generals.length > 0) {
             innerHTML += `
             <div class="keymap-plugin-header">${window.siyuan.languages["general"]}</div>
@@ -204,9 +198,8 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             `).join("")}`;
         }
 
-        // 渲染编辑器快捷键
         const editorKeys = Object.keys(types.editor);
-        const editor = {};
+        const editor: Record<string, Array<{ key: string; value: string }>> = {};
         let showEditor = false;
         
         for (const k of editorKeys) {
@@ -234,28 +227,27 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             `).join("")}`;
         }
 
-        // 渲染插件快捷键
         const pluginKeys = Object.keys(types.plugin);
-        const plugin = {};
+        const pluginData: Record<string, Array<{ key: string; value: string }>> = {};
         let showPlugin = false;
         
         for (const k of pluginKeys) {
-            plugin[k] = types.plugin[k].filter((v1) => 
+            pluginData[k] = types.plugin[k].filter((v1) => 
                 !searchInput || v1.key.includes(searchInput)
             );
-            if (plugin[k].length > 0) {
+            if (pluginData[k].length > 0) {
                 showPlugin = true;
             } else {
-                delete plugin[k];
+                delete pluginData[k];
             }
         }
         
         if (showPlugin) {
             innerHTML += `
             <div class="keymap-plugin-header">${window.siyuan.languages["plugin"]}</div>
-            ${Object.keys(plugin).map((v) => `
+            ${Object.keys(pluginData).map((v) => `
                 <div class="keymap-plugin-header-2">${window.siyuan.languages[v] || v}</div>
-                ${plugin[v].map((v1) => `
+                ${pluginData[v].map((v1) => `
                     <div class="keymap-plugin-item" data-keymap="${v1.value}">
                         <div class="keymap-plugin-title" title="${v1.key}">${v1.key}</div>
                         <div class="keymap-plugin-value config-keymap__key">${v1.value}</div>
@@ -277,14 +269,12 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
     });
     render();
 
-    // 搜索输入监听
     const input = document.getElementById('keymap-plugin-search-input');
     input?.addEventListener('keyup', (e) => {
         searchInput = (e.target as HTMLInputElement).value || '';
         render();
     });
 
-    // 重复快捷键点击监听
     document.querySelectorAll('.repeated-key').forEach((k) => {
         k.addEventListener('click', (e) => {
             const el = e.target as HTMLElement;

@@ -1,10 +1,6 @@
-/*
+/**
  * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-12-26 21:02:30
- * @FilePath     : /src/func/webview/app.ts
- * @LastEditTime : 2024-12-26 21:12:57
- * @Description  : 
+ * @description 自定义 Web 应用配置
  */
 import { IWebApp } from "./utils/types";
 

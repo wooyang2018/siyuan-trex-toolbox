@@ -7,7 +7,6 @@
  * @Description  : 从 Webapp 插件当中拿过来的代码
  */
 import siyuan from 'siyuan';
-// import type { WebviewTag } from 'electron';
 import * as clipboard from './utils/clipboard';
 import { ElectronParams, IWebApp } from './utils/types';
 
@@ -21,32 +20,8 @@ export const renderView = (
     },
     plugin: siyuan.Plugin
 ) => {
-    /**
-     * Browserview Implement
-     */
-    // const { getCurrentWindow, BrowserView } = window.require('@electron/remote');
-    // console.log(context.element);
-    // const rect = context.element.getBoundingClientRect();
-    // const win = getCurrentWindow();
-    // const view = new BrowserView()
-    // win.addBrowserView(view)
-    // view.setBounds(rect)
-    // view.webContents.loadURL(context.data.url)
-    // const observer = new ResizeObserver((entries) => {
-    //   const rect = context.element.getBoundingClientRect();
-    //   view.setBounds(rect);
-    // })
-    // observer.observe(context.element, { box: 'border-box' });
-
-    // window.addEventListener('beforeunload', () => {
-    //   win.removeBrowserView(view);
-    // });
-
     const useController = context.controller ?? true;
 
-    /**
-     * Webview Implement
-     */
     context.element.innerHTML = `
   <div style="display: flex" class="webapp-view fn__flex-column fn__flex fn__flex-1 ${context.data.name}__custom-tab">
       <webview allowfullscreen allowpopups style="border: none" class="fn__flex-column fn__flex  fn__flex-1" src="${context.data.url}"
@@ -76,7 +51,7 @@ export const renderView = (
         controller.querySelector('.refresh').addEventListener('click', () => {
             webview.reload();
         });
-        let zoom = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 2, 2.5, 3];
+        const zoom = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 2, 2.5, 3];
         let index = zoom.findIndex(v => v === 1);
         controller.querySelector('.zoomIn').addEventListener('click', () => {
             if (index < zoom.length - 1) {
@@ -115,32 +90,30 @@ export const renderView = (
 
 
     let startDrag = false;
-    function onDragStart(e) {
+    const onDragStart = (e) => {
         const el = e.target;
-        if (!el) {
-            return;
-        }
+        if (!el) return;
         if (el.getAttribute('data-type') === 'tab-header' || el.parentElement.getAttribute('data-type') === 'tab-header') {
             startDrag = true;
             cover.classList.remove('fn__none');
         }
-    }
-    function onDragStop() {
+    };
+    const onDragStop = () => {
         startDrag = false;
         cover.classList.add('fn__none');
-    }
-    function onResizeStart(e) {
+    };
+    const onResizeStart = (e) => {
         if (e.target.classList.contains('layout__resize')) {
             startDrag = true;
             cover.classList.remove('fn__none');
         }
-    }
-    function onResizeStop(e) {
+    };
+    const onResizeStop = (e) => {
         if (e.target.classList.contains('layout__resize')) {
             startDrag = false;
             cover.classList.add('fn__none');
         }
-    }
+    };
     document.addEventListener('dragstart', onDragStart, true);
     document.addEventListener('mousedown', onResizeStart, true);
     document.addEventListener('mouseup', onResizeStop, true);
@@ -148,23 +121,20 @@ export const renderView = (
 
     let menu;
     webview?.addEventListener?.("context-menu", e => {
-        console.log('context-menu', e)
+        console.log('context-menu', e);
         const { params } = e;
         const title = params.titleText || params.linkText || params.altText || params.suggestedFilename;
 
-        // 添加右键菜单
         const items: siyuan.IMenu[] = [];
 
-        function buildOpenMenuItems(url: string, title: string, action: string, current: boolean = true): siyuan.IMenu[] {
+        const buildOpenMenuItems = (url: string, title: string, action: string, current: boolean = true): siyuan.IMenu[] => {
             const items: siyuan.IMenu[] = [];
-
             return items;
-        }
+        };
 
-        function buildCopyMenuItems(params: ElectronParams): siyuan.IMenu[] {
+        const buildCopyMenuItems = (params: ElectronParams): siyuan.IMenu[] => {
             const items: siyuan.IMenu[] = [];
 
-            /* 复制链接地址 */
             if (params.linkURL) {
                 items.push({
                     icon: "iconLink",
@@ -174,7 +144,6 @@ export const renderView = (
                 });
             }
 
-            /* 复制资源地址 */
             if (params.srcURL) {
                 items.push({
                     icon: "iconLink",
@@ -184,7 +153,6 @@ export const renderView = (
                 });
             }
 
-            /* 复制框架地址 */
             if (params.frameURL) {
                 items.push({
                     icon: "iconLink",
@@ -194,7 +162,6 @@ export const renderView = (
                 });
             }
 
-            /* 复制页面地址 */
             if (params.pageURL) {
                 items.push({
                     icon: "iconLink",
@@ -206,7 +173,6 @@ export const renderView = (
 
             items.push({ type: "separator" });
 
-            /* 复制标题 */
             if (params.titleText) {
                 items.push({
                     icon: "icon-webview-title",
@@ -215,7 +181,6 @@ export const renderView = (
                 });
             }
 
-            /* 复制描述 */
             if (params.altText) {
                 items.push({
                     icon: "iconInfo",
@@ -224,7 +189,6 @@ export const renderView = (
                 });
             }
 
-            /* 复制锚文本 */
             if (params.linkText) {
                 items.push({
                     icon: "icon-webview-anchor",
@@ -233,7 +197,6 @@ export const renderView = (
                 });
             }
 
-            /* 复制文件名 */
             if (params.suggestedFilename) {
                 items.push({
                     icon: "iconN",
@@ -243,9 +206,9 @@ export const renderView = (
             }
 
             return items;
-        }
+        };
 
-        function buildMarkdownLink(text: string, url: string, title: string): string {
+        const buildMarkdownLink = (text: string, url: string, title: string): string => {
             text = text || "🔗";
             const markdown: string[] = [];
             markdown.push("[");
@@ -257,13 +220,12 @@ export const renderView = (
             }
             markdown.push(")");
             return markdown.join("");
-        }
+        };
 
-        function getValidTexts(...args: string[]): string[] {
+        const getValidTexts = (...args: string[]): string[] => {
             return args.filter(text => !!text);
-        }
+        };
 
-        /* 复制划选内容 */
         if (params.selectionText) {
             items.push({
                 icon: "icon-webview-select",
@@ -285,11 +247,9 @@ export const renderView = (
 
                         items.push({ type: "separator" });
 
-                        /* 复制链接 (富文本) */
                         items.push({
                             icon: "iconLink",
                             label: 'copyLink',
-                            // accelerator: escapeHTML("<a>"),
                             click: () => {
                                 const a = globalThis.document.createElement("a");
                                 a.href = params.linkURL;
@@ -299,7 +259,6 @@ export const renderView = (
                             },
                         });
 
-                        /* 复制链接 (HTML) */
                         items.push({
                             icon: "iconHTML5",
                             label: 'copyLink',
@@ -313,7 +272,6 @@ export const renderView = (
                             },
                         });
 
-                        /* 复制链接 (Markdown) */
                         items.push({
                             icon: "iconMarkdown",
                             label: 'copyLink',
@@ -322,9 +280,9 @@ export const renderView = (
                                 const texts = getValidTexts(params.linkText, params.altText, params.suggestedFilename, params.titleText);
                                 clipboard.writeText(
                                     buildMarkdownLink(
-                                        texts.shift(), //
-                                        params.linkURL, //
-                                        texts.pop(), //
+                                        texts.shift(),
+                                        params.linkURL,
+                                        texts.pop(),
                                     ),
                                 );
                             },
@@ -336,11 +294,9 @@ export const renderView = (
 
                         items.push({ type: "separator" });
 
-                        /* 复制框架 (富文本) */
                         items.push({
                             icon: "iconLayout",
                             label: 'copyFrame',
-                            // accelerator: escapeHTML("<iframe>"),
                             click: () => {
                                 const iframe = globalThis.document.createElement("iframe");
                                 iframe.src = params.frameURL;
@@ -349,7 +305,6 @@ export const renderView = (
                             },
                         });
 
-                        /* 复制框架 (HTML) */
                         items.push({
                             icon: "iconHTML5",
                             label: 'copyFrame',
@@ -362,23 +317,22 @@ export const renderView = (
                             },
                         });
 
-                        /* 复制框架 (Markdown) */
                         items.push({
                             icon: "iconMarkdown",
                             label: 'copyFrame',
                             accelerator: "Markdown",
                             click: () => {
                                 const texts = getValidTexts(
-                                    params.linkText, //
-                                    params.altText, //
-                                    params.suggestedFilename, //
-                                    params.titleText, //
+                                    params.linkText,
+                                    params.altText,
+                                    params.suggestedFilename,
+                                    params.titleText,
                                 );
                                 clipboard.writeText(
                                     buildMarkdownLink(
-                                        texts.shift(), //
-                                        params.frameURL, //
-                                        texts.pop(), //
+                                        texts.shift(),
+                                        params.frameURL,
+                                        texts.pop(),
                                     ),
                                 );
                             },
@@ -390,11 +344,9 @@ export const renderView = (
 
                         items.push({ type: "separator" });
 
-                        /* 复制页面链接 (富文本) */
                         items.push({
                             icon: "iconFile",
                             label: 'copyPage',
-                            // accelerator: escapeHTML("<a>"),
                             click: () => {
                                 const a = globalThis.document.createElement("a");
                                 a.href = params.pageURL;
@@ -403,7 +355,6 @@ export const renderView = (
                             },
                         });
 
-                        /* 复制页面链接 (HTML) */
                         items.push({
                             icon: "iconHTML5",
                             label: 'copyPage',
@@ -416,23 +367,22 @@ export const renderView = (
                             },
                         });
 
-                        /* 复制页面链接 (Markdown) */
                         items.push({
                             icon: "iconMarkdown",
                             label: 'copyPage',
                             accelerator: "Markdown",
                             click: () => {
                                 const texts = getValidTexts(
-                                    params.linkText, //
-                                    params.altText, //
-                                    params.suggestedFilename, //
-                                    params.titleText, //
+                                    params.linkText,
+                                    params.altText,
+                                    params.suggestedFilename,
+                                    params.titleText,
                                 );
                                 clipboard.writeText(
                                     buildMarkdownLink(
-                                        texts.shift(), //
-                                        params.pageURL, //
-                                        texts.pop(), //
+                                        texts.shift(),
+                                        params.pageURL,
+                                        texts.pop(),
                                     ),
                                 );
                             },
@@ -443,17 +393,14 @@ export const renderView = (
                 break;
             }
 
-            /* 图片 */
             case "image": {
                 items.push(...buildOpenMenuItems(params.linkURL, title, "iconImage"));
 
                 items.push({ type: "separator" });
 
-                /* 复制图片 (富文本) */
                 items.push({
                     icon: "iconImage",
                     label: 'copyImage',
-                    // accelerator: escapeHTML("<img>"),
                     click: () => {
                         const img = globalThis.document.createElement("img");
                         img.src = params.srcURL;
@@ -463,7 +410,6 @@ export const renderView = (
                     },
                 });
 
-                /* 复制图片 (HTML) */
                 items.push({
                     icon: "iconHTML5",
                     label: 'copyImage',
@@ -477,23 +423,22 @@ export const renderView = (
                     },
                 });
 
-                /* 复制图片 (Markdown) */
                 items.push({
                     icon: "iconMarkdown",
                     label: 'copyImage',
                     accelerator: "Markdown",
                     click: () => {
                         const texts = getValidTexts(
-                            params.altText, //
-                            params.linkText, //
-                            params.suggestedFilename, //
-                            params.titleText, //
+                            params.altText,
+                            params.linkText,
+                            params.suggestedFilename,
+                            params.titleText,
                         );
                         clipboard.writeText(
                             buildMarkdownLink(
-                                texts.shift(), //
-                                params.srcURL, //
-                                texts.pop(), //
+                                texts.shift(),
+                                params.srcURL,
+                                texts.pop(),
                             ),
                         );
                     },
@@ -502,12 +447,10 @@ export const renderView = (
             }
         }
 
-        /* 复制指定字段 */
         items.push({ type: "separator" });
         items.push(...buildCopyMenuItems(params));
 
-        function washMenuItems(items: siyuan.IMenu[]): siyuan.IMenu[] {
-            /* 清理首尾两端的分割线 */
+        const washMenuItems = (items: siyuan.IMenu[]): siyuan.IMenu[] => {
             items = items.slice(
                 items.findIndex(item => item.type !== "separator"),
                 items.findLastIndex(item => item.type !== "separator") + 1,
@@ -515,14 +458,13 @@ export const renderView = (
 
             if (items.length === 0) return items;
 
-            /* 清理连续的分割线 */
             items = items.filter((item, index, items) => {
                 if (item.type !== "separator") return true;
                 else return items[index - 1]?.type !== "separator";
             });
 
             return items;
-        }
+        };
 
         const _items = washMenuItems(items);
         if (_items.length > 0) {
@@ -532,7 +474,7 @@ export const renderView = (
                 x: params.x,
                 y: params.y,
             });
-            cover.classList.remove('fn__none')
+            cover.classList.remove('fn__none');
         }
     });
 
@@ -541,7 +483,7 @@ export const renderView = (
         if (session) {
             session.setProxy({
                 proxyRules: context.data.proxy,
-            })
+            });
         }
     }
 
@@ -562,7 +504,7 @@ export const renderView = (
             --siyuan-mode: ${mode};
             --siyuan-theme: ${window.siyuan.config.appearance.mode === 0 ? window.siyuan.config.appearance.themeLight : window.siyuan.config.appearance.themeDark};
           }`).then(() => {
-                    webview.insertCSS(context.data.css)
+                    webview.insertCSS(context.data.css);
                 });
             });
         });
@@ -589,5 +531,5 @@ export const renderView = (
         document.removeEventListener('dragend', onDragStop);
         document.removeEventListener('mousedown', onResizeStart);
         document.removeEventListener('mouseup', onResizeStop);
-    }
+    };
 };

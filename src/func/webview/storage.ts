@@ -1,49 +1,48 @@
-/*
- * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-12-27 15:21:16
- * @FilePath     : /src/func/webview/storage.ts
- * @Description  : WebView storage configuration
+/**
+ * WebView storage configuration
+ * 
+ * @description WebView 应用配置的存储和加载
+ * @author frostime
  */
-
 import { IWebApp } from "./utils/types";
 import { CustomApps as DefaultApps } from "./app";
-// import type FMiscPlugin from "@/index";
 import { thisPlugin } from "@frostime/siyuan-plugin-kits";
 
 export const StorageFileName = 'custom-webview-app.js';
 
-export async function loadStorage(): Promise<IWebApp[]> {
-    let plugin = thisPlugin();
+/**
+ * 加载存储的 WebView 应用配置
+ */
+export const loadStorage = async (): Promise<IWebApp[]> => {
+    const plugin = thisPlugin();
     try {
-        let data = await plugin.loadBlob(StorageFileName);
-        // let jsModuleCode: string = await plugin.loadData(StorageFileName);
+        const data = await plugin.loadBlob(StorageFileName);
         if (!data) {
             throw new Error("Storage file not found");
         }
 
-        // 创建一个 Blob URL 来动态导入模块
-        // const blob = new Blob([jsModuleCode], { type: 'text/javascript' });
-        let blob = new Blob([data], { type: 'text/javascript' });
+        const blob = new Blob([data], { type: 'text/javascript' });
         const url = URL.createObjectURL(blob);
 
         try {
             const module = await import(/* webpackIgnore: true */ url);
-            URL.revokeObjectURL(url);  // 清理 URL
+            URL.revokeObjectURL(url);
             const customApps = module.default as IWebApp[];
             return mergeWithDefault(customApps);
         } catch (importError) {
-            URL.revokeObjectURL(url);  // 确保在出错时也清理 URL
+            URL.revokeObjectURL(url);
             throw importError;
         }
     } catch (e) {
-        // If storage file doesn't exist, create it with default apps
         await createDefaultStorage(plugin);
         return [...DefaultApps];
     }
 }
 
-function mergeWithDefault(customApps: IWebApp[]): IWebApp[] {
+/**
+ * 合并自定义应用和默认应用
+ */
+const mergeWithDefault = (customApps: IWebApp[]): IWebApp[] => {
     const mergedApps = [...DefaultApps];
 
     customApps.forEach(newApp => {
@@ -58,9 +57,11 @@ function mergeWithDefault(customApps: IWebApp[]): IWebApp[] {
     return mergedApps;
 }
 
-async function createDefaultStorage(plugin: ReturnType<typeof thisPlugin>) {
-    const content = `\
-/*
+/**
+ * 创建默认存储文件
+ */
+const createDefaultStorage = async (plugin: ReturnType<typeof thisPlugin>) => {
+    const content = `/*
  * Custom WebView Apps Configuration
  * This file is auto-generated. You can modify it to customize your web apps.
  */

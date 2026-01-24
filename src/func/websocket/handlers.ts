@@ -1,20 +1,19 @@
+/**
+ * WebSocket 消息处理器
+ */
 import * as SiYuan from "siyuan";
-
-// import { html2ele } from "@frostime/siyuan-plugin-kits";
-import { searchAttr, formatSiYuanDate, thisPlugin, api, formatDateTime } from "@frostime/siyuan-plugin-kits";
-
-import { openWindow, showMessage } from "siyuan";
-import { importJavascriptFile } from "@frostime/siyuan-plugin-kits";
-import { createJavascriptFile } from "@frostime/siyuan-plugin-kits";
-
+import { searchAttr, formatDateTime, thisPlugin, api } from "@frostime/siyuan-plugin-kits";
+import { showMessage } from "siyuan";
+import { importJavascriptFile, createJavascriptFile } from "@frostime/siyuan-plugin-kits";
 import { getBlockByID, insertBlock, prependBlock, saveBlob } from "@frostime/siyuan-plugin-kits/api";
 import { openai } from "../gpt";
 
-const { appendBlock, request } = api;
+const { request } = api;
 
-const superBlock = (content: string) => {
-
-    return `
+/**
+ * 创建超级块
+ */
+const superBlock = (content: string) => `
 {{{row
 
 ${content}
@@ -22,17 +21,12 @@ ${content}
 }}}
 `.trim();
 
-}
-
 /**
  * 把 text 添加到我的 dailynote 快记当中
- * @param text 
- * @returns 
  */
 const appendDnList = async (text: string) => {
-
     const refreshDocument = () => {
-        let docId = blocks[0].root_id;
+        const docId = blocks[0].root_id;
         const protyles = SiYuan.getAllEditor();
         protyles.forEach((protyle) => {
             if (protyle.protyle.block.rootID == docId) {
@@ -40,42 +34,40 @@ const appendDnList = async (text: string) => {
             }
             protyle.reload(false);
         });
-    }
+    };
 
-    let name = 'custom-dn-quickh2';
+    const name = 'custom-dn-quickh2';
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const v = `${year}${month}${day}`;
 
-    let today = new Date();
-    let year = today.getFullYear();
-    let month = (today.getMonth() + 1).toString().padStart(2, '0');
-    let day = today.getDate().toString().padStart(2, '0');
-    let v = `${year}${month}${day}`; // 20240710
-
-    let hours = today.getHours().toString().padStart(2, '0');
-    let minutes = today.getMinutes().toString().padStart(2, '0');
-    let seconds = today.getSeconds().toString().padStart(2, '0');
-    let timestr = `${hours}:${minutes}:${seconds}`; // 12:10:10
+    const hours = today.getHours().toString().padStart(2, '0');
+    const minutes = today.getMinutes().toString().padStart(2, '0');
+    const seconds = today.getSeconds().toString().padStart(2, '0');
+    const timestr = `${hours}:${minutes}:${seconds}`;
+    
     text = text.trim();
     const lines = text.split(/\r?\n\r?\n/);
     const isMultiline = lines.length > 1;
-    let content = isMultiline ? superBlock(`[${timestr}] ${text}`) : `[${timestr}] ${text}`;
+    const content = isMultiline ? superBlock(`[${timestr}] ${text}`) : `[${timestr}] ${text}`;
 
-    let blocks = await searchAttr(name, v);
+    const blocks = await searchAttr(name, v);
     if (blocks.length !== 1) return;
-    let id = blocks[0].id;
+    const id = blocks[0].id;
 
-    let headChildren = await request('/api/block/getHeadingChildrenIDs', { id: id })
+    const headChildren = await request('/api/block/getHeadingChildrenIDs', { id });
     if (!headChildren || headChildren.length === 0) return;
     const lastChild = headChildren[headChildren.length - 1];
     await insertBlock('markdown', content, null, lastChild, null);
     refreshDocument();
 
     showMessage('WS: Quicklist appended!');
-}
-
+};
 
 /**
  * 快速将摘录保存到文档中
- * @param content 
  */
 const saveExcerpt = async (content: string) => {
     content = content.trim();
@@ -94,7 +86,7 @@ const saveExcerpt = async (content: string) => {
             return;
         }
         showMessage('无法保存摘录!', -1, 'error');
-    }
+    };
 
     const time = formatDateTime();
 
@@ -102,30 +94,26 @@ const saveExcerpt = async (content: string) => {
     content = content.replace(/\n{2,}/g, '\n\n');
 
     // 计算汉字和汉字符号数量
-    const hanCount = (content.match(/[\u4e00-\u9fa5]/g) || []).length; // 汉字
-    const hanSymbolCount = (content.match(/[\u3000-\u303f\uff00-\uffef]/g) || []).length; // 汉字符号
+    const hanCount = (content.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const hanSymbolCount = (content.match(/[\u3000-\u303f\uff00-\uffef]/g) || []).length;
     const chineseCount = hanCount + hanSymbolCount;
 
-    // 计算英文单词数量 - 使用正则表达式匹配英文单词
-    // 使用单词边界符号 \b 确保匹配完整单词
+    // 计算英文单词数量
     const englishWordCount = (content.match(/\b[a-zA-Z]+(?:[''-][a-zA-Z]+)*\b/g) || []).length;
 
     const length = chineseCount + englishWordCount;
 
-    let toSave = '';
-
     if (length <= 800) {
-        toSave = superBlock(`[${time}] | ${content}`);
+        const toSave = superBlock(`[${time}] | ${content}`);
         await addContent(toSave);
         showMessage('WS: 添加了新的摘录' + time);
     } else {
         // 太大了就不放入文档中，而是保存为附件
         const SEGMENT_LENGTH = 1250;
-        let formerPart = content.slice(0, SEGMENT_LENGTH);
+        const formerPart = content.slice(0, SEGMENT_LENGTH);
         const latterPartLength = Math.min(SEGMENT_LENGTH, length - SEGMENT_LENGTH);
-        let latterPart = content.slice(-latterPartLength);
+        const latterPart = content.slice(-latterPartLength);
         const response = await openai.complete(`<RAW_EXCERPT>${formerPart}\n[中间部分省略]\n${latterPart}</RAW_EXCERPT>`, {
-            // 编写系统提示，提取摘要
             systemPrompt: `Please extract the main idea of the content within the <RAW_EXCERPT> tags, and generate a title and a summary for it.
 - You MUST ONLY output two seperate lines, the first line is the title, the second line is the summary, no other text.
 - The title must be accurate and concise, about 15 ~ 70 characters.
@@ -151,9 +139,7 @@ const saveExcerpt = async (content: string) => {
         await addContent(superBlock(`[${time}] | [${title}](${path})\n\n> ${summary}`));
         showMessage('WS: 添加了新的摘录' + title);
     }
-
-}
-
+};
 
 const DEFAULT_CODE = `
 const defaultModule = {
@@ -180,6 +166,10 @@ type FHandler = (body: string, context?: {
 }) => void;
 
 export const moduleJsName = 'custom.ws-handlers.js';
+
+/**
+ * 解析自定义处理器模块
+ */
 const parseCustomHandlerModule = async () => {
     const plugin = thisPlugin();
     const module = await importJavascriptFile(moduleJsName);
@@ -193,16 +183,19 @@ const parseCustomHandlerModule = async () => {
             handler(body, {
                 plugin,
                 siyuan: SiYuan,
-                request: request,
-                api: api
+                request,
+                api
             });
-        }
+        };
     });
     return modules;
-}
-
+};
 
 export let currentHandlers: Record<string, FHandler> = {};
+
+/**
+ * 获取所有处理器
+ */
 export const Handlers = async () => {
     const modules = await parseCustomHandlerModule();
     currentHandlers = {
@@ -211,4 +204,4 @@ export const Handlers = async () => {
         ...modules
     };
     return currentHandlers;
-}
+};

@@ -7,14 +7,14 @@ import { getActiveDoc, openBlock, thisPlugin } from "@frostime/siyuan-plugin-kit
 import { getBlockByID, moveDocsByID } from "@frostime/siyuan-plugin-kits/api";
 import { floatingContainer } from "@/libs/components/floating-container";
 
-export let name = "InboxFunctions";
-export let enabled = false;
+export let name: string = "InboxFunctions";
+export let enabled: boolean = false;
 
 export const declareToggleEnabled = {
     title: '📑 文档工具',
     description: '一些文档管理相关的工具',
     defaultEnabled: false
-};
+} as const;
 
 interface DocInfo {
     id: string;
@@ -28,7 +28,7 @@ interface DocInfo {
  * 提供文档选择、展示和批量操作功能
  */
 const useDocItemSelection = () => {
-    let selectedFiletreeItems = new Set<{ id: string; name: string }>();
+    const selectedFiletreeItems = new Set<{ id: string; name: string }>();
 
     let containerDisposer: {
         dispose: () => void;
@@ -37,7 +37,6 @@ const useDocItemSelection = () => {
     } | null = null;
     let panelElement: HTMLElement | null = null;
 
-    // 事件监听器列表，用于后续清理
     let eventListeners: Array<{
         element: HTMLElement;
         type: string;
@@ -74,10 +73,12 @@ const useDocItemSelection = () => {
 
         panelElement = document.createElement('div');
         panelElement.className = 'trex-toolbox-fileitem-selection-panel b3-menu';
-        panelElement.style.maxHeight = '300px';
-        panelElement.style.overflowY = 'auto';
-        panelElement.style.minWidth = '250px';
-        panelElement.style.position = 'relative';
+        Object.assign(panelElement.style, {
+            maxHeight: '300px',
+            overflowY: 'auto',
+            minWidth: '250px',
+            position: 'relative'
+        });
 
         containerDisposer = floatingContainer({
             element: panelElement,
@@ -121,7 +122,6 @@ const useDocItemSelection = () => {
             borderBottom: '1px solid var(--b3-border-color)'
         });
 
-        // 添加当前文档按钮
         const addCurrentButton = document.createElement('button');
         addCurrentButton.className = 'b3-button b3-button--outline';
         addCurrentButton.textContent = '加入当前文档';
@@ -146,7 +146,6 @@ const useDocItemSelection = () => {
             }
         });
 
-        // 移动到当前文档按钮
         const moveToCurrentButton = document.createElement('button');
         moveToCurrentButton.className = 'b3-button b3-button--outline';
         moveToCurrentButton.textContent = '移动到当前文档下';
@@ -182,27 +181,23 @@ const useDocItemSelection = () => {
      * 更新选择面板内容
      */
     const updateSelectionPanel = () => {
-        // 没有选中项时，销毁面板
         if (selectedFiletreeItems.size === 0) {
             disposeContainer();
             return;
         }
 
-        // 确保容器已创建
         if (!containerDisposer || !panelElement) {
             createContainer();
         } else if (containerDisposer.container) {
             containerDisposer.container.style.display = 'block';
         }
 
-        // 清空面板内容和事件监听器
         if (panelElement) {
             cleanupEventListeners();
             panelElement.innerHTML = '';
             createActionButtons();
         }
 
-        // 添加所有选中的项目
         selectedFiletreeItems.forEach(item => {
             if (!panelElement) return;
 
@@ -215,7 +210,6 @@ const useDocItemSelection = () => {
                 marginBottom: '5px'
             });
 
-            // 文档名称元素
             const nameElement = document.createElement('span');
             nameElement.className = 'block-ref b3-menu__label popover__block';
             nameElement.dataset.id = item.id;
@@ -226,7 +220,6 @@ const useDocItemSelection = () => {
                 openBlock(item.id);
             });
 
-            // 删除按钮
             const removeButton = document.createElement('span');
             removeButton.className = 'trex-toolbox-selection-remove';
             removeButton.dataset.id = item.id;
@@ -244,16 +237,13 @@ const useDocItemSelection = () => {
                     }
                 });
 
-                // 如果删除后没有项目了，销毁面板
                 if (selectedFiletreeItems.size === 0) {
                     disposeContainer();
                 } else {
-                    // 否则更新面板
                     updateSelectionPanel();
                 }
             });
 
-            // 添加到项目元素
             itemElement.appendChild(nameElement);
             itemElement.appendChild(removeButton);
             panelElement.appendChild(itemElement);
@@ -262,35 +252,27 @@ const useDocItemSelection = () => {
 
     return {
         add: (item: { id: string; name: string }) => {
-            // 检查是否已存在相同ID的项目
-            let exists = false;
-            selectedFiletreeItems.forEach(i => {
-                if (i.id === item.id) {
-                    exists = true;
-                }
-            });
+            const exists = Array.from(selectedFiletreeItems).some(i => i.id === item.id);
             if (exists) return;
 
             selectedFiletreeItems.add(item);
-            updateSelectionPanel(); // 添加后更新显示
+            updateSelectionPanel();
         },
         clear: () => {
             selectedFiletreeItems.clear();
-            disposeContainer(); // 清空时完全销毁容器
+            disposeContainer();
         },
-        list: () => {
-            return Array.from(selectedFiletreeItems);
-        },
+        list: () => Array.from(selectedFiletreeItems),
         dispose: () => {
-            disposeContainer(); // 完全销毁容器和清理事件监听器
+            disposeContainer();
         }
-    }
-}
+    };
+};
 
 const selection = useDocItemSelection();
 
-let dispoer1 = () => { };
-let dispoer2 = () => { };
+let disposer1 = () => {};
+let disposer2 = () => {};
 
 export const load = (_: FMiscPlugin) => {
     if (enabled) return;
@@ -298,7 +280,7 @@ export const load = (_: FMiscPlugin) => {
 
     const plugin = thisPlugin();
 
-    dispoer1 = plugin.registerEventbusHandler('open-menu-doctree', (detail) => {
+    disposer1 = plugin.registerEventbusHandler('open-menu-doctree', (detail) => {
         console.log(detail);
         if (detail.type === 'notebook') return;
         const elements = Array.from(detail.elements);
@@ -315,7 +297,7 @@ export const load = (_: FMiscPlugin) => {
                     });
                 }
             }
-        ]
+        ];
         if (elements.length === 1 && selection.list().length > 0) {
             const ele = elements[0];
             submenu.push({
@@ -325,17 +307,17 @@ export const load = (_: FMiscPlugin) => {
                     await moveDocsByID(selection.list().map(i => i.id), ele.dataset.nodeId);
                     selection.clear();
                 }
-            })
+            });
         }
         detail.menu.addItem({
             label: '移动文档工具',
             icon: 'iconFile',
             submenu
-        })
+        });
     });
 
 
-    dispoer2 = plugin.registerEventbusHandler('click-editortitleicon', (detail) => {
+    disposer2 = plugin.registerEventbusHandler('click-editortitleicon', (detail) => {
         console.log(detail);
         const docId = detail.data.rootID;
         const submenu = [
@@ -364,16 +346,16 @@ export const load = (_: FMiscPlugin) => {
             label: '移动文档工具',
             icon: 'iconFile',
             submenu
-        })
+        });
     });
 };
 
 export const unload = (_: FMiscPlugin) => {
     if (!enabled) return;
     enabled = false;
-    selection.dispose(); // 完全销毁容器
-    dispoer1();
-    dispoer2();
-    dispoer1 = () => { };
-    dispoer2 = () => { };
+    selection.dispose();
+    disposer1();
+    disposer2();
+    disposer1 = () => {};
+    disposer2 = () => {};
 };

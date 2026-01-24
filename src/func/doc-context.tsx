@@ -14,40 +14,38 @@ import { getActiveDoc, getNotebook } from '@frostime/siyuan-plugin-kits';
 import type FMiscPlugin from '..';
 
 
-let I18n: any = {
+const I18n = {
     name: '文档上下文',
     focus: '跳转聚焦到文档',
     parent: '上级文档',
     children: '子文档',
     siblings: '同级文档',
     no: '无'
-}
+} as const;
 
-export let name = "DocContext";
-export let enabled = false;
+export let name: string = "DocContext";
+export let enabled: boolean = false;
 
 export const declareToggleEnabled = {
     title: '📑 文档上下文',
     description: '启用文档上下文功能',
     defaultEnabled: true
-};
+} as const;
 
-let config = {
+const config = {
     parentChildCommand: true,
     overwriteCtrlUpDownKey: true
-}
+};
 
 export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
     key: "doc-context",
     title: "文档上下文",
     load: (itemValues: any) => {
         if (itemValues) {
-            config = { ...config, ...itemValues };
+            Object.assign(config, itemValues);
         }
     },
-    dump: () => {
-        return structuredClone(config);
-    },
+    dump: () => structuredClone(config),
     items: [
         {
             key: 'parentChildCommand',
@@ -71,29 +69,29 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
                 config.overwriteCtrlUpDownKey = value;
             }
         }
-    ],
+    ]
 };
 
 /**
  * 获取父文档
  */
-async function getParentDocument(path: string) {
-    const pathArr = path.split("/").filter((item) => item);
+const getParentDocument = async (path: string): Promise<Block | null> => {
+    const pathArr = path.split("/").filter(item => item);
     pathArr.pop();
     
     if (pathArr.length === 0) return null;
     
     const id = pathArr[pathArr.length - 1];
     return getBlockByID(id);
-}
+};
 
 /**
  * 列出子文档
  */
-const listChildDocs = async (doc: any) => {
+const listChildDocs = async (doc: Block) => {
     const data = await listDocsByPath(doc.box, doc.path);
     return data?.files;
-}
+};
 
 /**
  * 获取同级文档
@@ -107,8 +105,8 @@ const getSibling = async (path: string, box: string) => {
     }
 
     const parentPath = parts.join('/') || '/';
-    return await listChildDocs({ path: parentPath, box });
-}
+    return await listChildDocs({ path: parentPath, box } as Block);
+};
 
 /**
  * 创建文档上下文数据
@@ -136,14 +134,13 @@ const createContext = async (docId?: string) => {
     const hpaths = doc.hpath.slice(1).split('/');
     const paths = doc.path.slice(1).split('/');
     
-    // 将 hpaths 和 paths 做 zip 操作
     const docPaths = hpaths.map((title, index) => ({
         title,
         id: paths[index],
     }));
 
     return { doc, parent, children, siblings, docPaths };
-}
+};
 
 
 /**
@@ -158,7 +155,6 @@ const A = (props: {
     updateDoc?: (docId: string) => void 
 }) => {
     const open = (e: MouseEvent) => {
-        // 如果按下了 Alt 键，则不跳转，而是更新当前面板的内容
         if (e.altKey && props.updateDoc) {
             e.preventDefault();
             props.updateDoc(props.id);
@@ -176,7 +172,7 @@ const A = (props: {
         
         const ele = document.querySelector(`div[data-node-id="${props.id}"]`);
         ele?.scrollIntoView();
-    }
+    };
 
     return (
         <span 
@@ -191,7 +187,7 @@ const A = (props: {
             {props.children}
         </span>
     );
-}
+};
 
 /**
  * 大纲组件
@@ -203,7 +199,6 @@ const OutlineComponent = (props: {
 }) => {
     const [outline, setOutline] = createSignal([]);
 
-    // 转换数据结构，保留层级关系
     const iterate = (data) => {
         if (!data) return [];
         return data.map(item => ({
@@ -212,9 +207,8 @@ const OutlineComponent = (props: {
             id: item.id,
             children: item.count > 0 ? iterate(item.blocks ?? item.children) : []
         }));
-    }
+    };
 
-    // 递归渲染组件
     const RenderItem = (propsRi: { items: any[] }) => (
         <ul style={{ "list-style-type": "disc", "margin": "0.5em 0" }}>
             <For each={propsRi.items}>
@@ -246,10 +240,9 @@ const OutlineComponent = (props: {
             </div>
         </Show>
     );
-}
+};
 
 
-// 导航栏组件，用于显示当前文档和返回按钮
 const NavBar = (props: { initialDocId: string, currentDocId: string, onBack: () => void }) => {
     return (
         <div style={{
@@ -312,8 +305,8 @@ const DocContextComponent = (props: {
     });
 
     const focus = () => {
-        let dock = document.querySelector(`.dock__items>span[data-type="file"]`) as HTMLElement;
-        let ele = document.querySelector('div.file-tree span[data-type="focus"]') as HTMLElement;
+        const dock = document.querySelector(`.dock__items>span[data-type="file"]`) as HTMLElement;
+        const ele = document.querySelector('div.file-tree span[data-type="focus"]') as HTMLElement;
         if (!dock && !ele) return;
         if (dock && !dock.classList.contains('dock__item--active')) {
             dock.click();
@@ -322,11 +315,11 @@ const DocContextComponent = (props: {
             ele.click();
         }
         props.dialog.destroy();
-    }
+    };
 
     const newDoc = (hpath: string) => {
         confirm('确定?', `新建文档: ${hpath}`, async () => {
-            let docId = await createDocWithMd(currentContext().doc.box, hpath, '');
+            const docId = await createDocWithMd(currentContext().doc.box, hpath, '');
             openTab({
                 app: plugin_?.app,
                 doc: {
@@ -335,19 +328,19 @@ const DocContextComponent = (props: {
             });
             props.dialog.destroy();
         });
-    }
+    };
 
     const newChild = () => {
-        let newPath = `${currentContext().doc.hpath}/Untitled`;
+        const newPath = `${currentContext().doc.hpath}/Untitled`;
         console.log(newPath);
         newDoc(newPath);
-    }
+    };
 
     const newSibling = () => {
-        let newPath = `${currentContext().parent.hpath}/Untitled`;
+        const newPath = `${currentContext().parent.hpath}/Untitled`;
         console.log(newPath);
         newDoc(newPath);
-    }
+    };
 
     const HR = () => (
         <hr
@@ -362,7 +355,7 @@ const DocContextComponent = (props: {
             <ol>
                 <For each={p.docs}>
                     {(item) => {
-                        let hightlight = item.id === currentContext().doc.id;
+                        const hightlight = item.id === currentContext().doc.id;
                         return (
                             <li>
                                 <A hightlight={hightlight} id={item.id} dialog={props.dialog} updateDoc={updateDoc}>
@@ -396,7 +389,6 @@ const DocContextComponent = (props: {
         </div>
     );
 
-    // 更新文档上下文的函数
     const updateDoc = async (docId: string) => {
         const newContext = await createContext(docId);
         if (newContext) {
@@ -404,7 +396,6 @@ const DocContextComponent = (props: {
         }
     };
 
-    // 返回初始文档的函数
     const backToInitialDoc = async () => {
         const initialContext = await createContext(initialDocId());
         if (initialContext) {
@@ -468,7 +459,6 @@ const DocContextComponent = (props: {
 
 let plugin_: FMiscPlugin;
 const Keymap = '⌥S';
-
 const KeymapConfig = window.siyuan.config.keymap;
 
 export const load = (plugin: FMiscPlugin) => {
@@ -476,17 +466,17 @@ export const load = (plugin: FMiscPlugin) => {
     enabled = true;
     plugin_ = plugin;
     plugin.addCommand({
-        langKey: 'fmisc::DocContext',
+        langKey: 'trex::doc-context',
         langText: `Trex-Toolbox ${I18n.name}`,
         hotkey: Keymap,
         callback: async () => {
             if (document.querySelector('.doc-context')) return;
-            let context = await createContext();
+            const context = await createContext();
             if (!context) {
                 return;
             }
 
-            let element = document.createElement('div');
+            const element = document.createElement('div');
             element.style.display = 'contents';
             const { dialog } = simpleDialog({
                 title: I18n.name,
@@ -494,7 +484,7 @@ export const load = (plugin: FMiscPlugin) => {
                 width: "1000px",
             });
             render(() => DocContextComponent({ ...context, dialog }), element);
-            let container = dialog.element.querySelector('.b3-dialog__container') as HTMLElement;
+            const container = dialog.element.querySelector('.b3-dialog__container') as HTMLElement;
             container.style.setProperty('max-width', '80%');
             container.style.setProperty('min-width', '40%');
             container.style.setProperty('max-height', '75%');
@@ -502,37 +492,37 @@ export const load = (plugin: FMiscPlugin) => {
     });
 
     let lastTriggered: Date = new Date();
+    
     /**
      * 控制时间，如果 Action 间隔太短，就关掉中键的文档
-     * @returns 
      */
     const speedControl = () => {
-        let now = new Date();
-        let closeCurrentDoc = () => { };
+        const now = new Date();
+        let closeCurrentDoc = () => {};
         if ((now.getTime() - lastTriggered.getTime()) <= 1000) {
-            let tab = document.querySelector("div.layout__wnd--active ul.layout-tab-bar>li.item--focus");
-            let closeEle = tab.querySelector('span.item__close') as HTMLSpanElement;
+            const tab = document.querySelector("div.layout__wnd--active ul.layout-tab-bar>li.item--focus");
+            const closeEle = tab.querySelector('span.item__close') as HTMLSpanElement;
             closeCurrentDoc = () => closeEle.click();
         }
         lastTriggered = now;
         return closeCurrentDoc;
-    }
+    };
 
     const goToSibling = async (delta: -1 | 1) => {
-        let docId = getActiveDoc();
-        if (!docId) return
-        let doc = await getBlockByID(docId);
-        let { path, box } = doc;
+        const docId = getActiveDoc();
+        if (!docId) return;
+        const doc = await getBlockByID(docId);
+        const { path, box } = doc;
 
-        let siblings: { id: string, path: string }[] = await getSibling(path, box);
-        let index = siblings.findIndex(sibling => sibling.path === path);
-        if ((delta < 0 && index == 0) || (delta > 0 && index == siblings.length - 1)) {
+        const siblings: { id: string, path: string }[] = await getSibling(path, box);
+        const index = siblings.findIndex(sibling => sibling.path === path);
+        if ((delta < 0 && index === 0) || (delta > 0 && index === siblings.length - 1)) {
             showMessage(`跳转${delta < 0 ? '最后' : '第'}一篇文档`);
         }
 
-        let postAction = speedControl();
+        const postAction = speedControl();
 
-        let newIndex = (index + delta + siblings.length) % siblings.length;
+        const newIndex = (index + delta + siblings.length) % siblings.length;
         openTab({
             app: plugin.app,
             doc: {
@@ -540,19 +530,19 @@ export const load = (plugin: FMiscPlugin) => {
             }
         });
         postAction();
-    }
+    };
 
     const goToParent = async () => {
-        let docId = getActiveDoc();
-        if (!docId) return
-        let doc = await getBlockByID(docId);
-        let parent = await getParentDocument(doc.path);
+        const docId = getActiveDoc();
+        if (!docId) return;
+        const doc = await getBlockByID(docId);
+        const parent = await getParentDocument(doc.path);
         if (!parent) {
             showMessage('无父文档');
             return;
         }
 
-        let postAction = speedControl();
+        const postAction = speedControl();
         openTab({
             app: plugin.app,
             doc: {
@@ -560,20 +550,20 @@ export const load = (plugin: FMiscPlugin) => {
             }
         });
         postAction();
-    }
+    };
 
     const goToChild = async () => {
-        let docId = getActiveDoc();
+        const docId = getActiveDoc();
         if (!docId) return;
 
-        let doc = await getBlockByID(docId);
-        let children = await listChildDocs(doc);
+        const doc = await getBlockByID(docId);
+        const children = await listChildDocs(doc);
         if (children.length === 0) {
             showMessage('无子文裆');
             return;
         }
 
-        let postAction = speedControl();
+        const postAction = speedControl();
         openTab({
             app: plugin.app,
             doc: {
@@ -581,31 +571,30 @@ export const load = (plugin: FMiscPlugin) => {
             }
         });
         postAction();
-    }
+    };
 
     plugin.addCommand({
-        langKey: 'fmisc::last-doc',
+        langKey: 'trex::last-doc',
         langText: '上一篇文档',
         hotkey: '⌘←',
         callback: async () => goToSibling(-1)
     });
     plugin.addCommand({
-        langKey: 'fmisc::next-doc',
+        langKey: 'trex::next-doc',
         langText: '下一篇文档',
         hotkey: '⌘→',
         callback: async () => goToSibling(1)
     });
 
-    // 🔥 根据配置决定是否添加父子文档命令
     if (config.parentChildCommand) {
         plugin.addCommand({
-            langKey: 'fmisc::parent-doc',
+            langKey: 'trex::parent-doc',
             langText: '父文档',
             hotkey: '⌘↑',
             callback: async () => goToParent()
         });
         plugin.addCommand({
-            langKey: 'fmisc::child-doc',
+            langKey: 'trex::child-doc',
             langText: '子文档',
             hotkey: '⌘↓',
             callback: async () => goToChild()
@@ -616,18 +605,18 @@ export const load = (plugin: FMiscPlugin) => {
             KeymapConfig.editor.general.expand.custom = '';
         }
     }
-}
+};
 
 export const unload = (plugin: FMiscPlugin) => {
     if (!enabled) return;
     enabled = false;
     plugin_ = null;
 
-    plugin.delCommand('fmisc::DocContext');
-    plugin.delCommand('fmisc::last-doc');
-    plugin.delCommand('fmisc::next-doc');
-    plugin.delCommand('fmisc::parent-doc');
-    plugin.delCommand('fmisc::child-doc');
+    plugin.delCommand('trex::doc-context');
+    plugin.delCommand('trex::last-doc');
+    plugin.delCommand('trex::next-doc');
+    plugin.delCommand('trex::parent-doc');
+    plugin.delCommand('trex::child-doc');
 
     if (config.overwriteCtrlUpDownKey) {
         KeymapConfig.editor.general.collapse.custom = KeymapConfig.editor.general.collapse.default;

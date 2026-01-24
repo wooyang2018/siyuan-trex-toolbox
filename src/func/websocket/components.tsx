@@ -1,3 +1,9 @@
+/**
+ * WebSocket 组件
+ * 
+ * @description WebSocket 状态显示和配置管理组件
+ * @author frostime
+ */
 import { Component, createSignal, onCleanup } from "solid-js";
 import { getAlive } from ".";
 import FormWrap from "@/libs/components/Form/form-wrap";
@@ -9,7 +15,7 @@ import { sharedConfigs } from "../shared-configs";
 import WebSocketManager from "./ws-manager";
 import { Rows } from "@/libs/components/Elements/Flex";
 
-let timer = null;
+let timer: NodeJS.Timeout | null = null;
 
 let cp: any;
 try {
@@ -18,41 +24,51 @@ try {
     cp = null;
 }
 
+/**
+ * WebSocket 状态显示组件
+ */
 export const WebSocketStatus: Component = () => {
-    let [alive, setAlive] = createSignal(false);
+    const [alive, setAlive] = createSignal(false);
+    
     if (timer) clearInterval(timer);
     setAlive(getAlive());
+    
     timer = setInterval(() => {
         setAlive(getAlive());
         console.debug('Websocket Alive:', alive?.());
-    }, 1000 * 5);
+    }, 5000);
 
     onCleanup(() => {
-        console.log("WebSokect Status Clearup");
-        clearInterval(timer);
+        console.log("WebSocket Status Cleanup");
+        if (timer) clearInterval(timer);
         timer = null;
     });
-    return <span class="b3-label">
-        {alive() ? "🟢" : "🔴"}
-    </span>
+    
+    return (
+        <span class="b3-label">
+            {alive() ? "🟢" : "🔴"}
+        </span>
+    );
 }
 
 const example = `{
     channel: "siyuan-trex-toolbox",
     message: { command: "<command-name>", body: "<command-argument>" }
 }`.trim();
+
+/**
+ * WebSocket 配置面板
+ */
 export const Configs = () => {
     const plugin = thisPlugin();
+    
     const current = () => {
-        // let names = Object.keys(currentHandlers);
-        let names = [];
-        Object.entries(currentHandlers).forEach(([key, handler]) => {
-            if (handler) {
-                names.push(key);
-            }
-        });
+        const names = Object.entries(currentHandlers)
+            .filter(([, handler]) => handler)
+            .map(([key]) => key);
         return names.join(', ');
     }
+    
     return (
         <>
             <FormWrap
@@ -61,16 +77,23 @@ export const Configs = () => {
                 direction="row"
                 action={<WebSocketStatus />}
             >
-                <div class="b3-label__text" style={{
-                    display: 'inline-block'
-                }} innerText={`向 /api/broadcast/postMessage 发送内核消息, 格式如下:`} />
+                <div 
+                    class="b3-label__text" 
+                    style={{ display: 'inline-block' }} 
+                    innerText="向 /api/broadcast/postMessage 发送内核消息, 格式如下:" 
+                />
                 <pre style={{ margin: '0px' }}>
-                    <code style={{ 'font-family': 'var(--b3-font-family-code)' }}>{example}</code>
+                    <code style={{ 'font-family': 'var(--b3-font-family-code)' }}>
+                        {example}
+                    </code>
                 </pre>
-                <div class="b3-label__text" style={{
-                    display: 'inline-block'
-                }} innerText={'Handlers: ' + current()} />
+                <div 
+                    class="b3-label__text" 
+                    style={{ display: 'inline-block' }} 
+                    innerText={`Handlers: ${current()}`} 
+                />
             </FormWrap>
+            
             <FormWrap
                 title="自定义消息处理函数"
                 description={`编辑 /data/storage/petal/${plugin.name}/${moduleJsName} 文件`}
@@ -87,7 +110,8 @@ export const Configs = () => {
                                 }
                                 const dataDir = window.siyuan.config.system.dataDir;
                                 const jsPath = `${dataDir}/storage/petal/${plugin.name}/${moduleJsName}`;
-                                let editorCmd = sharedConfigs('codeEditor') + ' ' + jsPath;
+                                const editorCmd = `${sharedConfigs('codeEditor')} ${jsPath}`;
+                                
                                 try {
                                     cp.exec(editorCmd);
                                 } catch (error) {
@@ -101,12 +125,14 @@ export const Configs = () => {
                         button={{
                             label: '重新导入',
                             callback: async () => {
-                                let handlers = await Handlers();
+                                const handlers = await Handlers();
                                 const wsManager = WebSocketManager.getInstance();
+                                
                                 Object.entries(handlers).forEach(([key, handler]) => {
                                     wsManager.registerMessageHandler(key, handler);
                                 });
-                                let names = Object.keys(handlers);
+                                
+                                const names = Object.keys(handlers);
                                 showMessage(`导入成功: ${names.join(', ')}`, 3000);
                             }
                         }}
@@ -114,5 +140,5 @@ export const Configs = () => {
                 </Rows>
             </FormWrap>
         </>
-    )
+    );
 }

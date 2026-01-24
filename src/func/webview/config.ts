@@ -1,3 +1,6 @@
+/**
+ * Webview 自定义 URL 配置管理
+ */
 import { thisPlugin } from "@frostime/siyuan-plugin-kits";
 import { showMessage } from "siyuan";
 import { sharedConfigs } from "../shared-configs";
@@ -9,7 +12,7 @@ try {
     cp = null;
 }
 
-let customUrlConfig = 'custom-urls.json'
+const customUrlConfig = 'custom-urls.json';
 
 interface CustomUrl {
     name: string;
@@ -17,8 +20,11 @@ interface CustomUrl {
     icon?: string;
 }
 
-let customUrls = [] as CustomUrl[];
+let customUrls: CustomUrl[] = [];
 
+/**
+ * 获取自定义 URL 列表
+ */
 export const getCustomUrls = async () => {
     if (customUrls.length > 0) {
         return customUrls;
@@ -27,14 +33,16 @@ export const getCustomUrls = async () => {
     return customUrls;
 };
 
-async function loadCustomUrls() {
+/**
+ * 加载自定义 URL 配置
+ */
+const loadCustomUrls = async () => {
     const plugin = thisPlugin();
     const savedUrls = await plugin.loadData(customUrlConfig);
     if (savedUrls) {
         customUrls = savedUrls;
     }
-}
-
+};
 
 export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
     key: 'CustomUrls',
@@ -59,7 +67,7 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
                 const plugin = thisPlugin();
                 const dataDir = window.siyuan.config.system.dataDir;
                 const jsonPath = `${dataDir}/storage/petal/${plugin.name}/${customUrlConfig}`;
-                let editorCmd = sharedConfigs('codeEditor') + ' ' + jsonPath;
+                const editorCmd = `${sharedConfigs('codeEditor')} ${jsonPath}`;
                 try {
                     cp.exec(editorCmd);
                 } catch (error) {
@@ -67,7 +75,5 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
                 }
             }
         }
-    },
-    ],
+    }],
 };
-

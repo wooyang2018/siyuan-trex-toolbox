@@ -1,10 +1,8 @@
-/*
- * Copyright (c) 2024 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2024-07-10 16:11:07
- * @FilePath     : /src/func/websocket/ws-manager.ts
- * @LastEditTime : 2025-02-26 23:51:44
- * @Description  : 
+/**
+ * WebSocket Manager
+ * 
+ * @description WebSocket 连接管理器,支持自动重连
+ * @author frostime
  */
 import { Plugin } from 'siyuan';
 import { forwardProxy } from "@/api";
@@ -22,7 +20,6 @@ interface IWsConfig {
     reconnectInterval: number;
     maxReconnectAttempts: number;
 }
-
 
 export default class WebSocketManager {
     private static instance: WebSocketManager | null = null;
@@ -89,10 +86,8 @@ export default class WebSocketManager {
     private parseRequest(msg: string): IMessage | null {
         try {
             const data = JSON.parse(msg);
-            if (!data) {
-                return null;
-            }
-            // 兼容 callbackURL 字段大小写不敏感
+            if (!data) return null;
+
             let callbackURL = undefined;
             for (const key of Object.keys(data)) {
                 if (key.toLowerCase() === 'callbackurl') {
@@ -100,6 +95,7 @@ export default class WebSocketManager {
                     break;
                 }
             }
+            
             if (data.command && data.body !== undefined) {
                 return {
                     command: data.command,
@@ -108,7 +104,7 @@ export default class WebSocketManager {
                 };
             }
         } catch (error) {
-            // console.error('Failed to parse message:', error);
+            // Silently ignore parse errors
         }
         return null;
     }
@@ -127,7 +123,6 @@ export default class WebSocketManager {
             this.ws.onclose = (event: CloseEvent) => this.onClose(event);
             this.ws.onerror = (error: Event) => this.onError(error);
 
-            // 添加连接超时检查
             const connectionTimeout = setTimeout(() => {
                 if (this.ws?.readyState !== WebSocket.OPEN) {
                     console.warn('[WebSocket] Connection timeout');
@@ -136,7 +131,6 @@ export default class WebSocketManager {
                 }
             }, 5000);
 
-            // 等待连接成功或失败
             await new Promise((resolve, reject) => {
                 this.ws!.onopen = () => {
                     clearTimeout(connectionTimeout);
@@ -178,9 +172,10 @@ export default class WebSocketManager {
         console.debug('[WebSocket] connection closed:', event.code, event.reason);
         this.ws = null;
 
-        if (!this.isRunning) return; //已经退出，不要安排重连调度
-        if (this.isReconnecting) return; //正在重连，不要安排重连调度
+        if (!this.isRunning) return;
+        if (this.isReconnecting) return;
         if (this.reconnectAttempts > this.config.maxReconnectAttempts) return;
+        
         this.scheduleReconnect();
     }
 
@@ -191,6 +186,7 @@ export default class WebSocketManager {
     private async handleMessage(message: IMessage) {
         console.log(`[WebSocket] handler: ${JSON.stringify(message)}`);
         const handler = this.messageHandlers[message.command];
+        
         if (handler) {
             let result;
             try {
@@ -205,21 +201,26 @@ export default class WebSocketManager {
                 console.warn(`[WebSocket] handler error:`, err);
                 result = { error: String(err) };
             }
-            // 如果有 callbackURL，且是合法 http(s) 地址或 localhost/IP，则 POST 结果
+
             if (
                 message.callbackURL &&
                 (/^https?:\/\//i.test(message.callbackURL) || /^(localhost|\d{1,3}(\.\d{1,3}){3})(:\d+)?(\/.*)?$/i.test(message.callbackURL))
             ) {
                 try {
+                    const url = message.callbackURL.startsWith('http') 
+                        ? message.callbackURL 
+                        : `http://${message.callbackURL}`;
+                    
                     const proxyResp = await forwardProxy(
-                        message.callbackURL.startsWith('http') ? message.callbackURL : `http://${message.callbackURL}`,
+                        url,
                         'POST',
                         result,
                         [{ 'Content-Type': 'application/json' }],
                         7000,
                         'application/json'
                     );
-                    if (!proxyResp || (proxyResp.status / 100) !== 2) {
+                    
+                    if (!proxyResp || Math.floor(proxyResp.status / 100) !== 2) {
                         console.warn(`[WebSocket] callbackURL proxy failed, status: ${proxyResp?.status}`);
                     }
                 } catch (e) {
@@ -232,13 +233,12 @@ export default class WebSocketManager {
     }
 
     private scheduleReconnect() {
-        if (this.reconnectTimeout) {
-            return;
-        }
+        if (this.reconnectTimeout) return;
         if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
             console.warn(`[WebSocket] Max reconnect attempts reached: ${this.reconnectAttempts}`);
             return;
         }
+        
         this.isReconnecting = true;
         this.reconnectTimeout = window.setTimeout(() => {
             console.debug('[WebSocket] Reconnecting...');
@@ -251,12 +251,11 @@ export default class WebSocketManager {
         this.isRunning = false;
         this.isReconnecting = false;
 
-        //关闭 ws
         if (this.ws) {
             this.ws.close();
             this.ws = null;
         }
-        //如果有正在排队中的重连任务，就关掉
+        
         if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
