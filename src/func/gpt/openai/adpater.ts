@@ -4,15 +4,6 @@ import { type complete } from "./complete";
 
 /**
  * 用户自定义的预处理器, 可以在发送 complete 请求之前，对消息进行处理
- *
- * 例如: 实现 Deepseek V3 0324 的默认温度缩放; 特别模型不支持 frequency_penalty 等参数需要删除等
- *
- * @param payload - 选项
- * @param payload.model - 模型
- * @param payload.modelDisplayName - 模型名称; 例如用户配置了重定向，{ [modelDisplayName]: modelName }; 比如 {'Deepseek V3': 'deepseek-ai/deepseek-v3'}
- * @param payload.url - API URL
- * @param payload.option - 选项
- * @returns void
  */
 export const userCustomizedPreprocessor = {
     preprocess: (payload: {
@@ -27,7 +18,7 @@ export const userCustomizedPreprocessor = {
 
 export const adpatInputMessage = (input: Parameters<typeof complete>[0], options: {
     model: string;
-}) => {
+}): IMessage[] => {
     let messages: IMessage[] = [];
     if (typeof input === 'string') {
         messages = [{
@@ -35,22 +26,20 @@ export const adpatInputMessage = (input: Parameters<typeof complete>[0], options
             "content": input
         }];
     } else {
-        const ALLOWED_FIELDS = ['role', 'content', 'tool_call_id', 'tool_calls'];
-        // 去掉可能的不需要的字段
+        const ALLOWED_FIELDS = ['role', 'content', 'tool_call_id', 'tool_calls'] as const;
         messages = input.map(item => {
             const result = {};
-            for (const key in item) {
-                if (ALLOWED_FIELDS.includes(key)) {
+            Object.keys(item).forEach(key => {
+                if (ALLOWED_FIELDS.includes(key as any)) {
                     result[key] = item[key];
                 }
-            }
+            });
             return result as IMessage;
         });
     }
 
     if (options) {
         const model = options?.model;
-        // 非视觉模型去掉图片消息字段
         if (!visualModel().includes(model)) {
             let hasImage = false;
             messages.forEach(item => {
@@ -73,7 +62,7 @@ export const adaptChatOptions = (target: {
     chatOption: IChatOption;
     model: string;
     apiUrl: string
-}) => {
+}): IChatOption => {
     let { model, apiUrl, chatOption } = target;
 
     const deleteIfEqual = (target: Record<string, any>, key: string, value = 0) => {
@@ -83,26 +72,21 @@ export const adaptChatOptions = (target: {
     }
 
     chatOption = structuredClone(chatOption);
-    for (const key in chatOption) {
+    Object.keys(chatOption).forEach(key => {
         if (chatOption[key] === null || chatOption[key] === undefined) {
             delete chatOption[key];
         }
-    }
+    });
 
-    //有些模型不支持这两个参数, 反正不填默认就是 0，那干脆可以闪电
     deleteIfEqual(chatOption, 'frequency_penalty', 0);
     deleteIfEqual(chatOption, 'presence_penalty', 0);
-
     deleteIfEqual(chatOption, 'max_tokens', 0);
-
     deleteIfEqual(chatOption, 'top_p', 1);
-
 
     model = model.toLocaleLowerCase();
 
     const isDoubao = model.match(/doubao/);
     if (isDoubao) {
-        // temperature
         if (chatOption.temperature > 1) {
             chatOption.temperature = 1;
         }
@@ -119,19 +103,13 @@ export type TReference = {
 
 /**
  * Adapts various reference formats from API responses into a standardized format
- * Handles multiple possible formats:
- * 1. Standard {title, url} format
- * 2. Citations format
- * 3. Plain URL strings
- * 4. Array of URLs
  */
 export const adaptResponseReferences = (responseData: any): TReference[] | undefined => {
     if (!responseData) return undefined;
 
-    const mapper = (item: any): TReference => {
+    const mapper = (item: any): TReference | null => {
         if (item === null || item === undefined || item === '') return null;
         if (typeof item === 'string') {
-            // Handle plain URL string
             return { url: item, title: item };
         }
         if (item.url) {
@@ -150,22 +128,13 @@ export const adaptResponseReferences = (responseData: any): TReference[] | undef
         return undefined;
     }
 
-    const keysToTry = ['references', 'citations'];
-    for (const key of keysToTry) {
-        const result = testExtract(key);
-        if (result) {
-            return result;
-        }
-    }
-
-    return undefined;
+    const keysToTry = ['references', 'citations'] as const;
+    return keysToTry.map(key => testExtract(key)).find(result => result !== undefined);
 }
 
 
 /**
  * 处理响应消息，提取内容、推理内容和工具调用
- * @param message 响应消息
- * @returns 处理后的消息
  */
 export const adaptResponseMessage = (message: Record<string, string>): {
     content: string;
@@ -177,14 +146,12 @@ export const adaptResponseMessage = (message: Record<string, string>): {
         reasoning_content: ''
     };
 
-    // 处理 reasoning_content
     if (message['reasoning_content']) {
         result.reasoning_content = message['reasoning_content'];
     } else if (message['reasoning']) {
         result.reasoning_content = message['reasoning'];
     }
 
-    // 处理 tool_calls
     if (message['tool_calls']) {
         result.tool_calls = message['tool_calls'];
     }
@@ -194,8 +161,6 @@ export const adaptResponseMessage = (message: Record<string, string>): {
 
 /**
  * 处理流式响应的数据块
- * @param messageInChoices 响应消息
- * @returns 处理后的消息
  */
 export const adaptChunkMessage = (messageInChoices: Record<string, any>): {
     content: string;

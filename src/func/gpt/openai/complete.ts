@@ -14,16 +14,13 @@ interface StreamChunkData {
     };
 }
 
-const buildReferencesText = (refers: CompletionResponse['references']) => {
+const buildReferencesText = (refers: CompletionResponse['references']): string => {
     if (!refers) return '';
     return '**References**:\n' + refers.filter(ref => Boolean(ref.url)).map((ref, index) => {
         return `${index + 1}. [${ref.title || ref.url}](${ref.url})`;
     }).join('\n');
 }
 
-/**
- * 处理流式响应的数据块
- */
 const handleStreamChunk = (line: string): (StreamChunkData | { usage: any }) | null => {
     appendLog({ type: 'chunk', data: line });
     if (line.includes('[DONE]') || !line.startsWith('data:')) {
@@ -40,7 +37,7 @@ const handleStreamChunk = (line: string): (StreamChunkData | { usage: any }) | n
             };
         }
 
-        let result = {
+        const result = {
             content: '',
             reasoning_content: '',
             usage: null
@@ -53,7 +50,7 @@ const handleStreamChunk = (line: string): (StreamChunkData | { usage: any }) | n
 
         if (responseData.choices && responseData.choices.length > 0) {
             const delta = responseData.choices[0].delta || {};
-            result = {...result, ...adaptChunkMessage(delta)};
+            return {...result, ...adaptChunkMessage(delta)};
         }
         return result;
     } catch (e) {
@@ -62,9 +59,6 @@ const handleStreamChunk = (line: string): (StreamChunkData | { usage: any }) | n
     }
 }
 
-/**
- * 处理流式响应
- */
 const handleStreamResponse = async (
     response: Response,
     options: NonNullable<Parameters<typeof complete>[1]> & { t0: number }
@@ -81,7 +75,7 @@ const handleStreamResponse = async (
             latency: null,
             throughput: null
         },
-        tool_calls: [], // 初始化 tool_calls 数组
+        tool_calls: [],
     };
 
     let references: TReference[] = null;
@@ -90,12 +84,12 @@ const handleStreamResponse = async (
     const transformStream = new TransformStream({
         transform: (chunk: string, controller) => {
             const lines = chunk.split('\n').filter(line => line.trim() !== '');
-            for (const line of lines) {
+            lines.forEach(line => {
                 const result = handleStreamChunk(line);
                 if (result) {
                     controller.enqueue(result);
                 }
-            }
+            });
         }
     });
 
@@ -110,7 +104,6 @@ const handleStreamResponse = async (
 
     let t1 = null;
 
-    // 用于跟踪和合并 tool_calls
     const toolCallsMap = new Map<number, IToolCallResponse>();
 
     try {
@@ -125,40 +118,32 @@ const handleStreamResponse = async (
                 break;
             }
 
-            // Check if this chunk contains usage data
             if ('usage' in readResult.value && readResult.value.usage) {
                 responseContent.usage = readResult.value.usage;
-                // continue;
             }
 
             const { content, reasoning_content, tool_calls } = readResult.value as StreamChunkData;
 
-            // 更新内容
             if (content) {
                 responseContent.content += content;
             }
 
-            // 更新推理内容
             if (reasoning_content) {
                 responseContent.reasoning_content += reasoning_content;
             }
 
-            // 处理 tool_calls
             if (tool_calls) {
-                for (const call of tool_calls) {
+                tool_calls.forEach(call => {
                     if (toolCallsMap.has(call.index)) {
-                        // 合并参数
                         const existing = toolCallsMap.get(call.index);
                         existing.function.arguments += call.function.arguments;
                     } else {
                         toolCallsMap.set(call.index, { ...call });
                     }
-                }
-                // 更新响应中的 tool_calls
+                });
                 responseContent.tool_calls = Array.from(toolCallsMap.values());
             }
 
-            // 构建流式消息
             let streamingMsg = '';
             if (responseContent.reasoning_content) {
                 streamingMsg += `<think>\n${responseContent.reasoning_content}\n</think>\n`;
@@ -167,26 +152,23 @@ const handleStreamResponse = async (
                 streamingMsg += responseContent.content;
             }
 
-            // 调用回调，添加 tool_calls 参数
             options.streamMsg?.(streamingMsg, responseContent.tool_calls);
 
-            // 引用
             const refers = adaptResponseReferences(readResult.value as StreamChunkData);
             if (refers) {
                 references = references || [];
-                // 只添加不存在的引用，保持原有顺序
-                for (const ref of refers) {
+                refers.forEach(ref => {
                     if (!references.some(existing => existing.url === ref.url)) {
                         references.push(ref);
                     }
-                }
+                });
             }
         }
     } catch (error) {
         responseContent.content += `\n **[Error]** ${error}`;
         responseContent.ok = false;
     }
-    let t2 = new Date().getTime();
+    const t2 = new Date().getTime();
 
     responseContent['time'] = {
         latency: t1 - options.t0,
@@ -199,16 +181,12 @@ const handleStreamResponse = async (
     }
 
     if (references && references.length) {
-        // responseContent.references = references;
         responseContent.content += '\n\n' + buildReferencesText(references);
     }
 
     return responseContent;
 }
 
-/**
- * 处理非流式响应
- */
 const handleNormalResponse = async (response: Response, options: { t0: number }): Promise<CompletionResponse> => {
     const data = await response.json();
     const t1 = new Date().getTime();
@@ -224,14 +202,11 @@ const handleNormalResponse = async (response: Response, options: { t0: number })
         };
     }
 
-    // 使用适配器处理消息
-    let results = adaptResponseMessage(data.choices[0].message) as CompletionResponse;
+    const results = adaptResponseMessage(data.choices[0].message) as CompletionResponse;
     results.usage = data.usage;
 
-    // 处理引用
-    let references = adaptResponseReferences(data);
+    const references = adaptResponseReferences(data);
     if (references && references.length) {
-        // results.references = data.references;
         results.content += '\n\n' + buildReferencesText(references);
     }
     results['time'] = {
@@ -289,16 +264,12 @@ export const complete = async (input: string | IMessage[], options?: {
         }
 
         if (options.stream) {
-            // 设置 stream options，启用 usage 数据返回
             chatInputs.option.stream_options = {
                 include_usage: true
             };
         }
 
 
-        /**
-         * 假如有用户自定义的预处理器, 则使用
-         */
         if (userCustomizedPreprocessor?.preprocess) {
             userCustomizedPreprocessor.preprocess(chatInputs);
         }

@@ -43,12 +43,12 @@ interface ToolChainTimelineProps {
 
 const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
 
-    const formatTime = (ms: number) => {
+    const formatTime = (ms: number): string => {
         if (ms < 1000) return `${ms}ms`;
         return `${(ms / 1000).toFixed(2)}s`;
     };
 
-    const getStatusIcon = (status: any) => {
+    const getStatusIcon = (status: any): string => {
         switch (status) {
             case ToolExecuteStatus.SUCCESS:
                 return '#iconCheck';
@@ -62,7 +62,7 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
         }
     };
 
-    const getStatusClass = (status: any) => {
+    const getStatusClass = (status: any): string => {
         switch (status) {
             case ToolExecuteStatus.SUCCESS:
                 return styles.success;
@@ -76,7 +76,6 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
     const formatData = (data: any): string => {
         if (data === null || data === undefined) return 'null';
         if (typeof data === 'string') {
-            // 如果字符串太长，截断显示
             if (data.length > 500) {
                 return data.substring(0, 500) + '\n... (truncated)';
             }
@@ -93,7 +92,7 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
         }
     };
 
-    const viewFullData = () => {
+    const viewFullData = (): void => {
         const fullData = {
             stats: props.stats,
             toolCallHistory: props.toolCallHistory.map(call => ({
@@ -120,7 +119,7 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
         });
     };
 
-    const viewDetailData = (title: string, data: any) => {
+    const viewDetailData = (title: string, data: any): void => {
         let dataStr: string;
         if (data === null || data === undefined) {
             dataStr = 'null';
@@ -145,7 +144,6 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
 
     return (
         <div class={styles.timeline}>
-            {/* 统计信息 */}
             <div class={styles.stats}>
                 <div class={styles.statsInfo}>
                     <span>总轮次: {props.stats.totalRounds}</span>
@@ -161,7 +159,6 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
                 </button>
             </div>
 
-            {/* 时间线 */}
             <div class={styles.timelineList}>
                 <For each={props.toolCallHistory}>
                     {(call) => (
@@ -182,7 +179,6 @@ const ToolChainTimeline: Component<ToolChainTimelineProps> = (props) => {
                                     </span>
                                 </div>
 
-                                {/* Token 使用情况 */}
                                 <Show when={call.llmUsage}>
                                     <div class={styles.tokenInfo}>
                                         <span class={styles.tokenLabel}>Token:</span>

@@ -33,19 +33,13 @@ const purgeLog = (options: {
         if (options.all) {
             return [];
         }
-        let beg = 0;
-        let end = log.length;
-        if (options.earliest !== undefined) {
-            beg = options.earliest;
-        }
-        if (options.latest !== undefined) {
-            end = options.latest;
-        }
+        const beg = options.earliest ?? 0;
+        const end = options.latest ?? log.length;
         return log.slice(beg, end);
     })
 }
 
-const formatTime = (timestamp: number) => {
+const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp);
     return date.toLocaleString();
 }

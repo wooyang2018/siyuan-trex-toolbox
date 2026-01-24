@@ -14,16 +14,15 @@ const TodayDailyNoteProvicer: CustomContextProvider = {
             return [];
         }
 
-        const results = docs.map(async (doc) => {
+        const results = await Promise.all(docs.map(async (doc) => {
             const markdown = await getMarkdown(doc.id);
             return {
                 name: doc.content,
                 description: `笔记本 ${getNotebook(doc.box).name} 在 ${formatDateTime('yyyy-MM-dd')} 的 Dailynote`,
                 content: markdown,
             };
-        });
-        const items = await Promise.all(results);
-        return items;
+        }));
+        return results;
     },
 };
 

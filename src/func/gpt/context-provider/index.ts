@@ -1,12 +1,3 @@
-/*
- * Copyright (c) 2025 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2025-01-26 21:52:32
- * @FilePath     : /src/func/gpt/context-provider/index.ts
- * @LastEditTime : 2025-06-13 23:04:00
- * @Description  : 
- */
-// import { inputDialog } from '@frostime/siyuan-plugin-kits';
 import { FocusDocProvider, OpenedDocProvider } from './ActiveDocProvider';
 import SelectedTextProvider from './SelectedTextProvider';
 import SQLSearchProvicer from './SQLSearchProvicer';
@@ -32,9 +23,8 @@ const contextProviders: CustomContextProvider[] = [
     SQLSearchProvicer,
     TextSearchProvider,
     URLProvider
-];
+] as const;
 
-// 动态添加自定义上下文提供器（如果存在）
 const getContextProviders = () => {
     let providers = [...contextProviders];
     if (customContextProviders?.preprocessProviders) {
@@ -48,8 +38,6 @@ const getContextProviders = () => {
 
 /**
  * 处理隐私信息，将隐私关键词替换为屏蔽词
- * @param text 需要处理的文本
- * @returns 处理后的文本
  */
 const handlePrivacy = (text: string): string => {
     if (!text) return text;
@@ -60,36 +48,28 @@ const handlePrivacy = (text: string): string => {
     const keywordList = keywords.split('\n').filter(k => k.trim());
 
     let result = text;
-    for (const keyword of keywordList) {
-        if (!keyword.trim()) continue;
-        result = result.replaceAll(keyword, mask);
-    }
+    keywordList.forEach(keyword => {
+        if (keyword.trim()) {
+            result = result.replaceAll(keyword, mask);
+        }
+    });
     return result;
 }
 
 /**
  * 处理上下文对象中的隐私信息
- * @param context 上下文对象
- * @returns 处理后的上下文对象
  */
 const handleContextPrivacy = (context: IProvidedContext): IProvidedContext => {
     if (!context) return context;
 
-    // 深拷贝以避免修改原对象
     const newContext = JSON.parse(JSON.stringify(context));
 
-    // 处理 contextItems 中的文本
     newContext.contextItems = newContext.contextItems.map(item => ({
         ...item,
         name: handlePrivacy(item.name),
         content: handlePrivacy(item.content),
         title: handlePrivacy(item.title)
     }));
-
-    // 处理描述信息
-    // if (newContext.description) {
-    //     newContext.description = handlePrivacy(newContext.description);
-    // }
 
     return newContext;
 }
@@ -156,7 +136,7 @@ const executeContextProvider = async (provider: CustomContextProvider, options?:
         return;
     }
 
-    let providerMetaInfo = {
+    const providerMetaInfo = {
         name: provider.name,
         displayTitle: provider.displayTitle,
         description: provider.description
@@ -173,24 +153,22 @@ const executeContextProvider = async (provider: CustomContextProvider, options?:
         contextItems: contextItems,
     });
 
-    // 处理隐私信息
     context = handleContextPrivacy(context);
 
     return context;
 }
 
-const assembleContext2Prompt = (contexts: IProvidedContext[]) => {
+const assembleContext2Prompt = (contexts: IProvidedContext[]): string => {
     if (contexts.length === 0) {
         return '';
     }
-    // const contextsPrompt = contexts.map(context2prompt).join('\n\n');
     const contextsPrompt = contexts
         .map(context => {
             try {
                 return context2prompt(context);
             } catch (error) {
                 console.error(`Failed to process context: ${context.name}`, error);
-                return ''; // Skip problematic contexts
+                return '';
             }
         })
         .filter(Boolean)
@@ -200,7 +178,7 @@ const assembleContext2Prompt = (contexts: IProvidedContext[]) => {
         return '';
     }
 
-    let prompt = `
+    const prompt = `
 <reference_rules>
 You may be provided with reference information between <reference> tags, and user\'s instructions after <user> tags.
 IMPORTANT INSTRUCTIONS FOR REFERENCES:
@@ -219,7 +197,7 @@ ${contextsPrompt}
     return prompt;
 }
 
-function context2prompt(context: IProvidedContext): string {
+const context2prompt = (context: IProvidedContext): string => {
     if (context.contextItems.length === 0) {
         return '';
     }
@@ -230,15 +208,10 @@ function context2prompt(context: IProvidedContext): string {
     const attrDescription = context.description ? ` description="${context.description}"` : '';
     prompt += `<source type="${context.name}"${attrTitle}${attrDescription}>`;
 
-    const itemPrompts = [];
-    context.contextItems.forEach((item) => {
-        let itemPrompt = '';
+    const itemPrompts = context.contextItems.map((item) => {
         const name = item.name ? `name="${item.name}"` : '';
         const description = item.description ? ` description="${item.description}"` : '';
-        itemPrompt += `<content ${name}${description}>\n`;
-        itemPrompt += `${item.content}\n`;
-        itemPrompt += `</content>`;
-        itemPrompts.push(itemPrompt);
+        return `<content ${name}${description}>\n${item.content}\n</content>`;
     });
     prompt += `\n${itemPrompts.join('\n').trim()}\n`;
 
@@ -248,10 +221,6 @@ function context2prompt(context: IProvidedContext): string {
 
 /**
  * 直接执行上下文提供器，不需要用户交互
- * @param provider 上下文提供器
- * @param providerOptions 提供给上下文提供器的选项，包含query和selected等参数
- * @param options 执行选项
- * @returns 提供的上下文
  */
 const executeContextProviderDirect = async (
     provider: CustomContextProvider,
@@ -267,7 +236,6 @@ const executeContextProviderDirect = async (
         id = provider.name;
     }
 
-    // 直接使用传入的参数调用getContextItems
     const contextItems = await provider.getContextItems(providerOptions);
 
     if ((!contextItems || contextItems.length === 0) && verbose) {
@@ -275,7 +243,7 @@ const executeContextProviderDirect = async (
         return;
     }
 
-    let providerMetaInfo = {
+    const providerMetaInfo = {
         name: provider.name,
         displayTitle: provider.displayTitle,
         description: provider.description
@@ -292,7 +260,6 @@ const executeContextProviderDirect = async (
         contextItems: contextItems,
     });
 
-    // 处理隐私信息
     context = handleContextPrivacy(context);
 
     return context;

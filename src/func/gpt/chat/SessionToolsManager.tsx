@@ -11,21 +11,15 @@ import { Component, For, Show, createSignal, onMount } from 'solid-js';
 import { ToolExecutor } from '../tools';
 import '../setting/ToolsManagerSetting.scss';
 
-/**
- * 会话级别的工具管理器组件
- * 复用 ToolsManagerSetting 的样式，但针对单个会话的 toolExecutor
- */
 export const SessionToolsManager: Component<{
     toolExecutor: ToolExecutor;
     onToggleGroup?: (groupName: string, enabled: boolean) => void;
     onToggleTool?: (toolName: string, enabled: boolean) => void;
     onClose?: () => void;
 }> = (props) => {
-    // 为每个工具组创建一个展开/折叠状态
     const [collapsedGroups, setCollapsedGroups] = createSignal<Record<string, boolean>>({});
 
-    // 切换工具组的展开/折叠状态
-    const toggleGroupExpand = (groupName: string) => {
+    const toggleGroupExpand = (groupName: string): void => {
         setCollapsedGroups(prev => ({
             ...prev,
             [groupName]: !prev[groupName]
@@ -33,7 +27,6 @@ export const SessionToolsManager: Component<{
     };
 
     onMount(() => {
-        // 初始化所有工具组为闭合状态
         const initialCollapsedState: Record<string, boolean> = {};
         for (const groupName of Object.keys(props.toolExecutor.groupRegistry)) {
             initialCollapsedState[groupName] = true;
@@ -41,23 +34,19 @@ export const SessionToolsManager: Component<{
         setCollapsedGroups(initialCollapsedState);
     });
 
-    // 切换工具组的启用状态
-    const toggleGroupEnabled = (groupName: string) => {
+    const toggleGroupEnabled = (groupName: string): void => {
         const currentEnabled = props.toolExecutor.isGroupEnabled(groupName);
         props.toolExecutor.toggleGroupEnabled(groupName, !currentEnabled);
 
-        // 调用回调函数
         if (props.onToggleGroup) {
             props.onToggleGroup(groupName, !currentEnabled);
         }
     };
 
-    // 切换工具的启用状态
-    const toggleToolEnabled = (toolName: string) => {
+    const toggleToolEnabled = (toolName: string): void => {
         const currentEnabled = props.toolExecutor.isToolEnabled(toolName);
         props.toolExecutor.setToolEnabled(toolName, !currentEnabled);
 
-        // 调用回调函数
         if (props.onToggleTool) {
             props.onToggleTool(toolName, !currentEnabled);
         }

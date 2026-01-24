@@ -10,5 +10,5 @@ interface IChatSessionHistoryShotcut {
     id: string;
     title: string;
     timestamp: number;
-    shotcut: string; // 简要提取其内容，不把存储完整的对话信息了
+    shotcut: string;
 }

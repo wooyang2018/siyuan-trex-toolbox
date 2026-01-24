@@ -1,16 +1,8 @@
-/*
- * Copyright (c) 2025 by frostime. All Rights Reserved.
- * @Author       : frostime
- * @Date         : 2025-01-26 21:25:34
- * @FilePath     : /src/func/gpt/context-provider/BlocksProvider.ts
- * @LastEditTime : 2025-03-14 15:31:15
-*/
-
 import { BlockTypeName, getBlockByID, getMarkdown } from "@frostime/siyuan-plugin-kits";
 
-const BLOCK_ID_REGEX = /(\d{14}-[0-9a-z]{7})/;
+const BLOCK_ID_REGEX = /(\d{14}-[0-9a-z]{7})/ as const;
 
-const parseID = (text: string) => {
+const parseID = (text: string): string | null => {
     const match = text.match(BLOCK_ID_REGEX);
     return match?.[1] ?? null;
 }
@@ -25,18 +17,9 @@ const BlocksProvider: CustomContextProvider = {
         query: string;
     }): Promise<ContextItem[]> => {
         const lines = options.query.split('\n').filter(line => line.trim());
-        let ids: string[] = [];
+        const ids: string[] = lines.map(line => parseID(line)).filter(Boolean);
 
-        // Extract block IDs from each line
-        for (const line of lines) {
-            const id = parseID(line);
-            if (id) {
-                ids.push(id);
-            }
-        }
-
-        // Retrieve block content for each ID
-        let blocks = await Promise.all(ids.map(async (id) => {
+        const blocks = (await Promise.all(ids.map(async (id) => {
             const block = await getBlockByID(id);
             if (!block) {
                 return null;
@@ -50,8 +33,7 @@ const BlocksProvider: CustomContextProvider = {
                 description: `${BlockTypeName[block.type]}; 文档: ${block.hpath}`,
                 content: content,
             };
-        }));
-        blocks = blocks.filter(block => block !== null);
+        }))).filter(block => block !== null);
 
         return blocks;
     },

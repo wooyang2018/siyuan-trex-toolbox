@@ -20,19 +20,18 @@ const AttachmentList: Component<Props> = (props) => {
             if (img instanceof Blob) {
                 return URL.createObjectURL(img);
             } else if (img.startsWith('data:image')) {
-                return img;
-            } else {
-                // 普通 URL
-                return img;
-            }
+                        return img;
+                    }
         });
     });
 
-    const showFullImage = (url: string) => {
+    const showFullImage = (url: string): void => {
         const img = document.createElement('img');
         img.src = url;
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
+        Object.assign(img.style, {
+            maxWidth: '100%',
+            maxHeight: '100%'
+        });
         simpleDialog({
             title: '图片预览',
             ele: img,
@@ -41,17 +40,17 @@ const AttachmentList: Component<Props> = (props) => {
         });
     };
 
-    const showContextContent = (context: IProvidedContext) => {
+    const showContextContent = (context: IProvidedContext): void => {
         solidDialog({
             title: context.displayTitle,
             loader: () => {
                 let typo: HTMLDivElement;
-                const expandAll = () => {
+                const expandAll = (): void => {
                     const details = typo.querySelectorAll('details');
                     details.forEach(detail => detail.setAttribute('open', ''));
                 };
 
-                const collapseAll = () => {
+                const collapseAll = (): void => {
                     const details = typo.querySelectorAll('details');
                     details.forEach(detail => detail.removeAttribute('open'));
                 };
@@ -94,7 +93,7 @@ const AttachmentList: Component<Props> = (props) => {
         });
     };
 
-    const sizeClass = () => {
+    const sizeClass = (): string => {
         switch (props.size) {
             case 'small': return styles.small;
             case 'large': return styles.large;

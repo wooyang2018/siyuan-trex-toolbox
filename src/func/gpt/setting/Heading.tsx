@@ -1,4 +1,6 @@
-const Heading = (prpos: { children }) => {
+import { JSX } from 'solid-js';
+
+const Heading = (props: { children: any }): JSX.Element => {
     return (
         <h3 style={{
             margin: '5px 24px',
@@ -10,7 +12,7 @@ const Heading = (prpos: { children }) => {
             "border-top": '2px solid var(--b3-theme-primary)',
             "border-bottom": '1px dashed var(--b3-theme-primary)',
         }}>
-            {prpos.children}
+            {props.children}
         </h3>
     )
 }

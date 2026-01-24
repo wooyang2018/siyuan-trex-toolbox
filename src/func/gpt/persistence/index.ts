@@ -8,22 +8,19 @@
  */
 import { saveToSiYuan, saveToSiYuanAssetFile } from "./sy-doc";
 import { saveToJson } from "./json-files";
-// import { confirmDialog } from "@frostime/siyuan-plugin-kits";
 import { showMessage } from "siyuan";
 
 export const persistHistory = async (history: IChatSessionHistory, options?: {
-    // saveToSiYuan?: boolean;
-    saveJson?: boolean; //default true
-    saveTo?: 'document' | 'asset'
+    saveJson?: boolean;
+    saveTo?: 'document' | 'asset';
     verbose?: string;
-}) => {
+}): Promise<void> => {
     if (options?.saveJson !== false) await saveToJson(history)
     if (options?.saveTo === 'document') {
         await saveToSiYuan(history)
     } else if (options?.saveTo === 'asset') {
         await saveToSiYuanAssetFile(history)
     }
-    // if (options?.verbose !== false) showMessage('保存成功')
     if (options?.verbose) showMessage(options.verbose)
 }
 
@@ -32,5 +29,4 @@ export * from "./json-files";
 export * from "./local-storage";
 export * from "./import-platform";
 
-// 导出 snapshot 相关功能
 export { rebuildHistorySnapshot, listFromJsonSnapshot, listFromJsonFull, updateSessionInSnapshot, updateSnapshotSession } from "./json-files";

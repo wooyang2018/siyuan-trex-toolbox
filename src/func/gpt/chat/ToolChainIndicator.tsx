@@ -16,7 +16,7 @@ interface ToolChainIndicatorProps {
 const ToolChainIndicator: Component<ToolChainIndicatorProps> = (props) => {
     const [expanded, setExpanded] = createSignal(false);
     
-    const hasToolChain = () => {
+    const hasToolChain = (): boolean => {
         return props.messageItem.toolChainResult && 
                props.messageItem.toolChainResult.toolCallHistory.length > 0;
     };
