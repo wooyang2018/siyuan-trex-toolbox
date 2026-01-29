@@ -26,7 +26,7 @@ export const renderView = (
   <div style="display: flex" class="webapp-view fn__flex-column fn__flex fn__flex-1 ${context.data.name}__custom-tab">
       <webview allowfullscreen allowpopups style="border: none" class="fn__flex-column fn__flex  fn__flex-1" src="${context.data.url}"
         ${context.data.proxy ? 'partition="' + context.data.name + '"' : ''}
-        webpreferences="disableWebSecurity=yes"></webview>
+        webpreferences="disableWebSecurity=yes,allowRunningInsecureContent=yes"></webview>
       <div class="webapp-view-controller ${useController ? '' : 'fn__none'}">
         <span class="pointer handle"><svg><use xlink:href="#iconSettings"></use></svg></span> 
         <span class="pointer func home"><svg><use xlink:href="#iconLanguage"></use></svg>Home</span>
@@ -501,6 +501,25 @@ export const renderView = (
                 urls: ['*://*/*']
             };
             
+            // 拦截请求头，修改 Referer 和 Origin
+            session.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+                const requestHeaders = details.requestHeaders || {};
+                
+                // 移除或修改可能导致跨域问题的请求头
+                if (requestHeaders['Origin']) {
+                    delete requestHeaders['Origin'];
+                }
+                
+                // 设置更宽松的 Referer 策略
+                requestHeaders['Sec-Fetch-Mode'] = 'no-cors';
+                requestHeaders['Sec-Fetch-Site'] = 'same-origin';
+                
+                callback({
+                    cancel: false,
+                    requestHeaders: requestHeaders,
+                });
+            });
+            
             // 拦截响应头，添加 CORS 支持
             session.webRequest.onHeadersReceived(filter, (details, callback) => {
                 const responseHeaders = details.responseHeaders || {};
@@ -514,6 +533,7 @@ export const renderView = (
                 // 移除可能导致问题的安全头
                 delete responseHeaders['X-Frame-Options'];
                 delete responseHeaders['Content-Security-Policy'];
+                delete responseHeaders['X-Content-Type-Options'];
                 
                 callback({
                     cancel: false,
