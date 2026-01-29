@@ -34,7 +34,6 @@ export const declareToggleEnabled = {
 
 const config = {
     parentChildCommand: true,
-    overwriteCtrlUpDownKey: true
 };
 
 export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
@@ -51,22 +50,10 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
             key: 'parentChildCommand',
             type: 'checkbox' as const,
             title: '启用切换父子文档快捷键',
-            description: `开启后，使用快捷键 Ctrl+↑ 跳转到父文档，Ctrl+↓ 跳转到子文档</br>默认会屏蔽这两个快捷键在思源中的默认功能，如果你想要换成别的快捷键，请关闭下方的选项然后在思源「快捷键」设置中自行更改`,
+            description: `开启后，使用快捷键 Ctrl+Shift+↑ 跳转到父文档，Ctrl+Shift+↓ 跳转到子文档<br/>默认会屏蔽这两个快捷键在思源中的默认功能。如果你想要换成别的快捷键，请自行更改 "文档上下文" 中 "父文档" 和 "子文档" 快捷键。`,
             get: () => config.parentChildCommand,
             set: (value: boolean) => {
                 config.parentChildCommand = value;
-            }
-        },
-        {
-            key: 'overwriteCtrlArrow',
-            type: 'checkbox' as const,
-            title: '⚠️ 覆盖默认 Ctrl+↑ 和 Ctrl+↓',
-            description: `
-            默认的 Ctrl+↑ 和 Ctrl+↓ 为思源内置快捷键（展开和折叠），插件提供的切换父子文档功能想要生效，会强制覆盖思源的默认快捷键。<br/>如果你依赖于这两个快捷键的默认功能，可以: 1) 关掉这个选项; 2) 在思源的快捷键配置中自行更改 "文档上下文" 中 "父文档" 和 "子文档" 快捷键。
-            `,
-            get: () => config.overwriteCtrlUpDownKey,
-            set: (value: boolean) => {
-                config.overwriteCtrlUpDownKey = value;
             }
         }
     ]
@@ -459,7 +446,6 @@ const DocContextComponent = (props: {
 
 let plugin_: FMiscPlugin;
 const Keymap = '⌥S';
-const KeymapConfig = window.siyuan.config.keymap;
 
 export const load = (plugin: FMiscPlugin) => {
     if (enabled) return;
@@ -590,20 +576,15 @@ export const load = (plugin: FMiscPlugin) => {
         plugin.addCommand({
             langKey: 'trex::parent-doc',
             langText: '父文档',
-            hotkey: '⌘↑',
+            hotkey: '⌘⇧↑',
             callback: async () => goToParent()
         });
         plugin.addCommand({
             langKey: 'trex::child-doc',
             langText: '子文档',
-            hotkey: '⌘↓',
+            hotkey: '⌘⇧↓',
             callback: async () => goToChild()
         });
-
-        if (config.overwriteCtrlUpDownKey) {
-            KeymapConfig.editor.general.collapse.custom = '';
-            KeymapConfig.editor.general.expand.custom = '';
-        }
     }
 };
 
@@ -617,9 +598,4 @@ export const unload = (plugin: FMiscPlugin) => {
     plugin.delCommand('trex::next-doc');
     plugin.delCommand('trex::parent-doc');
     plugin.delCommand('trex::child-doc');
-
-    if (config.overwriteCtrlUpDownKey) {
-        KeymapConfig.editor.general.collapse.custom = KeymapConfig.editor.general.collapse.default;
-        KeymapConfig.editor.general.expand.custom = KeymapConfig.editor.general.expand.default;
-    }
 }

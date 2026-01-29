@@ -1,9 +1,6 @@
 .item-wrap {
     box-shadow: unset;
     padding-bottom: 16px;
-}
-
-.item-wrap:not(:last-child) {
     border-bottom: 1px solid var(--b3-border-color);
 }
 
