@@ -15,8 +15,8 @@
     "zh_CN": "霸王龙工具箱"
   },
   "description": {
-    "en_US": "Feature-rich toolbox. Mini Window | WebView | Reference Transfer | Doc Context | Link Icon | Pin Image...",
-    "zh_CN": "功能丰富的工具箱。中键小窗 | 网页视图 | 转移引用 | 文档上下文 | 链接图标 | 固定图片..."
+    "en_US": "Feature-rich toolbox. Mini Window | Reference Transfer | Doc Context | Link Icon | Pin Image | Migrate Refs...",
+    "zh_CN": "功能丰富的工具箱。中键小窗 | 转移引用 | 文档上下文 | 链接图标 | 固定图片 | 引用迁移..."
   },
   "readme": {
     "default": "README.md"
@@ -24,7 +24,6 @@
   "keywords": [
     "toolbox",
     "trex-toolbox",
-    "webview",
     "reference",
     "navigation",
     "utils"

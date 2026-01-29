@@ -7,7 +7,6 @@ import * as mw from './mini-window';
 import * as tr from './transfer-ref';
 import * as dc from './doc-context';
 import * as ws from './websocket';
-import * as wb from './webview';
 import * as mr from './migrate-refs';
 import * as sc from './shared-configs';
 import * as dft from './docfile-tools';
@@ -17,7 +16,7 @@ import * as pi from './pin-image';
 import * as bq from './bq-callout';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, wb, tr, mr, ws];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];

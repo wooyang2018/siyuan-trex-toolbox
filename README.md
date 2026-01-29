@@ -26,15 +26,6 @@ A feature-rich SiYuan Note plugin that integrates various practical tools to enh
 
 **适用场景**：快速查看引用内容、对比多个文档内容
 
-### 🌐 网页视图 (WebView)
-- 在思源笔记内打开网页标签页，无需切换浏览器
-- 支持自定义网页应用列表
-- 可配置代理、Referer、自定义脚本和样式
-- 支持从链接右键菜单快速打开网页
-- 自动保存配置，支持自定义图标
-
-**适用场景**：集成常用Web工具、在线文档、API参考等
-
 ### 💭 转移引用 (Transfer Reference)
 - 批量将一个块的所有引用转移到另一个块
 - 可视化界面显示引用列表
@@ -116,7 +107,6 @@ siyuan-trex-toolbox/
 ├── src/
 │   ├── func/              # 功能模块
 │   │   ├── mini-window.ts      # 中键小窗
-│   │   ├── webview/            # 网页视图
 │   │   ├── transfer-ref/       # 转移引用
 │   │   ├── doc-context.tsx     # 文档上下文
 │   │   ├── migrate-refs/       # 引用迁移
