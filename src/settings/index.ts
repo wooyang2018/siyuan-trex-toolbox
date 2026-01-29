@@ -54,40 +54,6 @@ let CustomModuleConfigs: IFuncModule['declareModuleConfig'][] = [];
     }
 });
 
-
-const Misc: ISettingItem[] = [
-    // {
-    //     type: 'textinput',
-    //     title: 'Zotero Password',
-    //     description: 'Zotero Debug-Bridge 的密码',
-    //     key: 'zoteroPassword',
-    //     value: 'CTT'
-    // },
-    // {
-    //     type: 'textinput',
-    //     title: 'Zotero 存储目录',
-    //     description: 'Zotero 的数据存储位置',
-    //     key: 'zoteroDir',
-    //     value: ''
-    // },
-    // {
-    //     type: 'textinput',
-    //     title: '代码编辑器',
-    //     description: '代码编辑器路径, {{filepath}} 会被替换为真实的文件路径',
-    //     key: 'codeEditor',
-    //     value: 'code {{filepath}}',
-    //     direction: 'row'
-    // },
-    // {
-    //     type: 'textinput',
-    //     title: '思源派 Token',
-    //     description: '思源派 Token 的发布 Token',
-    //     key: 'sypaiToken',
-    //     value: ''
-    // },
-];
-
-
 const onSettingChanged = (plugin: FMiscPlugin, group: string, key: string, value: string) => {
     //动态启用或禁用功能
     if (group === 'Enable') {
@@ -110,7 +76,6 @@ export const initSetting = async (plugin: FMiscPlugin) => {
     //1. 初始化 plugin settings 配置
     let configs = {}
     configs['Enable'] = Object.fromEntries(Enable.map(item => [item.key, item.value]));
-    configs['Misc'] = Object.fromEntries(Misc.map(item => [item.key, item.value]));
     //@ts-ignore
     plugin.data['configs'] = configs;
 
@@ -124,7 +89,6 @@ export const initSetting = async (plugin: FMiscPlugin) => {
             });
         }
         UpdateConfig(Enable, 'Enable');
-        UpdateConfig(Misc, 'Misc');
     }
 
     updateConfigs();
@@ -205,7 +169,6 @@ export const initSetting = async (plugin: FMiscPlugin) => {
             height: "672px",
             loader: () => Settings({
                 GroupEnabled: Enable,
-                GroupMisc: Misc,
                 changed: onChanged,
                 customPanels: CustomPanels,
                 customModuleConfigs: CustomModuleConfigs

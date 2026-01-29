@@ -25,7 +25,8 @@ export const renderView = (
     context.element.innerHTML = `
   <div style="display: flex" class="webapp-view fn__flex-column fn__flex fn__flex-1 ${context.data.name}__custom-tab">
       <webview allowfullscreen allowpopups style="border: none" class="fn__flex-column fn__flex  fn__flex-1" src="${context.data.url}"
-        ${context.data.proxy ? 'partition="' + context.data.name + '"' : ''}></webview>
+        ${context.data.proxy ? 'partition="' + context.data.name + '"' : ''}
+        webpreferences="disableWebSecurity=yes"></webview>
       <div class="webapp-view-controller ${useController ? '' : 'fn__none'}">
         <span class="pointer handle"><svg><use xlink:href="#iconSettings"></use></svg></span> 
         <span class="pointer func home"><svg><use xlink:href="#iconLanguage"></use></svg>Home</span>
@@ -478,11 +479,46 @@ export const renderView = (
         }
     });
 
-    if (context.data.proxy) {
-        const session = window?.require?.('@electron/remote').session.fromPartition(context.data.name);
-        if (session) {
+    // 配置 Session 以处理跨域和代理
+    const electron = window?.require?.('@electron/remote');
+    if (electron) {
+        let session;
+        
+        if (context.data.proxy) {
+            // 使用独立的 partition 用于代理
+            session = electron.session.fromPartition(context.data.name);
             session.setProxy({
                 proxyRules: context.data.proxy,
+            });
+        } else {
+            // 使用默认 session
+            session = electron.session.defaultSession;
+        }
+
+        // 配置 webRequest 拦截器以解决 CORS 问题
+        if (session && session.webRequest) {
+            const filter = {
+                urls: ['*://*/*']
+            };
+            
+            // 拦截响应头，添加 CORS 支持
+            session.webRequest.onHeadersReceived(filter, (details, callback) => {
+                const responseHeaders = details.responseHeaders || {};
+                
+                // 添加 CORS 头以允许跨域访问
+                responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+                responseHeaders['Access-Control-Allow-Methods'] = ['GET, POST, PUT, DELETE, PATCH, OPTIONS'];
+                responseHeaders['Access-Control-Allow-Headers'] = ['*'];
+                responseHeaders['Access-Control-Allow-Credentials'] = ['true'];
+                
+                // 移除可能导致问题的安全头
+                delete responseHeaders['X-Frame-Options'];
+                delete responseHeaders['Content-Security-Policy'];
+                
+                callback({
+                    cancel: false,
+                    responseHeaders: responseHeaders,
+                });
             });
         }
     }

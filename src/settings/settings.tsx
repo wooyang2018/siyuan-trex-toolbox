@@ -16,7 +16,6 @@ interface IChangeEvent {
 
 interface IArgs {
     GroupEnabled: ISettingItem[];
-    GroupMisc: ISettingItem[];
     changed: (e: IChangeEvent) => void;
     customPanels?: {
         key: string;
@@ -30,8 +29,6 @@ interface IArgs {
 const App: Component<IArgs> = (props) => {
     let groups: { key: string, text: string }[] = [
         { key: 'Enable', text: '✅ 启用功能' },
-        { key: 'Misc', text: '🔧 其他设置' },
-        // { key: 'Toggl', text: '⏲️ Toggl' }
     ];
 
     props.customPanels?.forEach(panel => {
@@ -53,14 +50,6 @@ const App: Component<IArgs> = (props) => {
         <SettingPanel
             group={groups[0].key}
             settingItems={props.GroupEnabled}
-            onChanged={changed}
-        />
-    );
-
-    const Misc = () => (
-        <SettingPanel
-            group={groups[2].key}
-            settingItems={props.GroupMisc}
             onChanged={changed}
         >
             <CustomModuleConfigs />
@@ -119,7 +108,6 @@ const App: Component<IArgs> = (props) => {
 
     let showGroups = {
         Enable,
-        Misc,
     }
 
     props.customPanels?.forEach(panel => {

@@ -9,6 +9,29 @@
 
 type ScalarType = string | number | boolean;
 
+/**
+ * 设置项核心接口
+ */
+interface ISettingItemCore {
+    type: 'checkbox' | 'textinput' | 'textarea' | 'number' | 'button' | 'select' | 'slider' | 'hint';
+    title?: string;
+    description?: string;
+    placeholder?: string;
+    direction?: 'row' | 'column';
+    value?: any;
+    options?: { key: string; value: any; text: string }[];
+    slider?: { min: number; max: number; step: number };
+    button?: { text: string; callback: () => void };
+    number?: { min?: number; max?: number; step?: number };
+}
+
+/**
+ * 设置项接口
+ */
+interface ISettingItem extends ISettingItemCore {
+    key: string;
+}
+
 interface IDockyBlock {
     name: string;
     position: 'RightTop' | 'RightBottom' | 'LeftTop' | 'LeftBottom';
