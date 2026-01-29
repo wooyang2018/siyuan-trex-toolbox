@@ -2,10 +2,10 @@
   "name": "siyuan-trex-toolbox",
   "version": "7.3.6",
   "type": "module",
-  "description": "Frostime 自动工具代码",
+  "description": "Tyrannosaurus Toolbox 霸王龙工具箱",
   "repository": "https://github.com/wooyang2018/siyuan-trex-toolbox",
   "homepage": "",
-  "author": "frostime",
+  "author": "wooyang2018",
   "license": "GPL-3.0-only",
   "scripts": {
     "dev": "pnpm run dev:full",
