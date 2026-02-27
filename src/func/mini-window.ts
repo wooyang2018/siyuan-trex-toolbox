@@ -11,7 +11,7 @@ import { updateStyleDom } from "@frostime/siyuan-plugin-kits";
 
 export const declareToggleEnabled = {
     title: '🖥️ 中键小窗',
-    description: '启用中键点击元素打开独立小窗功能',
+    description: '中键点击元素时打开独立小窗',
     defaultEnabled: true
 };
 

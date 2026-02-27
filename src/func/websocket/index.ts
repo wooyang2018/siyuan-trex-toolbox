@@ -15,7 +15,7 @@ export let enabled = false;
 
 export const declareToggleEnabled = {
     title: '💬 WebSocket',
-    description: '启用 WebSocket 功能',
+    description: '监听思源 WebSocket 消息并执行自定义操作',
     defaultEnabled: false
 };
 

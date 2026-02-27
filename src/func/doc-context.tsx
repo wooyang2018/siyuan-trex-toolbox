@@ -28,7 +28,7 @@ export let enabled: boolean = false;
 
 export const declareToggleEnabled = {
     title: '📑 文档上下文',
-    description: '启用文档上下文功能',
+    description: '快速跳转父文档和子文档',
     defaultEnabled: true
 } as const;
 

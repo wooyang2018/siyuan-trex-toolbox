@@ -16,7 +16,7 @@ export let enabled = false;
 
 export const declareToggleEnabled = {
     title: '💭 转移引用',
-    description: '启用转移引用功能',
+    description: '将一个块的引用批量转移到另一个块',
     defaultEnabled: false
 };
 

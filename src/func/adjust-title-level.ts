@@ -7,7 +7,7 @@ export let enabled = false;
 
 export const declareToggleEnabled = {
     title: '🔤 调整标题层级',
-    description: '块菜单/文档菜单打开事件增加标题层级转换',
+    description: '在块菜单/文档菜单中批量转换标题层级',
     defaultEnabled: false
 };
 
@@ -21,12 +21,12 @@ const MAX_TITLE_LEVEL = 6;
 function onDocGutterClicked({ detail }: any) {
     const menu = detail.menu;
     menu.addItem({
-        iconHTML: "",
+        icon: "iconHeadings",
         label: "调整所有标题",
         submenu: [
             {
                 iconHTML: "",
-                label: "调整所有为",
+                label: "调整标题为",
                 submenu: Array.from({ length: MAX_TITLE_LEVEL }, (_, i) => i + 1).map((num) => ({
                     iconHTML: "",
                     label: `H${num}`,
