@@ -80,7 +80,7 @@ function blockToText(detail: any, querySelectorAllStr: string) {
 function onBlockIconClick(event: CustomEvent) {
     const detail = event.detail;
     detail.menu.addItem({
-        iconHTML: "🔄",
+        icon: "iconTransfer",
         label: "调整行内元素",
         submenu: [
             {

@@ -50,7 +50,7 @@ export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
             key: 'parentChildCommand',
             type: 'checkbox' as const,
             title: '启用切换父子文档快捷键',
-            description: `开启后，使用快捷键 Ctrl+Shift+↑ 跳转到父文档，Ctrl+Shift+↓ 跳转到子文档<br/>。如果你想要换成别的快捷键，请自行更改 "文档上下文" 中 "父文档" 和 "子文档" 快捷键。`,
+            description: `开启后，你可以使用快捷键 Ctrl+Shift+↑ 跳转到父文档，Ctrl+Shift+↓ 跳转到子文档<br/>。如果你想要换成别的快捷键，请自行更改 "文档上下文" 中 "父文档" 和 "子文档" 快捷键。`,
             get: () => config.parentChildCommand,
             set: (value: boolean) => {
                 config.parentChildCommand = value;

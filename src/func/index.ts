@@ -4,10 +4,8 @@
  */
 import type FMiscPlugin from "@/index";
 import * as mw from './mini-window';
-import * as tr from './transfer-ref';
 import * as dc from './doc-context';
 import * as ws from './websocket';
-import * as mr from './migrate-refs';
 import * as sc from './shared-configs';
 import * as dft from './docfile-tools';
 import * as km from './keymap';
@@ -20,7 +18,7 @@ import * as tp from './typography';
 import * as cv from './convert-inline';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws, atl, rn, tp, cv];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];

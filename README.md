@@ -26,14 +26,6 @@ A feature-rich SiYuan Note plugin that integrates various practical tools to enh
 
 **适用场景**：快速查看引用内容、对比多个文档内容
 
-### 💭 转移引用 (Transfer Reference)
-- 批量将一个块的所有引用转移到另一个块
-- 可视化界面显示引用列表
-- 支持搜索和选择目标块
-- 块菜单和文档标题右键菜单集成
-
-**适用场景**：重构笔记结构、合并重复内容
-
 ### 📑 文档上下文 (Document Context)
 - 快速查看和导航父文档、子文档和同级文档
 - 支持快捷键快速跳转：
@@ -43,11 +35,6 @@ A feature-rich SiYuan Note plugin that integrates various practical tools to enh
 - 支持在当前标签页或新标签页打开
 
 **适用场景**：在层级化的笔记结构中快速导航
-
-### 🔍 引用迁移 (Migrate References)
-- 搜索并迁移指定块的引用关系
-- 批量处理引用更新
-- 支持预览将要迁移的引用
 
 ### 🔗 链接图标 (Link Icon)
 - 为外部链接自动添加网站图标
@@ -107,9 +94,7 @@ siyuan-trex-toolbox/
 ├── src/
 │   ├── func/              # 功能模块
 │   │   ├── mini-window.ts      # 中键小窗
-│   │   ├── transfer-ref/       # 转移引用
 │   │   ├── doc-context.tsx     # 文档上下文
-│   │   ├── migrate-refs/       # 引用迁移
 │   │   ├── link-icon/          # 链接图标
 │   │   ├── pin-image/          # 固定图片
 │   │   ├── bq-callout/         # 引用块标注
