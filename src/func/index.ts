@@ -14,9 +14,10 @@ import * as km from './keymap';
 import * as li from './link-icon';
 import * as pi from './pin-image';
 import * as bq from './bq-callout';
+import * as atl from './adjust-title-level';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws, atl];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
