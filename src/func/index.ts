@@ -16,9 +16,10 @@ import * as pi from './pin-image';
 import * as bq from './bq-callout';
 import * as atl from './adjust-title-level';
 import * as rn from './random-note';
+import * as tp from './typography';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws, atl, rn];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws, atl, rn, tp];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
