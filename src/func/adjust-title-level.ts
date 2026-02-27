@@ -26,7 +26,7 @@ function onDocGutterClicked({ detail }: any) {
         submenu: [
             {
                 iconHTML: "",
-                label: "调整所有标题为",
+                label: "调整所有为",
                 submenu: Array.from({ length: MAX_TITLE_LEVEL }, (_, i) => i + 1).map((num) => ({
                     iconHTML: "",
                     label: `H${num}`,
@@ -59,7 +59,7 @@ function onDocGutterClicked({ detail }: any) {
  */
 function onBlockGutterClicked({ detail }: any) {
     detail.menu.addItem({
-        iconHTML: "",
+        icon: "iconHeadings",
         label: "调整标题",
         submenu: Array.from({ length: MAX_TITLE_LEVEL }, (_, i) => i + 1).map((num) => ({
             iconHTML: "",
