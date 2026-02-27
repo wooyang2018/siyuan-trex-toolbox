@@ -164,8 +164,8 @@ async function execFormatDoc() {
     }
 
     confirm(
-        "⚠️ 操作前强烈建议先对数据进行备份，若转换效果不理想可从历史页面恢复。",
-        "确认格式化吗？",
+        "⚠️ 操作前强烈建议先备份数据，若转换效果不理想可从历史恢复。",
+        "确认执行全文格式化吗？",
         async () => {
             await formatTitle(parentId);
             await formatDoc(parentId);
@@ -196,7 +196,7 @@ export const load = (plugin_: FMiscPlugin) => {
     topbarElement = plugin.addTopBar({
         icon: 'iconTypography',
         title: '格式化当前文档',
-        position: 'right',
+        position: 'left',
         callback: execFormatDoc
     });
 

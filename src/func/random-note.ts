@@ -60,7 +60,7 @@ export const load = (plugin_: FMiscPlugin) => {
     topbarElement = plugin.addTopBar({
         icon: 'iconRandomNote',
         title: '随机浏览',
-        position: 'right',
+        position: 'left',
         callback: execRandomNote
     });
 };

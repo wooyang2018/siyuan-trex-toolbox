@@ -17,9 +17,10 @@ import * as bq from './bq-callout';
 import * as atl from './adjust-title-level';
 import * as rn from './random-note';
 import * as tp from './typography';
+import * as cv from './convert-inline';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws, atl, rn, tp];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, tr, mr, ws, atl, rn, tp, cv];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
