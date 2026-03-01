@@ -193,7 +193,7 @@ export default class FMiscPlugin extends Plugin {
                 showMessage(`未找到 ${MCP_PLUGIN_DIR} 插件目录，请先安装该插件`, 5000, 'error');
                 return;
             }
-            const mcpPath = pluginsDir + '/' + MCP_PLUGIN_DIR + '/mcp-server.cjs';
+            const mcpPath = (pluginsDir + '/' + MCP_PLUGIN_DIR + '/mcp-server.cjs').replace(/\\/g, '/');
             const cmd = cmdTemplate.replace('{mcpPath}', mcpPath);
             navigator.clipboard.writeText(cmd).then(() => {
                 showMessage(`已复制 ${label} MCP 命令到剪贴板`);
@@ -246,7 +246,7 @@ export default class FMiscPlugin extends Plugin {
                             label: 'OpenCode',
                             icon: 'iconTerminal',
                             click: () => copyMcpCommand(
-                                `opencode mcp add siyuan-mcp-sisyphus --type local --command "node {mcpPath}"`,
+                                `(echo name: siyuan-mcp-sisyphus & echo type: Local & echo command: node "{mcpPath}") & opencode mcp add`,
                                 'OpenCode'
                             )
                         },
