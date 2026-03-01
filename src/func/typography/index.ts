@@ -195,7 +195,7 @@ export const load = (plugin_: FMiscPlugin) => {
     // 添加顶栏图标
     topbarElement = plugin.addTopBar({
         icon: 'iconTypography',
-        title: '格式化当前文档',
+        title: '格式化该文档',
         position: 'left',
         callback: execFormatDoc
     });
