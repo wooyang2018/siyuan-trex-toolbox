@@ -40,6 +40,8 @@ export default class BqCalloutPlugin {
     private blockIconEventBindThis = this.blockIconEvent.bind(this);
     private dynamicStyle: DynamicStyle;
     private siyuanPlugin: FMiscPlugin;
+    /** 记录本模块注册的斜杠命令 ID，用于 resetSlash 时只清除自己的 */
+    private registeredSlashIds: Set<string> = new Set();
 
     configs: IConfigs = {
         EmojiFont: `'Twitter Emoji', 'Noto Color Emoji', 'OpenMoji', sans-serif`,
@@ -111,10 +113,12 @@ export default class BqCalloutPlugin {
                 filters = [...customFilters, ...defaultFilters];
             }
 
+            const slashId = ct.id + filterSuffix;
+            this.registeredSlashIds.add(slashId);
             this.siyuanPlugin.protyleSlash.push({
                 filter: filters,
                 html: `<span class="b3-menu__label">${ct.icon}${callout.calloutName(ct)}${modenameSuffix}</span>`,
-                id: ct.id + filterSuffix,
+                id: slashId,
                 callback: (protyle: Protyle) => {
                     const toInsert = mode === undefined
                         ? `>\n{: custom-${calloutAttr}="${ct.id}" }`
@@ -124,7 +128,11 @@ export default class BqCalloutPlugin {
             });
         }
 
-        this.siyuanPlugin.protyleSlash = [];
+        // 只移除 bq-callout 注册的斜杠命令，保留其他模块注册的
+        this.siyuanPlugin.protyleSlash = this.siyuanPlugin.protyleSlash.filter(
+            slash => !this.registeredSlashIds.has(slash.id)
+        );
+        this.registeredSlashIds.clear();
         
         for (const ct of this.configs.DefaultCallout) {
             if (ct?.hide) continue;

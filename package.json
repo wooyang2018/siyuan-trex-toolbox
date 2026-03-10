@@ -12,14 +12,11 @@
     "dev:full": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",
     "build": "pnpm run build:publish",
     "build:publish": "cross-env NODE_ENV=production vite build",
-    "build:private": "cross-env NODE_ENV=production PRIVATE_ADD=true PRIVATE_REMOVE=true vite build",
-    "build:srcmap": "cross-env NODE_ENV=production PRIVATE_ADD=true VITE_SOURCEMAP=inline PRIVATE_REMOVE=true vite build",
+    "build:srcmap": "cross-env NODE_ENV=production VITE_SOURCEMAP=inline vite build",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true NODE_ENV=production vite build",
-    "make-link": "npx make-link-win",
     "update-version": "npx update-version",
     "make-install": "pnpm run build && npx make-install",
-    "make-install:srcmap": "pnpm run build:srcmap && npx make-install",
-    "make-install:private": "pnpm run build:private && npx make-install"
+    "make-install:srcmap": "pnpm run build:srcmap && npx make-install"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.1.0",

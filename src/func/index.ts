@@ -16,9 +16,10 @@ import * as atl from './adjust-title-level';
 import * as rn from './random-note';
 import * as tp from './typography';
 import * as cv from './convert-inline';
+import * as ii from './insert-index';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
