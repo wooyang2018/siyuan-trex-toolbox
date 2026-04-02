@@ -1,0 +1,43 @@
+/* 隐藏钉住按钮 */
+#dockLeft .dock__item--pin {
+    display: none !important;
+}
+
+#dockRight .dock__item--pin {
+    display: none !important;
+}
+
+/* 隐藏面板按钮 */
+#commonMenu>div.b3-menu__items>button.b3-menu__item>div>div {
+
+    /* 收集箱 */
+    & button[data-id="inbox"] {
+        display: none;
+    }
+
+    /* 显示小记侧边栏 */
+    & button[data-id="quick-notessmall_notes_dock"] {
+        display: none;
+    }
+
+    /* 在线图片文字识别 */
+    & button[data-id="siyuan-plugin-online-ocronlineOcrJobs"] {
+        display: none;
+    }
+}
+
+
+/** 隐藏左侧边栏的收集箱按钮 **/
+#dockLeft span[data-type='inbox'] {
+    display: none;
+}
+
+/** 隐藏顶部边栏的命令按钮 **/
+#toolbar #barCommand {
+    display: none;
+}
+
+/** 隐藏顶部边栏的订阅按钮 **/
+#toolbar #toolbarVIP {
+    display: none;
+}

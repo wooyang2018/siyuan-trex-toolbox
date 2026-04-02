@@ -1,0 +1,94 @@
+/* 浮动工具栏 */
+.layout-tab-container>.protyle:has(.protyle-content .protyle-title__input[contenteditable="true"])>.protyle-toolbar {
+    align-items: center;
+    height: 20px !important;
+    left: auto !important;
+    top: auto !important;
+    margin-top: 32px !important;
+}
+
+/* 小记 */
+#dockRight span[data-type="quick-notessmall_notes_dock"][data-title="显示小记侧边栏"] {
+    & svg {
+        transform: scale(1.5);
+    }
+}
+
+/* 片趣打卡 */
+#dockRight span[data-type="pinchPinch-habit"][data-title="Pinch-habit"] {
+    & svg {
+        transform: scale(0.95);
+    }
+}
+
+/* 插件栏 */
+body:not(.body--mobile, .body--window)>#toolbar {
+    & #plugin_siyuan-importer_0 {
+        & svg {
+            transform: scaleY(1.05);
+        }
+    }
+
+    & #plugin_sy-query-view_0 {
+        & svg {
+            transform: scale(0.95);
+        }
+    }
+
+    & #plugin_siyuan-plugins-index_0 {
+        & svg {
+            transform: scale(0.95);
+        }
+    }
+
+    & #plugin_siyuan-plugin-text-process_0 {
+        & svg {
+            transform: scale(1.02);
+        }
+    }
+
+    & #plugin_siyuan-trex-toolbox_0 {
+        & svg {
+            transform: scale(1.07);
+        }
+    }
+
+    & #plugin_quick-notes_0 {
+        & svg {
+            margin-top: 1px;
+            transform: scale(1.25);
+        }
+    }
+
+    & #barMode {
+        & svg {
+            transform: scale(1.12);
+        }
+    }
+}
+
+/* 侧边栏 */
+.dock {
+    & .dock__item {
+        svg {
+            transform: scale(1.1);
+        }
+    }
+}
+
+/* 文档树 */
+.layout__dockl,
+.layout__dockr,
+.layout__dockb {
+    & .layout-tab-container {
+        &>.fn__flex-column {
+            & .block__icons {
+                & .block__icon {
+                    svg {
+                        transform: scale(1.1);
+                    }
+                }
+            }
+        }
+    }
+}
