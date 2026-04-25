@@ -56,7 +56,7 @@ const replaceTextMap = {
     "Query&View": "Query View",
     "在线图片文字识别(OCR)": "在线图片文字识别",
     "书签+": "书签增强",
-    "思源 MCP sisyphus": "思源MCP",
+    "思源 sisyphus MCP & CLI": "思源MCP",
     "搜 easy": "搜索",
 };
 async function replaceMenuLabels() {

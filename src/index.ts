@@ -15,8 +15,6 @@ import {
     ICommand
 } from "siyuan";
 
-import { readDir } from "./api";
-
 import { load, unload, addStatus } from "./func";
 
 import "@/index.scss";
@@ -177,29 +175,6 @@ export default class FMiscPlugin extends Plugin {
     }
 
     private initTopBar() {
-        const MCP_PLUGIN_DIR = 'siyuan-plugins-mcp-sisyphus';
-
-        const copyMcpCommand = async (cmdTemplate: string, label: string) => {
-            const dataDir = window.siyuan.config.system.dataDir;
-            const pluginsDir = dataDir + '/plugins';
-            try {
-                const entries = await readDir('/data/plugins');
-                const exists = entries.some(e => e.isDir && e.name === MCP_PLUGIN_DIR);
-                if (!exists) {
-                    showMessage(`未找到 ${MCP_PLUGIN_DIR} 插件目录，请先安装该插件`, 5000, 'error');
-                    return;
-                }
-            } catch {
-                showMessage(`未找到 ${MCP_PLUGIN_DIR} 插件目录，请先安装该插件`, 5000, 'error');
-                return;
-            }
-            const mcpPath = (pluginsDir + '/' + MCP_PLUGIN_DIR + '/mcp-server.cjs').replace(/\\/g, '/');
-            const cmd = cmdTemplate.replace('{mcpPath}', mcpPath);
-            navigator.clipboard.writeText(cmd).then(() => {
-                showMessage(`已复制 ${label} MCP 命令到剪贴板`);
-            });
-        };
-
         const showMenu = () => {
             let menu = new Menu("trex-toolbox-topbar");
             let menuItems: IMenu[] = [];
@@ -233,30 +208,6 @@ export default class FMiscPlugin extends Plugin {
                                 const pluginDir = window.siyuan.config.system.dataDir + '/storage/petal';
                                 electron?.shell.openPath(pluginDir);
                             }
-                        }
-                    ]
-                });
-
-                menuItems.push({
-                    label: '复制MCP命令',
-                    icon: 'iconTerminal',
-                    type: 'submenu',
-                    submenu: [
-                        {
-                            label: 'OpenCode',
-                            icon: 'iconTerminal',
-                            click: () => copyMcpCommand(
-                                `(echo name: siyuan-mcp-sisyphus & echo type: Local & echo command: node "{mcpPath}") & opencode mcp add`,
-                                'OpenCode'
-                            )
-                        },
-                        {
-                            label: 'ClaudeCode',
-                            icon: 'iconTerminal',
-                            click: () => copyMcpCommand(
-                                `claude mcp add siyuan-mcp-sisyphus node "{mcpPath}"`,
-                                'ClaudeCode'
-                            )
                         }
                     ]
                 });
@@ -339,7 +290,6 @@ export default class FMiscPlugin extends Plugin {
 }
 
 const Svg = {
-    Terminal: `<symbol id="iconTerminal" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 4.5L6.5 7.5L3.5 10.5M8 10.5H12M1.5 1.5H13.5C14.0523 1.5 14.5 1.94772 14.5 2.5V12.5C14.5 13.0523 14.0523 13.5 13.5 13.5H1.5C0.947716 13.5 0.5 13.0523 0.5 12.5V2.5C0.5 1.94772 0.947715 1.5 1.5 1.5Z" stroke="currentColor" fill="none"/></symbol>`,
     Toolbox: `<symbol id="iconToolbox" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xml:space="preserve"><path d="M442.072 100.885h-75.987l-.078-20.781c-.076-20.184-16.56-36.605-36.744-36.605H182.891c-20.302 0-36.82 16.554-36.744 36.883l.077 20.503H69.928C31.37 100.885 0 132.254 0 170.813v26.024c0 14.553 10.791 26.628 24.789 28.658v214.044c0 15.971 12.993 28.962 28.962 28.962h404.498c15.97 0 28.962-12.992 28.962-28.962V225.495c14-2.03 24.789-14.105 24.789-28.658v-26.024c0-38.559-31.37-69.928-69.928-69.928M182.89 76.599h146.372a3.65 3.65 0 0 1 3.644 3.63l.078 20.657h-153.66l-.078-20.628a3.64 3.64 0 0 1 3.644-3.659m271.222 358.802H57.888V226.209h59.488v46.367c0 13.52 10.999 24.519 24.519 24.519h34.84c13.519 0 24.518-10.999 24.518-24.519v-46.367h109.492v46.367c0 13.52 10.999 24.519 24.518 24.519h34.84c13.519 0 24.518-10.999 24.518-24.519v-46.367h59.489v209.192zM150.478 263.996v-37.787h17.676v37.787zm193.368 0v-37.787h17.676v37.787zM478.9 192.7H33.1v-21.887c0-20.307 16.521-36.829 36.828-36.829h372.145c20.307 0 36.828 16.522 36.828 36.829z"/></symbol>`,
     Vertical: `<symbol id="iconVertical" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4241"><path d="M383.4 863.6V158.5c0-12.9-7.8-24.6-19.8-29.6s-25.7-2.2-34.9 6.9L76.9 387.7c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l197.2-197.2v627.9c0 17.7 14.3 32 32 32 17.6-0.1 32-14.4 32-32.1zM637.5 158.5v705.1c0 12.9 7.8 24.6 19.8 29.6s25.7 2.2 34.9-6.9L944 634.4c6.2-6.2 9.4-14.4 9.4-22.6s-3.1-16.4-9.4-22.6c-12.5-12.5-32.8-12.5-45.3 0L701.5 786.4V158.5c0-17.7-14.3-32-32-32s-32 14.4-32 32z" p-id="4242"></path></symbol>`,
     WebSearch: `<symbol id="iconWebSearch" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M335.36 178.56a609.088 609.088 0 0 0-26.112 72.192H200.64a407.488 407.488 0 0 1 155.52-114.24 454.4 454.4 0 0 0-20.864 42.048z m-47.808 168.192c-8.512 51.84-13.12 107.52-13.12 165.248 0 65.92 5.952 129.024 16.96 186.752H151.04A404.672 404.672 0 0 1 105.6 512c0-58.88 12.48-114.752 35.008-165.248h146.944z m88.704 352A906.432 906.432 0 0 1 357.632 512c0-59.072 5.12-114.88 14.4-165.248h279.936c9.216 50.368 14.464 106.24 14.464 165.248 0 67.648-6.848 131.008-18.688 186.752H376.256z m-60.288 96c5.888 17.856 12.352 34.752 19.328 50.688 6.4 14.72 13.44 28.8 20.928 42.048a407.168 407.168 0 0 1-136.128-92.736h95.872z m88.384 0h215.296a460.736 460.736 0 0 1-7.168 17.344c-16.384 37.44-34.752 65.088-53.12 82.816-18.112 17.536-34.048 23.488-47.36 23.488-13.312 0-29.248-5.952-47.36-23.488-18.368-17.728-36.736-45.44-53.12-82.816a459.648 459.648 0 0 1-7.168-17.28z m303.68 0h95.872a407.168 407.168 0 0 1-136.128 92.736c7.552-13.248 14.528-27.328 20.928-42.048 6.976-15.936 13.44-32.832 19.328-50.688z m164.992-96h-140.416c11.008-57.728 17.024-120.896 17.024-186.752 0-57.728-4.608-113.472-13.184-165.248h146.944c22.528 50.56 35.008 106.432 35.008 165.248a404.608 404.608 0 0 1-45.376 186.752z m-158.272-448a608.384 608.384 0 0 0-26.048-72.192c-6.4-14.72-13.44-28.8-20.928-42.048a407.488 407.488 0 0 1 155.52 114.24h-108.544z m-87.232 0h-231.04c4.736-13.696 9.728-26.688 15.04-38.848 16.384-37.376 34.752-65.088 53.12-82.752 18.112-17.536 34.048-23.552 47.36-23.552 13.312 0 29.248 6.016 47.36 23.552 18.368 17.664 36.736 45.376 53.12 82.752 5.312 12.16 10.368 25.152 15.04 38.848zM1001.6 512A489.6 489.6 0 1 0 22.4 512a489.6 489.6 0 0 0 979.2 0z" p-id="1511"></path></WebSearch>`,
