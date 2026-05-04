@@ -1,6 +1,5 @@
 .idea
 .vscode
-!.vscode/func.code-snippets
 .DS_Store
 pnpm-lock.yaml
 package.zip
@@ -13,4 +12,6 @@ tmp
 .env
 package-lock.json
 vite.config.ts.timestamp*
-/.github
+.github
+.claude
+.omc

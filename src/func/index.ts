@@ -18,9 +18,10 @@ import * as tp from './typography';
 import * as cv from './convert-inline';
 import * as ii from './insert-index';
 import * as srp from './sireader-patch';
+import * as pr from './paper-reader';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, pr];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq, srp];
