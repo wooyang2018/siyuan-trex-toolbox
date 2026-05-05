@@ -95,14 +95,6 @@ export async function runExtractConcepts(
     // Use doc title for source reference
     const docTitle = (await getDocTitle(targetDocId)) || '未命名文档';
 
-    const llmConfig = {
-        baseUrl: config.llmBaseUrl,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-        maxTokens: config.llmMaxTokens,
-        temperature: config.llmTemperature,
-    };
-
     const chunks = splitIntoChunks(markdown, config.chunkWordCount);
     reporter.log(`文档共 ${chunks.length} 个分块`);
 
@@ -118,7 +110,7 @@ export async function runExtractConcepts(
         const userPrompt = buildUserPrompt('extractConcepts', { content: chunks[i] }, config.outputLanguage);
 
         try {
-            const response = await callLLM(llmConfig, systemPrompt, userPrompt, reporter);
+            const response = await callLLM(config.claudeCliPath, systemPrompt, userPrompt, reporter);
             const concepts = parseConcepts(response);
             reporter.log(`块 ${i + 1}: 识别到 ${concepts.length} 个概念`);
             allConcepts.push(...concepts);

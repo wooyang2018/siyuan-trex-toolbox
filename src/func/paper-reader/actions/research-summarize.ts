@@ -37,18 +37,10 @@ export async function runResearchSummarize(
     if (reporter.cancelled) return { success: false, message: '操作已取消' };
 
     if (!searchContext) {
-        reporter.log('未获取搜索结果，使用 LLM 自有知识生成摘要');
+        reporter.log('未获取搜索结果，使用 Claude 自有知识生成摘要');
     }
 
     reporter.updateStatus('生成研究摘要...', 50);
-
-    const llmConfig = {
-        baseUrl: config.llmBaseUrl,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-        maxTokens: config.llmMaxTokens,
-        temperature: config.llmTemperature,
-    };
 
     const systemPrompt = getSystemPrompt('researchSummarize', config.outputLanguage);
     const userPrompt = buildUserPrompt(
@@ -62,14 +54,14 @@ export async function runResearchSummarize(
 
     let summary: string;
     try {
-        summary = await callLLM(llmConfig, systemPrompt, userPrompt, reporter);
+        summary = await callLLM(config.claudeCliPath, systemPrompt, userPrompt, reporter);
     } catch (e) {
         if (reporter.cancelled) return { success: false, message: '操作已取消' };
-        return { success: false, message: `LLM 调用失败: ${e instanceof Error ? e.message : String(e)}` };
+        return { success: false, message: `Claude CLI 调用失败: ${e instanceof Error ? e.message : String(e)}` };
     }
 
     if (!summary.trim()) {
-        return { success: false, message: 'LLM 返回了空响应' };
+        return { success: false, message: 'Claude CLI 返回了空响应' };
     }
 
     reporter.updateStatus('写入文档...', 90);

@@ -2,18 +2,6 @@
  * paper-reader module — shared type definitions
  */
 
-// ─── LLM Configuration ───────────────────────────────────────────────────────
-
-export interface LLMConfig {
-    baseUrl: string;        // e.g. "https://api.openai.com/v1"
-    apiKey: string;
-    model: string;
-    maxTokens: number;
-    temperature: number;
-    /** 'openai' | 'anthropic' — detected automatically from baseUrl/model */
-    apiFormat?: 'openai' | 'anthropic';
-}
-
 // ─── Progress reporting ───────────────────────────────────────────────────────
 
 export interface IProgressReporter {
@@ -34,18 +22,16 @@ export interface SearchResult {
 // ─── Module settings ─────────────────────────────────────────────────────────
 
 export interface PaperReaderConfig {
-    // LLM
-    llmBaseUrl: string;
-    llmApiKey: string;
-    llmModel: string;
-    llmMaxTokens: number;
-    llmTemperature: number;
+    // Claude CLI
+    claudeCliPath: string;     // claude CLI executable path, default 'claude'
+
+    // Processing
     chunkWordCount: number;
 
     // Output
-    conceptNotebook: string;    // SiYuan notebook name for concept docs
-    conceptPath: string;        // path prefix inside the notebook e.g. "/概念/"
-    outputLanguage: string;     // 'zh-CN' | 'en' | 'ja' | ...
+    conceptNotebook: string;   // SiYuan notebook name for concept docs
+    conceptPath: string;       // path prefix inside the notebook e.g. "/概念/"
+    outputLanguage: string;    // 'zh-CN' | 'en' | 'ja' | ...
 
     // Search
     tavilyApiKey: string;
@@ -54,11 +40,7 @@ export interface PaperReaderConfig {
 }
 
 export const DEFAULT_PAPER_READER_CONFIG: PaperReaderConfig = {
-    llmBaseUrl: 'https://api.openai.com/v1',
-    llmApiKey: '',
-    llmModel: 'gpt-4o-mini',
-    llmMaxTokens: 4096,
-    llmTemperature: 0.3,
+    claudeCliPath: 'claude',
     chunkWordCount: 800,
     conceptNotebook: '',
     conceptPath: '/概念/',

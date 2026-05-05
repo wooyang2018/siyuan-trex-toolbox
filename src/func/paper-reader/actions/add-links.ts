@@ -54,14 +54,6 @@ export async function runAddLinks(
         return { success: false, message: '无法读取文档内容' };
     }
 
-    const llmConfig = {
-        baseUrl: config.llmBaseUrl,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-        maxTokens: config.llmMaxTokens,
-        temperature: config.llmTemperature,
-    };
-
     const chunks = splitIntoChunks(markdown, config.chunkWordCount);
     reporter.log(`文档共 ${chunks.length} 个分块`);
 
@@ -77,7 +69,7 @@ export async function runAddLinks(
         const userPrompt = buildUserPrompt('addLinks', { content: chunks[i] }, config.outputLanguage);
 
         try {
-            const response = await callLLM(llmConfig, systemPrompt, userPrompt, reporter);
+            const response = await callLLM(config.claudeCliPath, systemPrompt, userPrompt, reporter);
             const concepts = parseConcepts(response);
             reporter.log(`块 ${i + 1}: 提取到 ${concepts.length} 个概念`);
             allConcepts.push(...concepts);

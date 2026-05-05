@@ -1,7 +1,7 @@
 /**
  * Generate Content — given the current document title (or selected text),
- * optionally search the web, then use LLM to generate structured content
- * and write it into the document (appended or replaced).
+ * optionally search the web, then use Claude CLI to generate structured content
+ * and write it into the document (appended).
  */
 import type { PaperReaderConfig, ActionResult, IProgressReporter } from '../types';
 import { callLLM } from '../llm/client';
@@ -44,14 +44,6 @@ export async function runGenerateContent(
 
     reporter.updateStatus('生成文档内容...', 50);
 
-    const llmConfig = {
-        baseUrl: config.llmBaseUrl,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-        maxTokens: config.llmMaxTokens,
-        temperature: config.llmTemperature,
-    };
-
     const systemPrompt = getSystemPrompt('generateContent', config.outputLanguage);
     const userPrompt = buildUserPrompt(
         'generateContent',
@@ -64,14 +56,14 @@ export async function runGenerateContent(
 
     let content: string;
     try {
-        content = await callLLM(llmConfig, systemPrompt, userPrompt, reporter);
+        content = await callLLM(config.claudeCliPath, systemPrompt, userPrompt, reporter);
     } catch (e) {
         if (reporter.cancelled) return { success: false, message: '操作已取消' };
-        return { success: false, message: `LLM 调用失败: ${e instanceof Error ? e.message : String(e)}` };
+        return { success: false, message: `Claude CLI 调用失败: ${e instanceof Error ? e.message : String(e)}` };
     }
 
     if (!content.trim()) {
-        return { success: false, message: 'LLM 返回了空响应' };
+        return { success: false, message: 'Claude CLI 返回了空响应' };
     }
 
     reporter.updateStatus('写入文档...', 90);

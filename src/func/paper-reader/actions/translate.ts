@@ -59,14 +59,6 @@ export async function runTranslate(
     const targetLanguage = getTargetLanguageLabel(config.outputLanguage);
     reporter.log(`翻译目标语言: ${targetLanguage}`);
 
-    const llmConfig = {
-        baseUrl: config.llmBaseUrl,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-        maxTokens: config.llmMaxTokens,
-        temperature: config.llmTemperature,
-    };
-
     const chunks = splitIntoChunks(markdown, config.chunkWordCount);
     reporter.log(`文档共 ${chunks.length} 个分块`);
 
@@ -89,7 +81,7 @@ export async function runTranslate(
         );
 
         try {
-            const translated = await callLLM(llmConfig, systemPrompt, userPrompt, reporter);
+            const translated = await callLLM(config.claudeCliPath, systemPrompt, userPrompt, reporter);
             translatedChunks.push(translated);
             reporter.log(`块 ${i + 1} 翻译完成`);
         } catch (e) {
