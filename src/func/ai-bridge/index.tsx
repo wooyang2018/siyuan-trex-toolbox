@@ -3,7 +3,8 @@
  * @description 在侧边栏嵌入 AI Agent 网页，支持多 URL 切换、拖拽块 ID 直接插入网页输入框
  */
 import type FMiscPlugin from "@/index";
-import { createSignal, For, type JSX } from "solid-js";
+import { For, type JSX } from "solid-js";
+import { createStore } from "solid-js/store";
 import Form from "@/libs/components/Form";
 import { showMessage } from "siyuan";
 
@@ -176,24 +177,22 @@ const saveConfig = async () => {
 
 // ===== 设置面板 =====
 function AIBridgeSettingPanel(): JSX.Element {
-    const [urls, setUrls] = createSignal<AIBridgeUrl[]>([...config.urls]);
+    // createStore 细粒度追踪：更新单个字段时 <For> 行不重建，焦点不会丢失
+    const [urls, setUrls] = createStore<AIBridgeUrl[]>([...config.urls]);
 
-    const persist = (next?: AIBridgeUrl[]) => {
-        if (next) { setUrls(next); config.urls = next; }
-        saveConfig();
+    const syncAndSave = () => { config.urls = [...urls]; saveConfig(); };
+
+    const handleNameChange = (i: number, v: string) => { setUrls(i, 'name', v); syncAndSave(); };
+    const handleUrlChange  = (i: number, v: string) => { setUrls(i, 'url',  v); syncAndSave(); };
+    const handleAdd = () => {
+        setUrls(urls.length, { name: '新地址', url: 'http://localhost:' });
+        syncAndSave();
     };
-
-    const handleNameChange = (i: number, v: string) =>
-        persist(urls().map((e, idx) => idx === i ? { ...e, name: v } : e));
-    const handleUrlChange = (i: number, v: string) =>
-        persist(urls().map((e, idx) => idx === i ? { ...e, url: v } : e));
-    const handleAdd = () =>
-        persist([...urls(), { name: '新地址', url: 'http://localhost:' }]);
     const handleDelete = (i: number) => {
-        if (urls().length <= 1) { showMessage('至少保留一个地址', 2000, 'error'); return; }
-        const next = urls().filter((_, idx) => idx !== i);
-        if (config.activeIndex >= next.length) config.activeIndex = next.length - 1;
-        persist(next);
+        if (urls.length <= 1) { showMessage('至少保留一个地址', 2000, 'error'); return; }
+        setUrls(prev => prev.filter((_, idx) => idx !== i));
+        if (config.activeIndex >= urls.length) config.activeIndex = urls.length - 1;
+        syncAndSave();
     };
 
     return (
@@ -203,7 +202,7 @@ function AIBridgeSettingPanel(): JSX.Element {
                 description="支持多个地址；有多个时 Dock 顶部显示标签栏切换（修改后需重新开关模块生效）"
                 direction="row"
             >
-                <For each={urls()}>
+                <For each={urls}>
                     {(entry, i) => (
                         <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
                             <Form.Input type="textinput" key={`name-${i()}`}
@@ -480,17 +479,24 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
     const onDrop = () => { hideDrop(); activeDragId = null; };
 
     // ── 服务检测 ──
+    // 使用 fetch HEAD 请求：任何 HTTP 响应（含 403/404）都视为服务可用；
+    // 只有网络错误（ERR_CONNECTION_REFUSED 等）才视为不可用。
     const checkAvailable = (url: string): Promise<boolean> =>
         new Promise((resolve) => {
-            const img = new Image();
-            const t = setTimeout(() => { img.src = ''; resolve(false); }, 2000);
-            img.onload = () => { clearTimeout(t); resolve(true); };
-            img.onerror = () => {
+            const ac = new AbortController();
+            const t = setTimeout(() => { ac.abort(); resolve(false); }, 3000);
+            fetch(`${url}/favicon.ico?_t=${Date.now()}`, {
+                method: 'HEAD',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                signal: ac.signal
+            }).then(() => {
+                clearTimeout(t); resolve(true);
+            }).catch((err) => {
                 clearTimeout(t);
-                fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-cache' })
-                    .then(() => resolve(true)).catch(() => resolve(false));
-            };
-            img.src = `${url}/favicon.ico?_t=${Date.now()}`;
+                // AbortError = 超时，视为不可用
+                resolve(err?.name === 'AbortError' ? false : true);
+            });
         });
 
     const stopRetry = () => {
@@ -516,8 +522,9 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
         media.removeEventListener('dragenter', onDragEnter);
         media.removeEventListener('dragleave', onDragLeave);
         media.removeEventListener('drop', onDrop);
-        // webview 与 iframe 均用 try/catch 统一处理（webview 在某些状态下会抛异常）
-        try { media.src = 'about:blank'; } catch {}
+        // iframe 重置 src；webview 不能设置 about:blank（Electron 异步 IPC 会抛 ERR_FAILED）
+        if (!useWebview) { try { (media as HTMLIFrameElement).src = 'about:blank'; } catch {} }
+        else { try { (media as Electron.WebviewTag).stop(); } catch {} }
         media.remove();
         media = null;
     };
