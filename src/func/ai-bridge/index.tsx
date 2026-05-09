@@ -1,0 +1,673 @@
+/**
+ * AI Bridge 模块
+ * @description 在侧边栏嵌入 AI Agent 网页，支持多 URL 切换、拖拽块 ID 直接插入网页输入框
+ */
+import type FMiscPlugin from "@/index";
+import { createSignal, For, type JSX } from "solid-js";
+import Form from "@/libs/components/Form";
+import { showMessage } from "siyuan";
+
+// ===== 类型 =====
+interface AIBridgeUrl { name: string; url: string; }
+
+// ===== 常量 =====
+const DOCK_TYPE = 'ai-agent-bridge-dock';
+const BLOCK_ID_TEXT_TYPE = 'text/siyuan-block-id';
+const BLOCK_ID_PATTERN = /\b\d{14}-[0-9a-z]{7}\b/i;
+const CONFIG_STORAGE_NAME = 'ai-bridge-config.json';
+
+// ===== 模块元数据 =====
+export const name = 'AIBridge';
+export let enabled = false;
+
+export const declareToggleEnabled = {
+    title: '🤖 AI 助手侧边栏',
+    description: '在侧边栏嵌入 AI Agent 网页，支持多地址切换、拖拽块 ID 到 AI 输入框',
+    defaultEnabled: false,
+};
+
+// ===== 模块配置 =====
+const config = {
+    urls: [{ name: 'OpenCode', url: 'http://localhost:4096' }] as AIBridgeUrl[],
+    activeIndex: 0,
+};
+
+// ===== 辅助：提取块 ID =====
+const extractBlockId = (value: string | null | undefined): string | null => {
+    if (!value) return null;
+    const m = value.match(BLOCK_ID_PATTERN);
+    return m ? m[0] : null;
+};
+
+const blockIdFromElement = (target: EventTarget | null): string | null => {
+    if (!(target instanceof Element)) return null;
+    return target.closest('[data-node-id]')?.getAttribute('data-node-id') ?? null;
+};
+
+const blockIdFromTransfer = (dt: DataTransfer | null): string | null => {
+    if (!dt) return null;
+    for (const t of [BLOCK_ID_TEXT_TYPE, 'application/x-siyuan-node-id',
+                     'application/x-siyuan-block-id', 'text/plain', 'text/uri-list', 'text/html']) {
+        try { const id = extractBlockId(dt.getData(t)); if (id) return id; } catch {}
+    }
+    return null;
+};
+
+// ===== 辅助：剪贴板降级 =====
+const copyToClipboard = (text: string) => {
+    navigator.clipboard?.writeText(text).catch(() => {
+        const ta = Object.assign(document.createElement('textarea'),
+            { value: text, style: 'position:fixed;top:-9999px;left:-9999px;' });
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch {}
+        ta.remove();
+    });
+};
+
+// ===== 辅助：Electron webview 检测 =====
+const isElectronEnv = (): boolean => /electron/i.test(navigator.userAgent);
+
+/**
+ * 向 webview 注入脚本，在光标/落点/常用选择器处插入文本。
+ */
+const injectTextToWebview = async (
+    webview: any,
+    text: string,
+    clientX: number,
+    clientY: number,
+): Promise<'ok' | 'clipboard'> => {
+    if (!webview || typeof webview.executeJavaScript !== 'function') return 'clipboard';
+
+    const rect = (webview as HTMLElement).getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    // execCommand('insertText') 是跨框架文本插入的标准做法：
+    // - 同时兼容 textarea/input 和 contenteditable
+    // - 会触发原生 beforeinput/input 事件，React/Vue/SolidJS 均能响应
+    // - 比手动操作 DOM 节点更可靠
+    const script = `
+(function(){
+    const text = ${JSON.stringify(text)};
+
+    function isEditable(el) {
+        if (!el || el === document.body) return false;
+        const tag = el.tagName;
+        if (tag === 'TEXTAREA') return true;
+        if (tag === 'INPUT' && !/checkbox|radio|button|submit|reset|file|image/i.test(el.type || '')) return true;
+        if (el.isContentEditable) return true;
+        return false;
+    }
+
+    function insert(el) {
+        if (!isEditable(el)) return false;
+        el.focus();
+        // execCommand('insertText') 触发原生 input 事件，兼容所有前端框架
+        const ok = document.execCommand('insertText', false, text);
+        if (ok) return true;
+        // execCommand 不可用时降级（textarea/input only）
+        if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+            const s = el.selectionStart ?? el.value.length;
+            const e2 = el.selectionEnd ?? el.value.length;
+            el.value = el.value.slice(0, s) + text + el.value.slice(e2);
+            el.selectionStart = el.selectionEnd = s + text.length;
+            el.dispatchEvent(new Event('input', {bubbles:true}));
+            el.dispatchEvent(new Event('change', {bubbles:true}));
+            return true;
+        }
+        return false;
+    }
+
+    // 1. 鼠标落点处元素（向上遍历，优先精确定位）
+    let node = document.elementFromPoint(${x}, ${y});
+    for (let i = 0; i < 8 && node; i++, node = node.parentElement) {
+        if (insert(node)) return 'point';
+    }
+
+    // 2. 当前焦点元素
+    if (insert(document.activeElement)) return 'focused';
+
+    // 3. 页面常用输入选择器（contenteditable 优先，现代 AI 工具多用富文本编辑器）
+    for (const sel of [
+        '[contenteditable="true"]',
+        'textarea',
+        '[role="textbox"]',
+        'input[type="text"]',
+        'input:not([type])'
+    ]) {
+        const el = document.querySelector(sel);
+        if (insert(el)) return 'selector';
+    }
+
+    return false;
+})()`;
+
+    try {
+        const result = await webview.executeJavaScript(script);
+        return result ? 'ok' : 'clipboard';
+    } catch (e) {
+        console.warn('[AI Bridge] executeJavaScript failed:', e);
+        return 'clipboard';
+    }
+};
+
+// ===== 模块状态 =====
+let plugin_: FMiscPlugin | null = null;
+let dockCleanup: (() => void) | null = null;
+
+// ===== 配置持久化 =====
+const saveConfig = async () => {
+    if (!plugin_) return;
+    await plugin_.saveData(CONFIG_STORAGE_NAME, {
+        urls: config.urls,
+        activeIndex: config.activeIndex,
+    });
+};
+
+// ===== 设置面板 =====
+function AIBridgeSettingPanel(): JSX.Element {
+    const [urls, setUrls] = createSignal<AIBridgeUrl[]>([...config.urls]);
+
+    const persist = (next?: AIBridgeUrl[]) => {
+        if (next) { setUrls(next); config.urls = next; }
+        saveConfig();
+    };
+
+    const handleNameChange = (i: number, v: string) =>
+        persist(urls().map((e, idx) => idx === i ? { ...e, name: v } : e));
+    const handleUrlChange = (i: number, v: string) =>
+        persist(urls().map((e, idx) => idx === i ? { ...e, url: v } : e));
+    const handleAdd = () =>
+        persist([...urls(), { name: '新地址', url: 'http://localhost:' }]);
+    const handleDelete = (i: number) => {
+        if (urls().length <= 1) { showMessage('至少保留一个地址', 2000, 'error'); return; }
+        const next = urls().filter((_, idx) => idx !== i);
+        if (config.activeIndex >= next.length) config.activeIndex = next.length - 1;
+        persist(next);
+    };
+
+    return (
+        <div class="config__tab-container">
+            <Form.Wrap
+                title="AI 网页地址列表"
+                description="支持多个地址；有多个时 Dock 顶部显示标签栏切换（修改后需重新开关模块生效）"
+                direction="row"
+            >
+                <For each={urls()}>
+                    {(entry, i) => (
+                        <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
+                            <Form.Input type="textinput" key={`name-${i()}`}
+                                value={entry.name} placeholder="名称"
+                                style={{ width: '100px' }} fn_size={false}
+                                changed={(v) => handleNameChange(i(), v)} />
+                            <Form.Input type="textinput" key={`url-${i()}`}
+                                value={entry.url} placeholder="http://localhost:4096"
+                                style={{ width: '230px' }} fn_size={false}
+                                changed={(v) => handleUrlChange(i(), v)} />
+                            <button class="b3-button b3-button--outline"
+                                style={{ padding: '2px 10px', height: '26px', 'flex-shrink': '0' }}
+                                onClick={() => handleDelete(i())}>删除</button>
+                        </div>
+                    )}
+                </For>
+                <button class="b3-button b3-button--outline"
+                    style={{ 'margin-top': '2px', width: 'fit-content' }}
+                    onClick={handleAdd}>+ 添加地址</button>
+            </Form.Wrap>
+        </div>
+    );
+}
+
+// ===== 设置面板声明（独立 Tab）=====
+export const declareSettingPanel: IFuncModule['declareSettingPanel'] = [{
+    key: 'ai-bridge',
+    title: '🤖 AI 助手',
+    element: () => <AIBridgeSettingPanel />,
+}];
+
+// ===== 生命周期 =====
+export function load(plugin: FMiscPlugin) {
+    if (enabled) return;
+    enabled = true;
+    plugin_ = plugin;
+
+    plugin.loadData(CONFIG_STORAGE_NAME).then((stored) => {
+        if (stored) {
+            // 兼容旧版单 URL 格式
+            const legacy = (stored as any).openCodeUrl;
+            if (legacy && (!Array.isArray((stored as any).urls) || !(stored as any).urls.length)) {
+                config.urls = [{ name: 'OpenCode', url: legacy }];
+                config.activeIndex = 0;
+            } else {
+                if (Array.isArray((stored as any).urls)) config.urls = (stored as any).urls;
+                if (typeof (stored as any).activeIndex === 'number') config.activeIndex = (stored as any).activeIndex;
+            }
+        }
+        if (!Array.isArray(config.urls) || !config.urls.length)
+            config.urls = [{ name: 'OpenCode', url: 'http://localhost:4096' }];
+        if (config.activeIndex >= config.urls.length) config.activeIndex = 0;
+        createDock(plugin);
+    }).catch(() => createDock(plugin));
+}
+
+export function unload(_plugin?: FMiscPlugin) {
+    if (!enabled) return;
+    enabled = false;
+    dockCleanup?.();
+    dockCleanup = null;
+    plugin_ = null;
+}
+
+// ===== Dock =====
+function createDock(plugin: FMiscPlugin) {
+    const useWebview = isElectronEnv();
+
+    plugin.addDock({
+        config: {
+            position: 'RightTop',
+            size: { width: 300, height: 0 },
+            icon: 'iconAI',
+            title: 'AI Agent',
+            show: true,
+        },
+        data: null,
+        type: DOCK_TYPE,
+        init(dock: any) {
+            dock.element.style.cssText =
+                'width:100%;height:100%;min-width:200px;min-height:180px;overflow:hidden;' +
+                'box-sizing:border-box;display:flex;flex-direction:column;' +
+                'border:1px solid var(--b3-border-color);border-radius:4px;';
+
+            // ── 标签栏 ──
+            const tabBar = document.createElement('div');
+            tabBar.style.cssText = 'display:none;flex:none;flex-wrap:nowrap;overflow-x:auto;' +
+                'border-bottom:1px solid var(--b3-border-color);background:var(--b3-theme-surface);' +
+                'min-height:30px;scrollbar-width:none;';
+
+            // ── 媒体容器 ──
+            const mediaContainer = document.createElement('div');
+            mediaContainer.style.cssText = 'flex:1;position:relative;overflow:hidden;min-height:0;';
+
+            // ── 拖拽覆盖层 ──
+            const dropHint = document.createElement('div');
+            dropHint.style.cssText =
+                'display:none;position:absolute;inset:0;pointer-events:none;z-index:12;' +
+                'border:2px dashed var(--b3-theme-primary);border-radius:4px;' +
+                'background:color-mix(in srgb, var(--b3-theme-primary) 10%, transparent);' +
+                'color:var(--b3-theme-primary);font-size:13px;font-weight:500;' +
+                'flex-direction:column;align-items:center;justify-content:center;' +
+                'text-align:center;gap:6px;padding:16px;box-sizing:border-box;';
+            dropHint.innerHTML = useWebview
+                ? `<span style="font-size:22px;">⌨️</span>
+                   <span>松开鼠标，将块 ID 插入光标处</span>
+                   <span style="font-size:11px;opacity:0.7;">（桌面端直接注入，无需粘贴）</span>`
+                : `<span style="font-size:22px;">📋</span>
+                   <span>松开鼠标，块 ID 将复制到剪贴板</span>
+                   <span style="font-size:11px;opacity:0.7;">在 AI 输入框中 Ctrl+V 粘贴即可</span>`;
+
+            // ── 等待容器 ──
+            const waitingEl = document.createElement('div');
+            waitingEl.style.cssText =
+                'display:flex;position:absolute;top:0;left:0;width:100%;height:100%;' +
+                'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
+                'text-align:center;color:var(--b3-theme-on-surface);' +
+                'background-color:var(--b3-theme-background);z-index:10;';
+            waitingEl.innerHTML = `
+                <svg style="width:48px;height:48px;margin-bottom:16px;opacity:0.6;"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <div style="font-size:16px;font-weight:500;margin-bottom:8px;">请先启动 AI Agent Web</div>
+                <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">等待服务启动中...</div>
+                <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;"></div>`;
+
+            // ── 错误容器 ──
+            const errorEl = document.createElement('div');
+            errorEl.style.cssText =
+                'display:none;position:absolute;top:0;left:0;width:100%;height:100%;' +
+                'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
+                'text-align:center;color:var(--b3-theme-on-surface);' +
+                'background-color:var(--b3-theme-background);z-index:11;';
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'b3-button b3-button--outline';
+            retryBtn.style.marginTop = '16px';
+            retryBtn.textContent = '重试';
+            errorEl.innerHTML = `
+                <svg style="width:48px;height:48px;margin-bottom:16px;opacity:0.6;"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <div style="font-size:16px;font-weight:500;margin-bottom:8px;">页面加载失败</div>
+                <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">请检查 URL 是否正确或服务是否已启动</div>
+                <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;margin-bottom:16px;"></div>`;
+            errorEl.appendChild(retryBtn);
+
+            mediaContainer.append(waitingEl, errorEl, dropHint);
+            dock.element.append(tabBar, mediaContainer);
+
+            // ── 运行状态 ──
+            let media: HTMLIFrameElement | any = null;
+            let loadTimeout: ReturnType<typeof setTimeout> | null = null;
+            let retryTimer: ReturnType<typeof setInterval> | null = null;
+            let hasLoaded = false;
+            let retrying = false;
+            let dragDepth = 0;
+            let activeDragId: string | null = null;
+            let currentIdx = Math.min(config.activeIndex, config.urls.length - 1);
+
+            const getUrl = () => config.urls[Math.min(currentIdx, config.urls.length - 1)]?.url ?? '';
+
+            // ── 标签栏渲染 ──
+            const renderTabs = () => {
+                tabBar.innerHTML = '';
+                if (config.urls.length <= 1) { tabBar.style.display = 'none'; return; }
+                tabBar.style.display = 'flex';
+                config.urls.forEach((e, idx) => {
+                    const btn = document.createElement('button');
+                    const active = idx === currentIdx;
+                    btn.style.cssText =
+                        'flex:none;padding:4px 14px;border:none;border-bottom:2px solid transparent;' +
+                        'background:transparent;cursor:pointer;font-size:12px;white-space:nowrap;' +
+                        'color:var(--b3-theme-on-surface);' +
+                        (active ? 'border-bottom-color:var(--b3-theme-primary);color:var(--b3-theme-primary);font-weight:500;'
+                                : 'opacity:0.6;');
+                    btn.textContent = e.name || e.url;
+                    btn.title = e.url;
+                    btn.addEventListener('click', () => switchTo(idx));
+                    tabBar.appendChild(btn);
+                });
+            };
+
+            // ── 状态显示 ──
+            // 等待/错误层已用 position:absolute + z-index:10/11 覆盖在 media 上方
+            // 不对 media 做 display 切换，避免破坏 webview/iframe 的尺寸计算
+            const setUrl = (el: Element | null) => { if (el) el.textContent = getUrl(); };
+            const showWaiting = () => {
+                setUrl(waitingEl.querySelector('.ai-url'));
+                waitingEl.style.display = 'flex';
+                errorEl.style.display = 'none';
+            };
+            const showError = () => {
+                waitingEl.style.display = 'none';
+                setUrl(errorEl.querySelector('.ai-url'));
+                errorEl.style.display = 'flex';
+            };
+            const showMedia = () => {
+                waitingEl.style.display = 'none';
+                errorEl.style.display = 'none';
+            };
+
+            // ── 拖拽覆盖层 ──
+            const showDrop = () => {
+                if (!activeDragId) return;
+                dropHint.style.display = 'flex';
+                dropHint.style.pointerEvents = 'auto';
+            };
+            const hideDrop = () => {
+                dragDepth = 0;
+                dropHint.style.display = 'none';
+                dropHint.style.pointerEvents = 'none';
+                // 拖拽结束，恢复 webview/iframe 的指针事件
+                if (media?.style) media.style.pointerEvents = 'auto';
+            };
+
+            dropHint.addEventListener('dragover', (e: DragEvent) => {
+                e.preventDefault(); e.stopPropagation();
+            });
+
+            dropHint.addEventListener('drop', async (e: DragEvent) => {
+                e.preventDefault(); e.stopPropagation();
+                const blockId = activeDragId;
+                hideDrop();
+                activeDragId = null;
+                if (!blockId) return;
+
+                if (useWebview && media) {
+                    const result = await injectTextToWebview(media, blockId, e.clientX, e.clientY);
+                    if (result === 'ok') {
+                        showMessage('块 ID 已插入', 1500, 'info');
+                    } else {
+                        copyToClipboard(blockId);
+                        showMessage('未找到输入框，块 ID 已复制到剪贴板', 3000, 'info');
+                    }
+                } else {
+                    copyToClipboard(blockId);
+                    showMessage('块 ID 已复制到剪贴板，在 AI 输入框粘贴即可', 3000, 'info');
+                }
+            });
+
+            // ── 全局拖拽监听 ──
+            const onDragStart = (e: DragEvent) => {
+                const id = blockIdFromElement(e.target) ?? blockIdFromTransfer(e.dataTransfer);
+                if (!id || !e.dataTransfer) { activeDragId = null; return; }
+                activeDragId = id;
+                try {
+                    e.dataTransfer.setData('text/plain', id);
+                    e.dataTransfer.setData(BLOCK_ID_TEXT_TYPE, id);
+                } catch {}
+                // 拖拽期间禁用 webview/iframe 的指针事件
+                // Electron webview 是独立嵌入窗口，z-index 无效，必须用 pointer-events:none
+                // 才能让外层 DOM 接收到 dragenter/drop 事件
+                if (media?.style) media.style.pointerEvents = 'none';
+            };
+            const onDragEnd = () => {
+                activeDragId = null;
+                hideDrop();
+                // hideDrop 内已恢复 pointer-events
+            };
+            const onDragEnter = () => { if (!activeDragId) return; dragDepth++; showDrop(); };
+            const onDragLeave = () => {
+                if (!activeDragId) return;
+                dragDepth = Math.max(0, dragDepth - 1);
+                if (dragDepth === 0) hideDrop();
+            };
+            const onDrop = () => { hideDrop(); activeDragId = null; };
+
+            // ── 服务检测 ──
+            const checkAvailable = (url: string): Promise<boolean> =>
+                new Promise((resolve) => {
+                    const img = new Image();
+                    const t = setTimeout(() => { img.src = ''; resolve(false); }, 2000);
+                    img.onload = () => { clearTimeout(t); resolve(true); };
+                    img.onerror = () => {
+                        clearTimeout(t);
+                        fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-cache' })
+                            .then(() => resolve(true)).catch(() => resolve(false));
+                    };
+                    img.src = `${url}/favicon.ico?_t=${Date.now()}`;
+                });
+
+            // ── 媒体元素销毁 ──
+            const destroyMedia = () => {
+                if (!media) return;
+                media.removeEventListener('dragenter', onDragEnter);
+                media.removeEventListener('dragleave', onDragLeave);
+                media.removeEventListener('drop', onDrop);
+                if (useWebview) {
+                    try { media.src = 'about:blank'; } catch {}
+                } else {
+                    media.src = 'about:blank';
+                }
+                media.remove();
+                media = null;
+            };
+
+            const stopRetry = () => {
+                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+                retrying = false;
+            };
+            const startRetry = (targetUrl: string) => {
+                if (retryTimer || retrying) return;
+                retrying = true;
+                retryTimer = setInterval(() => {
+                    if (hasLoaded || targetUrl !== getUrl()) { stopRetry(); return; }
+                    checkAvailable(targetUrl).then((ok) => {
+                        if (ok && !hasLoaded && targetUrl === getUrl()) {
+                            stopRetry(); destroyMedia(); createMedia();
+                        }
+                    });
+                }, 3000);
+            };
+
+            // ── 媒体元素创建 ──
+            const createMedia = () => {
+                if (media) return;
+                const url = getUrl();
+                if (!url) { showError(); return; }
+                showWaiting();
+
+                checkAvailable(url).then((ok) => {
+                    if (url !== getUrl()) return;
+                    if (!ok) { showError(); startRetry(url); return; }
+
+                    if (useWebview) {
+                        const wv = document.createElement('webview') as any;
+                        wv.src = url;
+                        wv.style.cssText =
+                            'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
+                        wv.setAttribute('allowpopups', '');
+
+                        let loaded = false;
+                        wv.addEventListener('did-finish-load', () => {
+                            loaded = true; hasLoaded = true;
+                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                            stopRetry(); showMedia();
+                        });
+                        wv.addEventListener('did-fail-load', (e: any) => {
+                            if (e.errorCode === -3) return;
+                            hasLoaded = false;
+                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                            showError(); startRetry(url);
+                        });
+                        wv.addEventListener('dragenter', onDragEnter);
+                        wv.addEventListener('dragleave', onDragLeave);
+                        wv.addEventListener('drop', onDrop);
+                        media = wv;
+                        mediaContainer.appendChild(wv);
+
+                        loadTimeout = setTimeout(() => {
+                            if (!loaded && media) { showError(); startRetry(url); }
+                        }, 8000);
+
+                    } else {
+                        const fr = document.createElement('iframe');
+                        fr.src = url;
+                        fr.style.cssText =
+                            'position:absolute;top:0;left:0;right:0;bottom:0;border:none;' +
+                            'pointer-events:auto;z-index:0;';
+                        fr.setAttribute('allow', 'clipboard-read; clipboard-write');
+
+                        let loaded = false;
+                        fr.onload = () => {
+                            loaded = true; hasLoaded = true;
+                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                            stopRetry(); showMedia();
+                        };
+                        fr.onerror = () => {
+                            hasLoaded = false;
+                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                            showError(); startRetry(url);
+                        };
+                        fr.addEventListener('dragenter', onDragEnter);
+                        fr.addEventListener('dragleave', onDragLeave);
+                        fr.addEventListener('drop', onDrop);
+                        media = fr;
+                        mediaContainer.appendChild(fr);
+
+                        loadTimeout = setTimeout(() => {
+                            if (!loaded && media) { showError(); startRetry(url); }
+                        }, 5000);
+                    }
+                });
+            };
+
+            // ── 切换标签 ──
+            const switchTo = (idx: number) => {
+                if (idx === currentIdx && media) return;
+                stopRetry(); hasLoaded = false;
+                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                destroyMedia();
+                currentIdx = idx;
+                config.activeIndex = idx;
+                renderTabs();
+                createMedia();
+            };
+
+            retryBtn.addEventListener('click', () => {
+                stopRetry(); hasLoaded = false; destroyMedia(); createMedia();
+            });
+
+            // ── ResizeObserver ──
+            let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+            let isResizing = false;
+            const resizeStart = () => {
+                if (!media?.style || isResizing) return;
+                isResizing = true; media.style.pointerEvents = 'none';
+            };
+            const resizeEnd = () => {
+                if (!media?.style) return;
+                isResizing = false;
+                if (resizeTimer) clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (media?.style) media.style.pointerEvents = 'auto';
+                }, 150);
+            };
+            const ro = new ResizeObserver(() => {
+                resizeStart();
+                if (resizeTimer) clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(resizeEnd, 100);
+            });
+            ro.observe(dock.element);
+
+            let edgeDrag = false;
+            const onMouseUp = () => { if (edgeDrag) { edgeDrag = false; resizeEnd(); } };
+            dock.element.addEventListener('mousedown', (e: MouseEvent) => {
+                const r = dock.element.getBoundingClientRect(), th = 5;
+                if (e.clientX <= r.left + th || e.clientX >= r.right - th ||
+                    e.clientY <= r.top + th  || e.clientY >= r.bottom - th) {
+                    edgeDrag = true; resizeStart();
+                }
+            });
+
+            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('dragstart', onDragStart, false);
+            document.addEventListener('dragend', onDragEnd, true);
+            mediaContainer.addEventListener('dragenter', onDragEnter);
+            mediaContainer.addEventListener('dragleave', onDragLeave);
+            mediaContainer.addEventListener('drop', onDrop);
+
+            // ── 清理 ──
+            const cleanup = () => {
+                stopRetry();
+                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
+                ro.disconnect();
+                document.removeEventListener('mouseup', onMouseUp);
+                document.removeEventListener('dragstart', onDragStart, false);
+                document.removeEventListener('dragend', onDragEnd, true);
+                mediaContainer.removeEventListener('dragenter', onDragEnter);
+                mediaContainer.removeEventListener('dragleave', onDragLeave);
+                mediaContainer.removeEventListener('drop', onDrop);
+                hideDrop(); activeDragId = null;
+                destroyMedia();
+            };
+
+            (dock.element as any).__aiBridgeCleanup = cleanup;
+            dockCleanup = cleanup;
+
+            renderTabs();
+            createMedia();
+        },
+
+        destroy() {
+            const fn = (this as any)?.element?.__aiBridgeCleanup;
+            if (typeof fn === 'function') fn();
+            console.log('[AI Bridge] dock destroyed');
+        },
+    });
+}
