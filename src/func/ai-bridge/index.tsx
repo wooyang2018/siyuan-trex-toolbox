@@ -10,6 +10,15 @@ import { showMessage } from "siyuan";
 // ===== 类型 =====
 interface AIBridgeUrl { name: string; url: string; }
 
+interface DockLayout {
+    tabBar: HTMLDivElement;
+    mediaContainer: HTMLDivElement;
+    dropHint: HTMLDivElement;
+    waitingEl: HTMLDivElement;
+    errorEl: HTMLDivElement;
+    retryBtn: HTMLButtonElement;
+}
+
 // ===== 常量 =====
 const DOCK_TYPE = 'ai-agent-bridge-dock';
 const BLOCK_ID_TEXT_TYPE = 'text/siyuan-block-id';
@@ -232,16 +241,16 @@ export function load(plugin: FMiscPlugin) {
     enabled = true;
     plugin_ = plugin;
 
-    plugin.loadData(CONFIG_STORAGE_NAME).then((stored) => {
+    plugin.loadData(CONFIG_STORAGE_NAME).then((stored: any) => {
         if (stored) {
             // 兼容旧版单 URL 格式
-            const legacy = (stored as any).openCodeUrl;
-            if (legacy && (!Array.isArray((stored as any).urls) || !(stored as any).urls.length)) {
+            const legacy = stored.openCodeUrl;
+            if (legacy && (!Array.isArray(stored.urls) || !stored.urls.length)) {
                 config.urls = [{ name: 'OpenCode', url: legacy }];
                 config.activeIndex = 0;
             } else {
-                if (Array.isArray((stored as any).urls)) config.urls = (stored as any).urls;
-                if (typeof (stored as any).activeIndex === 'number') config.activeIndex = (stored as any).activeIndex;
+                if (Array.isArray(stored.urls)) config.urls = stored.urls;
+                if (typeof stored.activeIndex === 'number') config.activeIndex = stored.activeIndex;
             }
         }
         if (!Array.isArray(config.urls) || !config.urls.length)
@@ -259,6 +268,407 @@ export function unload(_plugin?: FMiscPlugin) {
     plugin_ = null;
 }
 
+// ===== DOM 构建 =====
+
+/**
+ * 创建并返回 dock 所需的全部 DOM 元素。
+ * 不修改任何状态，不 append 到 document，仅负责构建。
+ */
+function buildDockLayout(useWebview: boolean): DockLayout {
+    // 等待层与错误层共享的基础定位样式
+    const overlayBase =
+        'position:absolute;top:0;left:0;width:100%;height:100%;' +
+        'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
+        'text-align:center;color:var(--b3-theme-on-surface);' +
+        'background-color:var(--b3-theme-background);z-index:';
+
+    // 等待层与错误层共享的 SVG 图标（info 圆圈）
+    const infoIcon =
+        `<svg style="width:48px;height:48px;margin-bottom:16px;opacity:0.6;"` +
+        ` viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">` +
+        `<circle cx="12" cy="12" r="10"/>` +
+        `<line x1="12" y1="8" x2="12" y2="12"/>` +
+        `<line x1="12" y1="16" x2="12.01" y2="16"/>` +
+        `</svg>`;
+
+    // ── 标签栏 ──
+    const tabBar = document.createElement('div');
+    tabBar.style.cssText = 'display:none;flex:none;flex-wrap:nowrap;overflow-x:auto;' +
+        'border-bottom:1px solid var(--b3-border-color);background:var(--b3-theme-surface);' +
+        'min-height:30px;scrollbar-width:none;';
+
+    // ── 媒体容器 ──
+    const mediaContainer = document.createElement('div');
+    mediaContainer.style.cssText = 'flex:1;position:relative;overflow:hidden;min-height:0;';
+
+    // ── 拖拽覆盖层 ──
+    const dropHint = document.createElement('div');
+    dropHint.style.cssText =
+        'display:none;position:absolute;inset:0;pointer-events:none;z-index:12;' +
+        'border:2px dashed var(--b3-theme-primary);border-radius:4px;' +
+        'background:color-mix(in srgb, var(--b3-theme-primary) 10%, transparent);' +
+        'color:var(--b3-theme-primary);font-size:13px;font-weight:500;' +
+        'flex-direction:column;align-items:center;justify-content:center;' +
+        'text-align:center;gap:6px;padding:16px;box-sizing:border-box;';
+    dropHint.innerHTML = useWebview
+        ? `<span style="font-size:22px;">⌨️</span>
+           <span>松开鼠标，将块 ID 插入光标处</span>
+           <span style="font-size:11px;opacity:0.7;">（桌面端直接注入，无需粘贴）</span>`
+        : `<span style="font-size:22px;">📋</span>
+           <span>松开鼠标，块 ID 将复制到剪贴板</span>
+           <span style="font-size:11px;opacity:0.7;">在 AI 输入框中 Ctrl+V 粘贴即可</span>`;
+
+    // ── 等待容器（z-index:10，等待服务启动时显示）──
+    const waitingEl = document.createElement('div');
+    waitingEl.style.cssText = 'display:flex;' + overlayBase + '10;';
+    waitingEl.innerHTML = infoIcon + `
+        <div style="font-size:16px;font-weight:500;margin-bottom:8px;">请先启动 AI Agent Web</div>
+        <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">等待服务启动中...</div>
+        <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;"></div>`;
+
+    // ── 错误容器（z-index:11，加载失败时显示）──
+    const errorEl = document.createElement('div');
+    errorEl.style.cssText = 'display:none;' + overlayBase + '11;';
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'b3-button b3-button--outline';
+    retryBtn.style.marginTop = '16px';
+    retryBtn.textContent = '重试';
+    errorEl.innerHTML = infoIcon + `
+        <div style="font-size:16px;font-weight:500;margin-bottom:8px;">页面加载失败</div>
+        <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">请检查 URL 是否正确或服务是否已启动</div>
+        <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;margin-bottom:16px;"></div>`;
+    errorEl.appendChild(retryBtn);
+
+    mediaContainer.append(waitingEl, errorEl, dropHint);
+
+    return { tabBar, mediaContainer, dropHint, waitingEl, errorEl, retryBtn };
+}
+
+// ===== Dock 初始化 =====
+
+/**
+ * 初始化 dock 根元素：构建布局、绑定所有事件、启动媒体加载。
+ * 返回 cleanup 函数，销毁时调用以注销所有监听器和定时器。
+ */
+function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
+    dockEl.style.cssText =
+        'width:100%;height:100%;min-width:200px;min-height:180px;overflow:hidden;' +
+        'box-sizing:border-box;display:flex;flex-direction:column;' +
+        'border:1px solid var(--b3-border-color);border-radius:4px;';
+
+    const { tabBar, mediaContainer, dropHint, waitingEl, errorEl, retryBtn } =
+        buildDockLayout(useWebview);
+
+    dockEl.append(tabBar, mediaContainer);
+
+    // ── 运行状态 ──
+    let media: HTMLIFrameElement | any = null;
+    let loadTimeout: ReturnType<typeof setTimeout> | null = null;
+    let retryTimer: ReturnType<typeof setInterval> | null = null;
+    let hasLoaded = false;
+    let retrying = false;
+    let dragDepth = 0;
+    let activeDragId: string | null = null;
+    let currentIdx = Math.min(config.activeIndex, config.urls.length - 1);
+
+    const getUrl = () => config.urls[Math.min(currentIdx, config.urls.length - 1)]?.url ?? '';
+
+    // ── 标签栏渲染 ──
+    const renderTabs = () => {
+        tabBar.innerHTML = '';
+        if (config.urls.length <= 1) { tabBar.style.display = 'none'; return; }
+        tabBar.style.display = 'flex';
+        config.urls.forEach((e, idx) => {
+            const btn = document.createElement('button');
+            const active = idx === currentIdx;
+            btn.style.cssText =
+                'flex:none;padding:4px 14px;border:none;border-bottom:2px solid transparent;' +
+                'background:transparent;cursor:pointer;font-size:12px;white-space:nowrap;' +
+                'color:var(--b3-theme-on-surface);' +
+                (active ? 'border-bottom-color:var(--b3-theme-primary);color:var(--b3-theme-primary);font-weight:500;'
+                        : 'opacity:0.6;');
+            btn.textContent = e.name || e.url;
+            btn.title = e.url;
+            btn.addEventListener('click', () => switchTo(idx));
+            tabBar.appendChild(btn);
+        });
+    };
+
+    // ── 状态显示 ──
+    // 等待/错误层已用 position:absolute + z-index:10/11 覆盖在 media 上方
+    // 不对 media 做 display 切换，避免破坏 webview/iframe 的尺寸计算
+    const setUrlText = (el: Element | null) => { if (el) el.textContent = getUrl(); };
+    const showWaiting = () => {
+        setUrlText(waitingEl.querySelector('.ai-url'));
+        waitingEl.style.display = 'flex';
+        errorEl.style.display = 'none';
+    };
+    const showError = () => {
+        waitingEl.style.display = 'none';
+        setUrlText(errorEl.querySelector('.ai-url'));
+        errorEl.style.display = 'flex';
+    };
+    const showMedia = () => {
+        waitingEl.style.display = 'none';
+        errorEl.style.display = 'none';
+    };
+
+    // ── 拖拽覆盖层 ──
+    const showDrop = () => {
+        if (!activeDragId) return;
+        dropHint.style.display = 'flex';
+        dropHint.style.pointerEvents = 'auto';
+    };
+    const hideDrop = () => {
+        dragDepth = 0;
+        dropHint.style.display = 'none';
+        dropHint.style.pointerEvents = 'none';
+        // 拖拽结束，恢复 webview/iframe 的指针事件
+        if (media?.style) media.style.pointerEvents = 'auto';
+    };
+
+    dropHint.addEventListener('dragover', (e: DragEvent) => {
+        e.preventDefault(); e.stopPropagation();
+    });
+
+    dropHint.addEventListener('drop', async (e: DragEvent) => {
+        e.preventDefault(); e.stopPropagation();
+        const blockId = activeDragId;
+        hideDrop();
+        activeDragId = null;
+        if (!blockId) return;
+
+        if (useWebview && media) {
+            const result = await injectTextToWebview(media, blockId, e.clientX, e.clientY);
+            if (result === 'ok') {
+                showMessage('块 ID 已插入', 1500, 'info');
+            } else {
+                copyToClipboard(blockId);
+                showMessage('未找到输入框，块 ID 已复制到剪贴板', 3000, 'info');
+            }
+        } else {
+            copyToClipboard(blockId);
+            showMessage('块 ID 已复制到剪贴板，在 AI 输入框粘贴即可', 3000, 'info');
+        }
+    });
+
+    // ── 全局拖拽监听 ──
+    const onDragStart = (e: DragEvent) => {
+        const id = blockIdFromElement(e.target) ?? blockIdFromTransfer(e.dataTransfer);
+        if (!id || !e.dataTransfer) { activeDragId = null; return; }
+        activeDragId = id;
+        try {
+            e.dataTransfer.setData('text/plain', id);
+            e.dataTransfer.setData(BLOCK_ID_TEXT_TYPE, id);
+        } catch {}
+        // 拖拽期间禁用 webview/iframe 的指针事件
+        // Electron webview 是独立嵌入窗口，z-index 无效，必须用 pointer-events:none
+        // 才能让外层 DOM 接收到 dragenter/drop 事件
+        if (media?.style) media.style.pointerEvents = 'none';
+    };
+    const onDragEnd = () => {
+        activeDragId = null;
+        hideDrop();
+        // hideDrop 内已恢复 pointer-events
+    };
+    const onDragEnter = () => { if (!activeDragId) return; dragDepth++; showDrop(); };
+    const onDragLeave = () => {
+        if (!activeDragId) return;
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0) hideDrop();
+    };
+    const onDrop = () => { hideDrop(); activeDragId = null; };
+
+    // ── 服务检测 ──
+    const checkAvailable = (url: string): Promise<boolean> =>
+        new Promise((resolve) => {
+            const img = new Image();
+            const t = setTimeout(() => { img.src = ''; resolve(false); }, 2000);
+            img.onload = () => { clearTimeout(t); resolve(true); };
+            img.onerror = () => {
+                clearTimeout(t);
+                fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-cache' })
+                    .then(() => resolve(true)).catch(() => resolve(false));
+            };
+            img.src = `${url}/favicon.ico?_t=${Date.now()}`;
+        });
+
+    const stopRetry = () => {
+        if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
+        retrying = false;
+    };
+    const startRetry = (targetUrl: string) => {
+        if (retryTimer || retrying) return;
+        retrying = true;
+        retryTimer = setInterval(() => {
+            if (hasLoaded || targetUrl !== getUrl()) { stopRetry(); return; }
+            checkAvailable(targetUrl).then((ok) => {
+                if (ok && !hasLoaded && targetUrl === getUrl()) {
+                    stopRetry(); destroyMedia(); createMedia();
+                }
+            });
+        }, 3000);
+    };
+
+    // ── 媒体元素销毁 ──
+    const destroyMedia = () => {
+        if (!media) return;
+        media.removeEventListener('dragenter', onDragEnter);
+        media.removeEventListener('dragleave', onDragLeave);
+        media.removeEventListener('drop', onDrop);
+        // webview 与 iframe 均用 try/catch 统一处理（webview 在某些状态下会抛异常）
+        try { media.src = 'about:blank'; } catch {}
+        media.remove();
+        media = null;
+    };
+
+    // ── 媒体元素创建 ──
+    const createMedia = () => {
+        if (media) return;
+        const url = getUrl();
+        if (!url) { showError(); return; }
+        showWaiting();
+
+        checkAvailable(url).then((ok) => {
+            if (url !== getUrl()) return;
+            if (!ok) { showError(); startRetry(url); return; }
+
+            if (useWebview) {
+                const wv = document.createElement('webview') as any;
+                wv.src = url;
+                wv.style.cssText =
+                    'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
+                wv.setAttribute('allowpopups', '');
+
+                let loaded = false;
+                wv.addEventListener('did-finish-load', () => {
+                    loaded = true; hasLoaded = true;
+                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                    stopRetry(); showMedia();
+                });
+                wv.addEventListener('did-fail-load', (e: any) => {
+                    if (e.errorCode === -3) return;
+                    hasLoaded = false;
+                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                    showError(); startRetry(url);
+                });
+                wv.addEventListener('dragenter', onDragEnter);
+                wv.addEventListener('dragleave', onDragLeave);
+                wv.addEventListener('drop', onDrop);
+                media = wv;
+                mediaContainer.appendChild(wv);
+
+                loadTimeout = setTimeout(() => {
+                    if (!loaded && media) { showError(); startRetry(url); }
+                }, 8000);
+
+            } else {
+                const fr = document.createElement('iframe');
+                fr.src = url;
+                fr.style.cssText =
+                    'position:absolute;top:0;left:0;right:0;bottom:0;border:none;' +
+                    'pointer-events:auto;z-index:0;';
+                fr.setAttribute('allow', 'clipboard-read; clipboard-write');
+
+                let loaded = false;
+                fr.onload = () => {
+                    loaded = true; hasLoaded = true;
+                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                    stopRetry(); showMedia();
+                };
+                fr.onerror = () => {
+                    hasLoaded = false;
+                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                    showError(); startRetry(url);
+                };
+                fr.addEventListener('dragenter', onDragEnter);
+                fr.addEventListener('dragleave', onDragLeave);
+                fr.addEventListener('drop', onDrop);
+                media = fr;
+                mediaContainer.appendChild(fr);
+
+                loadTimeout = setTimeout(() => {
+                    if (!loaded && media) { showError(); startRetry(url); }
+                }, 5000);
+            }
+        });
+    };
+
+    // ── 切换标签 ──
+    const switchTo = (idx: number) => {
+        if (idx === currentIdx && media) return;
+        stopRetry(); hasLoaded = false;
+        if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+        destroyMedia();
+        currentIdx = idx;
+        config.activeIndex = idx;
+        renderTabs();
+        createMedia();
+    };
+
+    retryBtn.addEventListener('click', () => {
+        stopRetry(); hasLoaded = false; destroyMedia(); createMedia();
+    });
+
+    // ── ResizeObserver ──
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let isResizing = false;
+    const resizeStart = () => {
+        if (!media?.style || isResizing) return;
+        isResizing = true; media.style.pointerEvents = 'none';
+    };
+    const resizeEnd = () => {
+        if (!media?.style) return;
+        isResizing = false;
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (media?.style) media.style.pointerEvents = 'auto';
+        }, 150);
+    };
+    const ro = new ResizeObserver(() => {
+        resizeStart();
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resizeEnd, 100);
+    });
+    ro.observe(dockEl);
+
+    let edgeDrag = false;
+    const onMouseUp = () => { if (edgeDrag) { edgeDrag = false; resizeEnd(); } };
+    dockEl.addEventListener('mousedown', (e: MouseEvent) => {
+        const r = dockEl.getBoundingClientRect(), th = 5;
+        if (e.clientX <= r.left + th || e.clientX >= r.right - th ||
+            e.clientY <= r.top + th  || e.clientY >= r.bottom - th) {
+            edgeDrag = true; resizeStart();
+        }
+    });
+
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('dragstart', onDragStart, false);
+    document.addEventListener('dragend', onDragEnd, true);
+    mediaContainer.addEventListener('dragenter', onDragEnter);
+    mediaContainer.addEventListener('dragleave', onDragLeave);
+    mediaContainer.addEventListener('drop', onDrop);
+
+    renderTabs();
+    createMedia();
+
+    // ── 清理 ──
+    return () => {
+        stopRetry();
+        if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+        if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
+        ro.disconnect();
+        document.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('dragstart', onDragStart, false);
+        document.removeEventListener('dragend', onDragEnd, true);
+        mediaContainer.removeEventListener('dragenter', onDragEnter);
+        mediaContainer.removeEventListener('dragleave', onDragLeave);
+        mediaContainer.removeEventListener('drop', onDrop);
+        hideDrop(); activeDragId = null;
+        destroyMedia();
+    };
+}
+
 // ===== Dock =====
 function createDock(plugin: FMiscPlugin) {
     const useWebview = isElectronEnv();
@@ -274,399 +684,11 @@ function createDock(plugin: FMiscPlugin) {
         data: null,
         type: DOCK_TYPE,
         init(dock: any) {
-            dock.element.style.cssText =
-                'width:100%;height:100%;min-width:200px;min-height:180px;overflow:hidden;' +
-                'box-sizing:border-box;display:flex;flex-direction:column;' +
-                'border:1px solid var(--b3-border-color);border-radius:4px;';
-
-            // ── 标签栏 ──
-            const tabBar = document.createElement('div');
-            tabBar.style.cssText = 'display:none;flex:none;flex-wrap:nowrap;overflow-x:auto;' +
-                'border-bottom:1px solid var(--b3-border-color);background:var(--b3-theme-surface);' +
-                'min-height:30px;scrollbar-width:none;';
-
-            // ── 媒体容器 ──
-            const mediaContainer = document.createElement('div');
-            mediaContainer.style.cssText = 'flex:1;position:relative;overflow:hidden;min-height:0;';
-
-            // ── 拖拽覆盖层 ──
-            const dropHint = document.createElement('div');
-            dropHint.style.cssText =
-                'display:none;position:absolute;inset:0;pointer-events:none;z-index:12;' +
-                'border:2px dashed var(--b3-theme-primary);border-radius:4px;' +
-                'background:color-mix(in srgb, var(--b3-theme-primary) 10%, transparent);' +
-                'color:var(--b3-theme-primary);font-size:13px;font-weight:500;' +
-                'flex-direction:column;align-items:center;justify-content:center;' +
-                'text-align:center;gap:6px;padding:16px;box-sizing:border-box;';
-            dropHint.innerHTML = useWebview
-                ? `<span style="font-size:22px;">⌨️</span>
-                   <span>松开鼠标，将块 ID 插入光标处</span>
-                   <span style="font-size:11px;opacity:0.7;">（桌面端直接注入，无需粘贴）</span>`
-                : `<span style="font-size:22px;">📋</span>
-                   <span>松开鼠标，块 ID 将复制到剪贴板</span>
-                   <span style="font-size:11px;opacity:0.7;">在 AI 输入框中 Ctrl+V 粘贴即可</span>`;
-
-            // ── 等待容器 ──
-            const waitingEl = document.createElement('div');
-            waitingEl.style.cssText =
-                'display:flex;position:absolute;top:0;left:0;width:100%;height:100%;' +
-                'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
-                'text-align:center;color:var(--b3-theme-on-surface);' +
-                'background-color:var(--b3-theme-background);z-index:10;';
-            waitingEl.innerHTML = `
-                <svg style="width:48px;height:48px;margin-bottom:16px;opacity:0.6;"
-                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <div style="font-size:16px;font-weight:500;margin-bottom:8px;">请先启动 AI Agent Web</div>
-                <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">等待服务启动中...</div>
-                <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;"></div>`;
-
-            // ── 错误容器 ──
-            const errorEl = document.createElement('div');
-            errorEl.style.cssText =
-                'display:none;position:absolute;top:0;left:0;width:100%;height:100%;' +
-                'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
-                'text-align:center;color:var(--b3-theme-on-surface);' +
-                'background-color:var(--b3-theme-background);z-index:11;';
-            const retryBtn = document.createElement('button');
-            retryBtn.className = 'b3-button b3-button--outline';
-            retryBtn.style.marginTop = '16px';
-            retryBtn.textContent = '重试';
-            errorEl.innerHTML = `
-                <svg style="width:48px;height:48px;margin-bottom:16px;opacity:0.6;"
-                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <div style="font-size:16px;font-weight:500;margin-bottom:8px;">页面加载失败</div>
-                <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">请检查 URL 是否正确或服务是否已启动</div>
-                <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;margin-bottom:16px;"></div>`;
-            errorEl.appendChild(retryBtn);
-
-            mediaContainer.append(waitingEl, errorEl, dropHint);
-            dock.element.append(tabBar, mediaContainer);
-
-            // ── 运行状态 ──
-            let media: HTMLIFrameElement | any = null;
-            let loadTimeout: ReturnType<typeof setTimeout> | null = null;
-            let retryTimer: ReturnType<typeof setInterval> | null = null;
-            let hasLoaded = false;
-            let retrying = false;
-            let dragDepth = 0;
-            let activeDragId: string | null = null;
-            let currentIdx = Math.min(config.activeIndex, config.urls.length - 1);
-
-            const getUrl = () => config.urls[Math.min(currentIdx, config.urls.length - 1)]?.url ?? '';
-
-            // ── 标签栏渲染 ──
-            const renderTabs = () => {
-                tabBar.innerHTML = '';
-                if (config.urls.length <= 1) { tabBar.style.display = 'none'; return; }
-                tabBar.style.display = 'flex';
-                config.urls.forEach((e, idx) => {
-                    const btn = document.createElement('button');
-                    const active = idx === currentIdx;
-                    btn.style.cssText =
-                        'flex:none;padding:4px 14px;border:none;border-bottom:2px solid transparent;' +
-                        'background:transparent;cursor:pointer;font-size:12px;white-space:nowrap;' +
-                        'color:var(--b3-theme-on-surface);' +
-                        (active ? 'border-bottom-color:var(--b3-theme-primary);color:var(--b3-theme-primary);font-weight:500;'
-                                : 'opacity:0.6;');
-                    btn.textContent = e.name || e.url;
-                    btn.title = e.url;
-                    btn.addEventListener('click', () => switchTo(idx));
-                    tabBar.appendChild(btn);
-                });
-            };
-
-            // ── 状态显示 ──
-            // 等待/错误层已用 position:absolute + z-index:10/11 覆盖在 media 上方
-            // 不对 media 做 display 切换，避免破坏 webview/iframe 的尺寸计算
-            const setUrl = (el: Element | null) => { if (el) el.textContent = getUrl(); };
-            const showWaiting = () => {
-                setUrl(waitingEl.querySelector('.ai-url'));
-                waitingEl.style.display = 'flex';
-                errorEl.style.display = 'none';
-            };
-            const showError = () => {
-                waitingEl.style.display = 'none';
-                setUrl(errorEl.querySelector('.ai-url'));
-                errorEl.style.display = 'flex';
-            };
-            const showMedia = () => {
-                waitingEl.style.display = 'none';
-                errorEl.style.display = 'none';
-            };
-
-            // ── 拖拽覆盖层 ──
-            const showDrop = () => {
-                if (!activeDragId) return;
-                dropHint.style.display = 'flex';
-                dropHint.style.pointerEvents = 'auto';
-            };
-            const hideDrop = () => {
-                dragDepth = 0;
-                dropHint.style.display = 'none';
-                dropHint.style.pointerEvents = 'none';
-                // 拖拽结束，恢复 webview/iframe 的指针事件
-                if (media?.style) media.style.pointerEvents = 'auto';
-            };
-
-            dropHint.addEventListener('dragover', (e: DragEvent) => {
-                e.preventDefault(); e.stopPropagation();
-            });
-
-            dropHint.addEventListener('drop', async (e: DragEvent) => {
-                e.preventDefault(); e.stopPropagation();
-                const blockId = activeDragId;
-                hideDrop();
-                activeDragId = null;
-                if (!blockId) return;
-
-                if (useWebview && media) {
-                    const result = await injectTextToWebview(media, blockId, e.clientX, e.clientY);
-                    if (result === 'ok') {
-                        showMessage('块 ID 已插入', 1500, 'info');
-                    } else {
-                        copyToClipboard(blockId);
-                        showMessage('未找到输入框，块 ID 已复制到剪贴板', 3000, 'info');
-                    }
-                } else {
-                    copyToClipboard(blockId);
-                    showMessage('块 ID 已复制到剪贴板，在 AI 输入框粘贴即可', 3000, 'info');
-                }
-            });
-
-            // ── 全局拖拽监听 ──
-            const onDragStart = (e: DragEvent) => {
-                const id = blockIdFromElement(e.target) ?? blockIdFromTransfer(e.dataTransfer);
-                if (!id || !e.dataTransfer) { activeDragId = null; return; }
-                activeDragId = id;
-                try {
-                    e.dataTransfer.setData('text/plain', id);
-                    e.dataTransfer.setData(BLOCK_ID_TEXT_TYPE, id);
-                } catch {}
-                // 拖拽期间禁用 webview/iframe 的指针事件
-                // Electron webview 是独立嵌入窗口，z-index 无效，必须用 pointer-events:none
-                // 才能让外层 DOM 接收到 dragenter/drop 事件
-                if (media?.style) media.style.pointerEvents = 'none';
-            };
-            const onDragEnd = () => {
-                activeDragId = null;
-                hideDrop();
-                // hideDrop 内已恢复 pointer-events
-            };
-            const onDragEnter = () => { if (!activeDragId) return; dragDepth++; showDrop(); };
-            const onDragLeave = () => {
-                if (!activeDragId) return;
-                dragDepth = Math.max(0, dragDepth - 1);
-                if (dragDepth === 0) hideDrop();
-            };
-            const onDrop = () => { hideDrop(); activeDragId = null; };
-
-            // ── 服务检测 ──
-            const checkAvailable = (url: string): Promise<boolean> =>
-                new Promise((resolve) => {
-                    const img = new Image();
-                    const t = setTimeout(() => { img.src = ''; resolve(false); }, 2000);
-                    img.onload = () => { clearTimeout(t); resolve(true); };
-                    img.onerror = () => {
-                        clearTimeout(t);
-                        fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-cache' })
-                            .then(() => resolve(true)).catch(() => resolve(false));
-                    };
-                    img.src = `${url}/favicon.ico?_t=${Date.now()}`;
-                });
-
-            // ── 媒体元素销毁 ──
-            const destroyMedia = () => {
-                if (!media) return;
-                media.removeEventListener('dragenter', onDragEnter);
-                media.removeEventListener('dragleave', onDragLeave);
-                media.removeEventListener('drop', onDrop);
-                if (useWebview) {
-                    try { media.src = 'about:blank'; } catch {}
-                } else {
-                    media.src = 'about:blank';
-                }
-                media.remove();
-                media = null;
-            };
-
-            const stopRetry = () => {
-                if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
-                retrying = false;
-            };
-            const startRetry = (targetUrl: string) => {
-                if (retryTimer || retrying) return;
-                retrying = true;
-                retryTimer = setInterval(() => {
-                    if (hasLoaded || targetUrl !== getUrl()) { stopRetry(); return; }
-                    checkAvailable(targetUrl).then((ok) => {
-                        if (ok && !hasLoaded && targetUrl === getUrl()) {
-                            stopRetry(); destroyMedia(); createMedia();
-                        }
-                    });
-                }, 3000);
-            };
-
-            // ── 媒体元素创建 ──
-            const createMedia = () => {
-                if (media) return;
-                const url = getUrl();
-                if (!url) { showError(); return; }
-                showWaiting();
-
-                checkAvailable(url).then((ok) => {
-                    if (url !== getUrl()) return;
-                    if (!ok) { showError(); startRetry(url); return; }
-
-                    if (useWebview) {
-                        const wv = document.createElement('webview') as any;
-                        wv.src = url;
-                        wv.style.cssText =
-                            'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
-                        wv.setAttribute('allowpopups', '');
-
-                        let loaded = false;
-                        wv.addEventListener('did-finish-load', () => {
-                            loaded = true; hasLoaded = true;
-                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                            stopRetry(); showMedia();
-                        });
-                        wv.addEventListener('did-fail-load', (e: any) => {
-                            if (e.errorCode === -3) return;
-                            hasLoaded = false;
-                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                            showError(); startRetry(url);
-                        });
-                        wv.addEventListener('dragenter', onDragEnter);
-                        wv.addEventListener('dragleave', onDragLeave);
-                        wv.addEventListener('drop', onDrop);
-                        media = wv;
-                        mediaContainer.appendChild(wv);
-
-                        loadTimeout = setTimeout(() => {
-                            if (!loaded && media) { showError(); startRetry(url); }
-                        }, 8000);
-
-                    } else {
-                        const fr = document.createElement('iframe');
-                        fr.src = url;
-                        fr.style.cssText =
-                            'position:absolute;top:0;left:0;right:0;bottom:0;border:none;' +
-                            'pointer-events:auto;z-index:0;';
-                        fr.setAttribute('allow', 'clipboard-read; clipboard-write');
-
-                        let loaded = false;
-                        fr.onload = () => {
-                            loaded = true; hasLoaded = true;
-                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                            stopRetry(); showMedia();
-                        };
-                        fr.onerror = () => {
-                            hasLoaded = false;
-                            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                            showError(); startRetry(url);
-                        };
-                        fr.addEventListener('dragenter', onDragEnter);
-                        fr.addEventListener('dragleave', onDragLeave);
-                        fr.addEventListener('drop', onDrop);
-                        media = fr;
-                        mediaContainer.appendChild(fr);
-
-                        loadTimeout = setTimeout(() => {
-                            if (!loaded && media) { showError(); startRetry(url); }
-                        }, 5000);
-                    }
-                });
-            };
-
-            // ── 切换标签 ──
-            const switchTo = (idx: number) => {
-                if (idx === currentIdx && media) return;
-                stopRetry(); hasLoaded = false;
-                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                destroyMedia();
-                currentIdx = idx;
-                config.activeIndex = idx;
-                renderTabs();
-                createMedia();
-            };
-
-            retryBtn.addEventListener('click', () => {
-                stopRetry(); hasLoaded = false; destroyMedia(); createMedia();
-            });
-
-            // ── ResizeObserver ──
-            let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-            let isResizing = false;
-            const resizeStart = () => {
-                if (!media?.style || isResizing) return;
-                isResizing = true; media.style.pointerEvents = 'none';
-            };
-            const resizeEnd = () => {
-                if (!media?.style) return;
-                isResizing = false;
-                if (resizeTimer) clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (media?.style) media.style.pointerEvents = 'auto';
-                }, 150);
-            };
-            const ro = new ResizeObserver(() => {
-                resizeStart();
-                if (resizeTimer) clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(resizeEnd, 100);
-            });
-            ro.observe(dock.element);
-
-            let edgeDrag = false;
-            const onMouseUp = () => { if (edgeDrag) { edgeDrag = false; resizeEnd(); } };
-            dock.element.addEventListener('mousedown', (e: MouseEvent) => {
-                const r = dock.element.getBoundingClientRect(), th = 5;
-                if (e.clientX <= r.left + th || e.clientX >= r.right - th ||
-                    e.clientY <= r.top + th  || e.clientY >= r.bottom - th) {
-                    edgeDrag = true; resizeStart();
-                }
-            });
-
-            document.addEventListener('mouseup', onMouseUp);
-            document.addEventListener('dragstart', onDragStart, false);
-            document.addEventListener('dragend', onDragEnd, true);
-            mediaContainer.addEventListener('dragenter', onDragEnter);
-            mediaContainer.addEventListener('dragleave', onDragLeave);
-            mediaContainer.addEventListener('drop', onDrop);
-
-            // ── 清理 ──
-            const cleanup = () => {
-                stopRetry();
-                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
-                ro.disconnect();
-                document.removeEventListener('mouseup', onMouseUp);
-                document.removeEventListener('dragstart', onDragStart, false);
-                document.removeEventListener('dragend', onDragEnd, true);
-                mediaContainer.removeEventListener('dragenter', onDragEnter);
-                mediaContainer.removeEventListener('dragleave', onDragLeave);
-                mediaContainer.removeEventListener('drop', onDrop);
-                hideDrop(); activeDragId = null;
-                destroyMedia();
-            };
-
-            (dock.element as any).__aiBridgeCleanup = cleanup;
-            dockCleanup = cleanup;
-
-            renderTabs();
-            createMedia();
+            dockCleanup = initDock(dock.element, useWebview);
         },
-
         destroy() {
-            const fn = (this as any)?.element?.__aiBridgeCleanup;
-            if (typeof fn === 'function') fn();
+            dockCleanup?.();
+            dockCleanup = null;
             console.log('[AI Bridge] dock destroyed');
         },
     });
