@@ -32,31 +32,12 @@ export const declareToggleEnabled = {
     defaultEnabled: true
 } as const;
 
-const config = {
-    parentChildCommand: true,
-};
-
 export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
     key: "doc-context",
     title: "文档上下文",
-    load: (itemValues: any) => {
-        if (itemValues) {
-            Object.assign(config, itemValues);
-        }
-    },
-    dump: () => structuredClone(config),
-    items: [
-        {
-            key: 'parentChildCommand',
-            type: 'checkbox' as const,
-            title: '启用切换父子文档快捷键',
-            description: `开启后，你可以使用快捷键 Ctrl+Shift+↑ 跳转到父文档，Ctrl+Shift+↓ 跳转到子文档<br/>。如果你想要换成别的快捷键，请自行更改 "文档上下文" 中 "父文档" 和 "子文档" 快捷键。`,
-            get: () => config.parentChildCommand,
-            set: (value: boolean) => {
-                config.parentChildCommand = value;
-            }
-        }
-    ]
+    load: (_itemValues: any) => {},
+    dump: () => ({}),
+    items: []
 };
 
 /**
@@ -572,20 +553,18 @@ export const load = (plugin: FMiscPlugin) => {
         callback: async () => goToSibling(1)
     });
 
-    if (config.parentChildCommand) {
-        plugin.addCommand({
-            langKey: 'trex::parent-doc',
-            langText: '父文档',
-            hotkey: '⌘⇧↑',
-            callback: async () => goToParent()
-        });
-        plugin.addCommand({
-            langKey: 'trex::child-doc',
-            langText: '子文档',
-            hotkey: '⌘⇧↓',
-            callback: async () => goToChild()
-        });
-    }
+    plugin.addCommand({
+        langKey: 'trex::parent-doc',
+        langText: '父文档',
+        hotkey: '⌘⇧↑',
+        callback: async () => goToParent()
+    });
+    plugin.addCommand({
+        langKey: 'trex::child-doc',
+        langText: '子文档',
+        hotkey: '⌘⇧↓',
+        callback: async () => goToChild()
+    });
 };
 
 export const unload = (plugin: FMiscPlugin) => {
