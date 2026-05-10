@@ -538,63 +538,68 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
 
         // 直接创建媒体元素；加载失败由 did-fail-load/onerror/loadTimeout 处理
         // （不再做 checkAvailable 前置预检，避免多余的 favicon 请求）
+        // 加载失败的统一处理：先销毁媒体元素再显示等待界面。
+        // webview 是 Electron OS 级嵌入窗口，任何 HTML 覆盖层都会被它遮挡，
+        // 必须先 destroyMedia() 把它从 DOM 移除，showWaiting() 才可见。
+        const onFail = () => {
+            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+            hasLoaded = false;
+            destroyMedia();
+            showWaiting();
+            startRetry(url);
+        };
+
         if (useWebview) {
-                const wv = document.createElement('webview') as any;
-                wv.src = url;
-                wv.style.cssText =
-                    'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
-                wv.setAttribute('allowpopups', '');
+            const wv = document.createElement('webview') as any;
+            wv.src = url;
+            wv.style.cssText =
+                'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
+            wv.setAttribute('allowpopups', '');
 
-                let loaded = false;
-                wv.addEventListener('did-finish-load', () => {
-                    loaded = true; hasLoaded = true;
-                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                    stopRetry(); showMedia();
-                });
-                wv.addEventListener('did-fail-load', (e: any) => {
-                    if (e.errorCode === -3) return;
-                    hasLoaded = false;
-                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                    showError(); startRetry(url);
-                });
-                wv.addEventListener('dragenter', onDragEnter);
-                wv.addEventListener('dragleave', onDragLeave);
-                wv.addEventListener('drop', onDrop);
-                media = wv;
-                mediaContainer.appendChild(wv);
+            let loaded = false;
+            wv.addEventListener('did-finish-load', () => {
+                loaded = true; hasLoaded = true;
+                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                stopRetry(); showMedia();
+            });
+            wv.addEventListener('did-fail-load', (e: any) => {
+                if (e.errorCode === -3) return; // ERR_ABORTED，忽略
+                onFail();
+            });
+            wv.addEventListener('dragenter', onDragEnter);
+            wv.addEventListener('dragleave', onDragLeave);
+            wv.addEventListener('drop', onDrop);
+            media = wv;
+            mediaContainer.appendChild(wv);
 
-                loadTimeout = setTimeout(() => {
-                    if (!loaded && media) { showError(); startRetry(url); }
-                }, 8000);
+            loadTimeout = setTimeout(() => {
+                if (!loaded && media) onFail();
+            }, 8000);
 
-            } else {
-                const fr = document.createElement('iframe');
-                fr.src = url;
-                fr.style.cssText =
-                    'position:absolute;top:0;left:0;right:0;bottom:0;border:none;' +
-                    'pointer-events:auto;z-index:0;';
-                fr.setAttribute('allow', 'clipboard-read; clipboard-write');
+        } else {
+            const fr = document.createElement('iframe');
+            fr.src = url;
+            fr.style.cssText =
+                'position:absolute;top:0;left:0;right:0;bottom:0;border:none;' +
+                'pointer-events:auto;z-index:0;';
+            fr.setAttribute('allow', 'clipboard-read; clipboard-write');
 
-                let loaded = false;
-                fr.onload = () => {
-                    loaded = true; hasLoaded = true;
-                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                    stopRetry(); showMedia();
-                };
-                fr.onerror = () => {
-                    hasLoaded = false;
-                    if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                    showError(); startRetry(url);
-                };
-                fr.addEventListener('dragenter', onDragEnter);
-                fr.addEventListener('dragleave', onDragLeave);
-                fr.addEventListener('drop', onDrop);
-                media = fr;
-                mediaContainer.appendChild(fr);
+            let loaded = false;
+            fr.onload = () => {
+                loaded = true; hasLoaded = true;
+                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+                stopRetry(); showMedia();
+            };
+            fr.onerror = () => onFail();
+            fr.addEventListener('dragenter', onDragEnter);
+            fr.addEventListener('dragleave', onDragLeave);
+            fr.addEventListener('drop', onDrop);
+            media = fr;
+            mediaContainer.appendChild(fr);
 
-                loadTimeout = setTimeout(() => {
-                    if (!loaded && media) { showError(); startRetry(url); }
-                }, 5000);
+            loadTimeout = setTimeout(() => {
+                if (!loaded && media) onFail();
+            }, 5000);
         }
     };
 
