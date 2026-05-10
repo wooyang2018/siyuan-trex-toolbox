@@ -32,13 +32,6 @@ export const declareToggleEnabled = {
     defaultEnabled: true
 } as const;
 
-export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
-    key: "doc-context",
-    title: "文档上下文",
-    load: (_itemValues: any) => {},
-    dump: () => ({}),
-    items: []
-};
 
 /**
  * 获取父文档

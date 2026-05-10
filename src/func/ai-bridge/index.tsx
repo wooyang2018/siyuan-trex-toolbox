@@ -1,18 +1,30 @@
 /**
  * AI Bridge 模块
- * @description 在侧边栏嵌入 AI Agent 网页，支持多 URL 切换、拖拽块 ID 直接插入网页输入框
+ * @description 在侧边栏嵌入 AI Agent 网页，支持多 URL 切换、拖拽块 ID 直接插入网页输入框、提示词预设
  */
 import type FMiscPlugin from "@/index";
 import { For, type JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import Form from "@/libs/components/Form";
 import { showMessage } from "siyuan";
+import { getBlockByID } from "@/api";
+import { getActiveDoc } from "@frostime/siyuan-plugin-kits";
 
 // ===== 类型 =====
 interface AIBridgeUrl { name: string; url: string; }
 
+interface PromptPreset {
+    id: string;
+    icon: string;
+    name: string;
+    template: string;
+}
+
 interface DockLayout {
     tabBar: HTMLDivElement;
+    promptBar: HTMLDivElement;
+    chipsContainer: HTMLDivElement;
+    toggleBtn: HTMLButtonElement;
     mediaContainer: HTMLDivElement;
     dropHint: HTMLDivElement;
     waitingEl: HTMLDivElement;
@@ -26,13 +38,24 @@ const BLOCK_ID_TEXT_TYPE = 'text/siyuan-block-id';
 const BLOCK_ID_PATTERN = /\b\d{14}-[0-9a-z]{7}\b/i;
 const CONFIG_STORAGE_NAME = 'ai-bridge-config.json';
 
+const DEFAULT_PROMPTS: PromptPreset[] = [
+    { id: 'translate', icon: '🌐', name: '翻译',
+      template: '请将以下内容翻译成中文：\n\n{{selection}}' },
+    { id: 'research', icon: '🔬', name: 'Research & Summarize',
+      template: 'Please research and summarize the following topic:\n\n{{selection}}' },
+    { id: 'diagram', icon: '📊', name: 'Generate Diagram',
+      template: 'Please generate a Mermaid diagram to illustrate:\n\n{{selection}}' },
+    { id: 'polish', icon: '✨', name: '润色',
+      template: '请润色以下内容，使其更加流畅自然：\n\n{{selection}}' },
+];
+
 // ===== 模块元数据 =====
 export const name = 'AIBridge';
 export let enabled = false;
 
 export const declareToggleEnabled = {
     title: '🤖 AI 助手侧边栏',
-    description: '在侧边栏嵌入 AI Agent 网页，支持多地址切换、拖拽块 ID 到 AI 输入框',
+    description: '在侧边栏嵌入 AI Agent 网页，支持多地址切换、拖拽块 ID 到 AI 输入框、提示词预设',
     defaultEnabled: false,
 };
 
@@ -40,6 +63,8 @@ export const declareToggleEnabled = {
 const config = {
     urls: [{ name: 'OpenCode', url: 'http://localhost:4096' }] as AIBridgeUrl[],
     activeIndex: 0,
+    prompts: [...DEFAULT_PROMPTS] as PromptPreset[],
+    promptBarOpen: true,
 };
 
 // ===== 辅助：提取块 ID =====
@@ -162,6 +187,40 @@ const injectTextToWebview = async (
     }
 };
 
+// ===== 辅助：模板变量解析 =====
+/**
+ * 解析提示词模板，替换以下变量：
+ * - {{selection}} 当前选中文本
+ * - {{docId}}     当前文档 ID
+ * - {{docTitle}}  当前文档标题
+ */
+const resolveTemplate = async (template: string): Promise<string> => {
+    let result = template;
+
+    if (result.includes('{{selection}}')) {
+        const sel = window.getSelection()?.toString() ?? '';
+        result = result.replace(/\{\{selection\}\}/g, sel);
+    }
+
+    if (result.includes('{{docId}}') || result.includes('{{docTitle}}')) {
+        const docId = getActiveDoc() ?? '';
+        result = result.replace(/\{\{docId\}\}/g, docId);
+
+        if (result.includes('{{docTitle}}')) {
+            let title = '';
+            if (docId) {
+                try {
+                    const doc = await getBlockByID(docId);
+                    title = doc?.content ?? '';
+                } catch { /* ignore */ }
+            }
+            result = result.replace(/\{\{docTitle\}\}/g, title);
+        }
+    }
+
+    return result;
+};
+
 // ===== 模块状态 =====
 let plugin_: FMiscPlugin | null = null;
 let dockCleanup: (() => void) | null = null;
@@ -172,6 +231,8 @@ const saveConfig = async () => {
     await plugin_.saveData(CONFIG_STORAGE_NAME, {
         urls: config.urls,
         activeIndex: config.activeIndex,
+        prompts: config.prompts,
+        promptBarOpen: config.promptBarOpen,
     });
 };
 
@@ -180,23 +241,51 @@ function AIBridgeSettingPanel(): JSX.Element {
     // createStore 细粒度追踪：更新单个字段时 <For> 行不重建，焦点不会丢失
     const [urls, setUrls] = createStore<AIBridgeUrl[]>([...config.urls]);
 
-    const syncAndSave = () => { config.urls = [...urls]; saveConfig(); };
+    const syncUrlsAndSave = () => { config.urls = [...urls]; saveConfig(); };
 
-    const handleNameChange = (i: number, v: string) => { setUrls(i, 'name', v); syncAndSave(); };
-    const handleUrlChange  = (i: number, v: string) => { setUrls(i, 'url',  v); syncAndSave(); };
-    const handleAdd = () => {
-        setUrls(urls.length, { name: '新地址', url: 'http://localhost:' });
-        syncAndSave();
+    const handleUrlChange = (i: number, field: keyof AIBridgeUrl, v: string) => {
+        setUrls(i, field, v); syncUrlsAndSave();
     };
-    const handleDelete = (i: number) => {
+    const handleUrlAdd = () => {
+        setUrls(urls.length, { name: '', url: 'http://localhost:' });
+        syncUrlsAndSave();
+    };
+    const handleUrlDelete = (i: number) => {
         if (urls.length <= 1) { showMessage('至少保留一个地址', 2000, 'error'); return; }
         setUrls(prev => prev.filter((_, idx) => idx !== i));
         if (config.activeIndex >= urls.length) config.activeIndex = urls.length - 1;
-        syncAndSave();
+        syncUrlsAndSave();
+    };
+
+    // ── 提示词设置 ──
+    const [prompts, setPrompts] = createStore<PromptPreset[]>([...config.prompts]);
+
+    const syncPromptsAndSave = () => { config.prompts = [...prompts]; saveConfig(); };
+
+    const handlePromptChange = (i: number, field: keyof PromptPreset, v: string) => {
+        setPrompts(i, field, v); syncPromptsAndSave();
+    };
+    const handlePromptAdd = () => {
+        setPrompts(prompts.length, {
+            id: Date.now().toString(),
+            icon: '💬', name: '', template: ''
+        });
+        syncPromptsAndSave();
+    };
+    const handlePromptDelete = (i: number) => {
+        setPrompts(prev => prev.filter((_, idx) => idx !== i));
+        syncPromptsAndSave();
+    };
+    const handleResetPrompts = () => {
+        const defaults = DEFAULT_PROMPTS.map(p => ({ ...p }));
+        setPrompts(defaults);
+        config.prompts = [...defaults];
+        saveConfig();
     };
 
     return (
         <div class="config__tab-container">
+            {/* ── URL 列表 ── */}
             <Form.Wrap
                 title="AI 网页地址列表"
                 description="支持多个地址；有多个时 Dock 顶部显示标签栏切换（修改后需重新开关模块生效）"
@@ -208,20 +297,79 @@ function AIBridgeSettingPanel(): JSX.Element {
                             <Form.Input type="textinput" key={`name-${i()}`}
                                 value={entry.name} placeholder="名称"
                                 style={{ width: '100px' }} fn_size={false}
-                                changed={(v) => handleNameChange(i(), v)} />
+                                changed={(v) => handleUrlChange(i(), 'name', v)} />
                             <Form.Input type="textinput" key={`url-${i()}`}
                                 value={entry.url} placeholder="http://localhost:4096"
                                 style={{ width: '230px' }} fn_size={false}
-                                changed={(v) => handleUrlChange(i(), v)} />
+                                changed={(v) => handleUrlChange(i(), 'url', v)} />
                             <button class="b3-button b3-button--outline"
                                 style={{ padding: '2px 10px', height: '26px', 'flex-shrink': '0' }}
-                                onClick={() => handleDelete(i())}>删除</button>
+                                onClick={() => handleUrlDelete(i())}>删除</button>
                         </div>
                     )}
                 </For>
                 <button class="b3-button b3-button--outline"
                     style={{ 'margin-top': '2px', width: 'fit-content' }}
-                    onClick={handleAdd}>+ 添加地址</button>
+                    onClick={handleUrlAdd}>+ 添加地址</button>
+            </Form.Wrap>
+
+            {/* ── 提示词预设 ── */}
+            <Form.Wrap
+                title="提示词预设"
+                description="点击侧边栏中的提示词芯片，模板内容会被解析后发送到 AI。支持变量：{{selection}} 当前选中文本、{{docTitle}} 文档标题、{{docId}} 文档 ID"
+                direction="row"
+            >
+                <For each={prompts}>
+                    {(entry, i) => (
+                        <div style={{
+                            display: 'flex', gap: '6px', 'align-items': 'flex-start',
+                            'margin-bottom': '8px', 'padding-bottom': '8px',
+                            'border-bottom': '1px dashed var(--b3-border-color)'
+                        }}>
+                            {/* 图标 */}
+                            <Form.Input type="textinput" key={`picon-${i()}`}
+                                value={entry.icon} placeholder="🔬"
+                                style={{ width: '48px', 'text-align': 'center' }} fn_size={false}
+                                changed={(v) => handlePromptChange(i(), 'icon', v)} />
+                            {/* 名称 */}
+                            <Form.Input type="textinput" key={`pname-${i()}`}
+                                value={entry.name} placeholder="提示词名称"
+                                style={{ width: '120px' }} fn_size={false}
+                                changed={(v) => handlePromptChange(i(), 'name', v)} />
+                            {/* 模板 */}
+                            <textarea
+                                style={{
+                                    flex: '1',
+                                    'min-height': '60px',
+                                    'font-size': '12px',
+                                    padding: '4px 6px',
+                                    resize: 'vertical',
+                                    background: 'var(--b3-theme-background)',
+                                    color: 'var(--b3-theme-on-surface)',
+                                    border: '1px solid var(--b3-border-color)',
+                                    'border-radius': '4px',
+                                    'line-height': '1.4',
+                                    'font-family': 'var(--b3-font-family-code)',
+                                }}
+                                placeholder={"模板内容，支持 {{selection}} {{docTitle}} {{docId}}"}
+                                value={entry.template}
+                                onInput={(e) => handlePromptChange(i(), 'template', e.currentTarget.value)}
+                            />
+                            {/* 删除 */}
+                            <button class="b3-button b3-button--outline"
+                                style={{ padding: '2px 8px', height: '26px', 'flex-shrink': '0' }}
+                                onClick={() => handlePromptDelete(i())}>删除</button>
+                        </div>
+                    )}
+                </For>
+                <div style={{ display: 'flex', gap: '8px', 'margin-top': '4px' }}>
+                    <button class="b3-button b3-button--outline"
+                        style={{ width: 'fit-content' }}
+                        onClick={handlePromptAdd}>+ 添加提示词</button>
+                    <button class="b3-button b3-button--outline"
+                        style={{ width: 'fit-content', opacity: '0.7' }}
+                        onClick={handleResetPrompts}>↺ 恢复默认</button>
+                </div>
             </Form.Wrap>
         </div>
     );
@@ -242,19 +390,15 @@ export function load(plugin: FMiscPlugin) {
 
     plugin.loadData(CONFIG_STORAGE_NAME).then((stored: any) => {
         if (stored) {
-            // 兼容旧版单 URL 格式
-            const legacy = stored.openCodeUrl;
-            if (legacy && (!Array.isArray(stored.urls) || !stored.urls.length)) {
-                config.urls = [{ name: 'OpenCode', url: legacy }];
-                config.activeIndex = 0;
-            } else {
-                if (Array.isArray(stored.urls)) config.urls = stored.urls;
-                if (typeof stored.activeIndex === 'number') config.activeIndex = stored.activeIndex;
-            }
+            if (Array.isArray(stored.urls)) config.urls = stored.urls;
+            if (typeof stored.activeIndex === 'number') config.activeIndex = stored.activeIndex;
+            if (Array.isArray(stored.prompts)) config.prompts = stored.prompts;
+            if (typeof stored.promptBarOpen === 'boolean') config.promptBarOpen = stored.promptBarOpen;
         }
         if (!Array.isArray(config.urls) || !config.urls.length)
             config.urls = [{ name: 'OpenCode', url: 'http://localhost:4096' }];
         if (config.activeIndex >= config.urls.length) config.activeIndex = 0;
+        if (!Array.isArray(config.prompts)) config.prompts = [...DEFAULT_PROMPTS];
         createDock(plugin);
     }).catch(() => createDock(plugin));
 }
@@ -295,6 +439,29 @@ function buildDockLayout(useWebview: boolean): DockLayout {
     tabBar.style.cssText = 'display:none;flex:none;flex-wrap:nowrap;overflow-x:auto;' +
         'border-bottom:1px solid var(--b3-border-color);background:var(--b3-theme-surface);' +
         'min-height:30px;scrollbar-width:none;';
+
+    // ── 提示词栏 ──
+    const promptBar = document.createElement('div');
+    promptBar.style.cssText =
+        'flex:none;border-bottom:1px solid var(--b3-border-color);' +
+        'background:var(--b3-theme-surface);';
+
+    const promptHeader = document.createElement('div');
+    promptHeader.style.cssText =
+        'display:flex;align-items:center;justify-content:flex-end;padding:1px 6px;min-height:20px;';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.style.cssText =
+        'border:none;background:transparent;cursor:pointer;padding:1px 4px;' +
+        'color:var(--b3-theme-on-surface);font-size:10px;opacity:0.5;line-height:1;';
+    toggleBtn.title = '收起/展开提示词栏';
+
+    const chipsContainer = document.createElement('div');
+    chipsContainer.style.cssText =
+        'display:flex;flex-wrap:wrap;gap:4px;padding:4px 6px 6px;';
+
+    promptHeader.appendChild(toggleBtn);
+    promptBar.append(promptHeader, chipsContainer);
 
     // ── 媒体容器 ──
     const mediaContainer = document.createElement('div');
@@ -340,7 +507,7 @@ function buildDockLayout(useWebview: boolean): DockLayout {
 
     mediaContainer.append(waitingEl, errorEl, dropHint);
 
-    return { tabBar, mediaContainer, dropHint, waitingEl, errorEl, retryBtn };
+    return { tabBar, promptBar, chipsContainer, toggleBtn, mediaContainer, dropHint, waitingEl, errorEl, retryBtn };
 }
 
 // ===== Dock 初始化 =====
@@ -355,10 +522,10 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
         'box-sizing:border-box;display:flex;flex-direction:column;' +
         'border:1px solid var(--b3-border-color);border-radius:4px;';
 
-    const { tabBar, mediaContainer, dropHint, waitingEl, errorEl, retryBtn } =
+    const { tabBar, promptBar, chipsContainer, toggleBtn, mediaContainer, dropHint, waitingEl, errorEl, retryBtn } =
         buildDockLayout(useWebview);
 
-    dockEl.append(tabBar, mediaContainer);
+    dockEl.append(tabBar, promptBar, mediaContainer);
 
     // ── 运行状态 ──
     let media: HTMLIFrameElement | any = null;
@@ -393,23 +560,93 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
         });
     };
 
+    // ── 提示词栏渲染 ──
+    const updatePromptBarVisibility = () => {
+        const open = config.promptBarOpen;
+        chipsContainer.style.display = open ? 'flex' : 'none';
+        toggleBtn.textContent = open ? '▲' : '▼';
+    };
+
+    const renderPromptBar = () => {
+        chipsContainer.innerHTML = '';
+
+        if (config.prompts.length === 0) {
+            promptBar.style.display = 'none';
+            return;
+        }
+        promptBar.style.display = '';
+
+        config.prompts.forEach((preset) => {
+            const chip = document.createElement('button');
+            chip.className = 'b3-button b3-button--outline';
+            chip.style.cssText =
+                'padding:1px 8px;font-size:11px;height:22px;line-height:1;' +
+                'display:inline-flex;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;';
+            chip.title = preset.template;
+
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = preset.icon;
+            iconSpan.style.fontSize = '12px';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = preset.name || preset.id;
+
+            chip.append(iconSpan, nameSpan);
+
+            chip.addEventListener('click', async () => {
+                if (!preset.template.trim()) {
+                    showMessage('该提示词模板为空', 1500, 'error');
+                    return;
+                }
+
+                chip.disabled = true;
+                chip.style.opacity = '0.5';
+
+                try {
+                    const resolved = await resolveTemplate(preset.template);
+
+                    if (useWebview && media) {
+                        // 使用 webview 中心坐标，以命中焦点区域
+                        const rect = (media as HTMLElement).getBoundingClientRect();
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
+                        const result = await injectTextToWebview(media, resolved, cx, cy);
+                        if (result === 'ok') {
+                            showMessage(`✓ ${preset.name}`, 1500, 'info');
+                        } else {
+                            copyToClipboard(resolved);
+                            showMessage('已复制到剪贴板，请在 AI 输入框粘贴', 2500, 'info');
+                        }
+                    } else {
+                        copyToClipboard(resolved);
+                        showMessage('已复制到剪贴板，请在 AI 输入框粘贴', 2500, 'info');
+                    }
+                } finally {
+                    chip.disabled = false;
+                    chip.style.opacity = '';
+                }
+            });
+
+            chipsContainer.appendChild(chip);
+        });
+
+        updatePromptBarVisibility();
+    };
+
+    toggleBtn.addEventListener('click', () => {
+        config.promptBarOpen = !config.promptBarOpen;
+        updatePromptBarVisibility();
+        saveConfig();
+    });
+
     // ── 状态显示 ──
     // 等待/错误层已用 position:absolute + z-index:10/11 覆盖在 media 上方
     // 不对 media 做 display 切换，避免破坏 webview/iframe 的尺寸计算
-    const setUrlText = (el: Element | null) => { if (el) el.textContent = getUrl(); };
-    const showWaiting = () => {
-        setUrlText(waitingEl.querySelector('.ai-url'));
-        waitingEl.style.display = 'flex';
-        errorEl.style.display = 'none';
-    };
-    const showError = () => {
-        waitingEl.style.display = 'none';
-        setUrlText(errorEl.querySelector('.ai-url'));
-        errorEl.style.display = 'flex';
-    };
-    const showMedia = () => {
-        waitingEl.style.display = 'none';
-        errorEl.style.display = 'none';
+    const setOverlay = (state: 'waiting' | 'error' | 'media') => {
+        const overlay = state === 'waiting' ? waitingEl : state === 'error' ? errorEl : null;
+        if (overlay) overlay.querySelector<HTMLElement>('.ai-url')!.textContent = getUrl();
+        waitingEl.style.display = state === 'waiting' ? 'flex' : 'none';
+        errorEl.style.display   = state === 'error'   ? 'flex' : 'none';
     };
 
     // ── 拖拽覆盖层 ──
@@ -494,11 +731,12 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
     };
 
     // ── 媒体元素销毁 ──
+    const addDragListeners    = (el: Element) => { el.addEventListener('dragenter', onDragEnter); el.addEventListener('dragleave', onDragLeave); el.addEventListener('drop', onDrop); };
+    const removeDragListeners = (el: Element) => { el.removeEventListener('dragenter', onDragEnter); el.removeEventListener('dragleave', onDragLeave); el.removeEventListener('drop', onDrop); };
+
     const destroyMedia = () => {
         if (!media) return;
-        media.removeEventListener('dragenter', onDragEnter);
-        media.removeEventListener('dragleave', onDragLeave);
-        media.removeEventListener('drop', onDrop);
+        removeDragListeners(media);
         // iframe 重置 src；webview 不能设置 about:blank（Electron 异步 IPC 会抛 ERR_FAILED）
         if (!useWebview) { try { (media as HTMLIFrameElement).src = 'about:blank'; } catch {} }
         else { try { (media as Electron.WebviewTag).stop(); } catch {} }
@@ -510,21 +748,28 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
     const createMedia = () => {
         if (media) return;
         const url = getUrl();
-        if (!url) { showError(); return; }
-        showWaiting();
+        if (!url) { setOverlay('error'); return; }
+        setOverlay('waiting');
 
         // 直接创建媒体元素；加载失败由 did-fail-load/onerror/loadTimeout 处理
         // （不再做 checkAvailable 前置预检，避免多余的 favicon 请求）
         // 加载失败的统一处理：先销毁媒体元素再显示等待界面。
         // webview 是 Electron OS 级嵌入窗口，任何 HTML 覆盖层都会被它遮挡，
-        // 必须先 destroyMedia() 把它从 DOM 移除，showWaiting() 才可见。
+        // 必须先 destroyMedia() 把它从 DOM 移除，setOverlay('waiting') 才可见。
         const onFail = () => {
             if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
             hasLoaded = false;
             destroyMedia();
-            showWaiting();
+            setOverlay('waiting');
             startRetry(url);
         };
+        const onLoadSuccess = () => {
+            loaded = true; hasLoaded = true;
+            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
+            stopRetry(); setOverlay('media');
+        };
+
+        let loaded = false;
 
         if (useWebview) {
             const wv = document.createElement('webview') as any;
@@ -533,19 +778,12 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
                 'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
             wv.setAttribute('allowpopups', '');
 
-            let loaded = false;
-            wv.addEventListener('did-finish-load', () => {
-                loaded = true; hasLoaded = true;
-                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                stopRetry(); showMedia();
-            });
+            wv.addEventListener('did-finish-load', onLoadSuccess);
             wv.addEventListener('did-fail-load', (e: any) => {
                 if (e.errorCode === -3) return; // ERR_ABORTED，忽略
                 onFail();
             });
-            wv.addEventListener('dragenter', onDragEnter);
-            wv.addEventListener('dragleave', onDragLeave);
-            wv.addEventListener('drop', onDrop);
+            addDragListeners(wv);
             media = wv;
             mediaContainer.appendChild(wv);
 
@@ -561,16 +799,9 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
                 'pointer-events:auto;z-index:0;';
             fr.setAttribute('allow', 'clipboard-read; clipboard-write');
 
-            let loaded = false;
-            fr.onload = () => {
-                loaded = true; hasLoaded = true;
-                if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-                stopRetry(); showMedia();
-            };
+            fr.onload = onLoadSuccess;
             fr.onerror = () => onFail();
-            fr.addEventListener('dragenter', onDragEnter);
-            fr.addEventListener('dragleave', onDragLeave);
-            fr.addEventListener('drop', onDrop);
+            addDragListeners(fr);
             media = fr;
             mediaContainer.appendChild(fr);
 
@@ -598,33 +829,33 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
 
     // ── ResizeObserver ──
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-    let isResizing = false;
-    const resizeStart = () => {
-        if (!media?.style || isResizing) return;
-        isResizing = true; media.style.pointerEvents = 'none';
-    };
-    const resizeEnd = () => {
-        if (!media?.style) return;
-        isResizing = false;
+    const ro = new ResizeObserver(() => {
+        if (media?.style) media.style.pointerEvents = 'none';
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
+            resizeTimer = null;
             if (media?.style) media.style.pointerEvents = 'auto';
-        }, 150);
-    };
-    const ro = new ResizeObserver(() => {
-        resizeStart();
-        if (resizeTimer) clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(resizeEnd, 100);
+        }, 200);
     });
     ro.observe(dockEl);
 
     let edgeDrag = false;
-    const onMouseUp = () => { if (edgeDrag) { edgeDrag = false; resizeEnd(); } };
+    const onMouseUp = () => {
+        if (!edgeDrag) return;
+        edgeDrag = false;
+        if (media?.style) media.style.pointerEvents = 'none';
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            resizeTimer = null;
+            if (media?.style) media.style.pointerEvents = 'auto';
+        }, 200);
+    };
     dockEl.addEventListener('mousedown', (e: MouseEvent) => {
         const r = dockEl.getBoundingClientRect(), th = 5;
         if (e.clientX <= r.left + th || e.clientX >= r.right - th ||
             e.clientY <= r.top + th  || e.clientY >= r.bottom - th) {
-            edgeDrag = true; resizeStart();
+            edgeDrag = true;
+            if (media?.style) media.style.pointerEvents = 'none';
         }
     });
 
@@ -636,6 +867,7 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
     mediaContainer.addEventListener('drop', onDrop);
 
     renderTabs();
+    renderPromptBar();
     createMedia();
 
     // ── 清理 ──
