@@ -454,7 +454,8 @@ function buildDockLayout(useWebview: boolean): DockLayout {
     const toggleBtn = document.createElement('button');
     toggleBtn.style.cssText =
         'border:none;background:transparent;cursor:pointer;padding:1px 4px;' +
-        'color:var(--b3-theme-on-surface);font-size:10px;opacity:0.4;line-height:1;flex-shrink:0;';
+        'color:var(--b3-theme-on-surface);font-size:10px;opacity:0.4;line-height:1;' +
+        'flex-shrink:0;margin-left:auto;';
     toggleBtn.title = '收起/展开提示词栏';
 
     promptBar.append(chipsContainer, toggleBtn);
