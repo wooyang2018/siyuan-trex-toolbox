@@ -536,11 +536,9 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
         if (!url) { showError(); return; }
         showWaiting();
 
-        checkAvailable(url).then((ok) => {
-            if (url !== getUrl()) return;
-            if (!ok) { showError(); startRetry(url); return; }
-
-            if (useWebview) {
+        // 直接创建媒体元素；加载失败由 did-fail-load/onerror/loadTimeout 处理
+        // （不再做 checkAvailable 前置预检，避免多余的 favicon 请求）
+        if (useWebview) {
                 const wv = document.createElement('webview') as any;
                 wv.src = url;
                 wv.style.cssText =
@@ -597,8 +595,7 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
                 loadTimeout = setTimeout(() => {
                     if (!loaded && media) { showError(); startRetry(url); }
                 }, 5000);
-            }
-        });
+        }
     };
 
     // ── 切换标签 ──
