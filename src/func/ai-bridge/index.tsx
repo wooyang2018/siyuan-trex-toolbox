@@ -478,41 +478,18 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
     };
     const onDrop = () => { hideDrop(); activeDragId = null; };
 
-    // ── 服务检测 ──
-    // 使用 fetch HEAD 请求：任何 HTTP 响应（含 403/404）都视为服务可用；
-    // 只有网络错误（ERR_CONNECTION_REFUSED 等）才视为不可用。
-    const checkAvailable = (url: string): Promise<boolean> =>
-        new Promise((resolve) => {
-            const ac = new AbortController();
-            const t = setTimeout(() => { ac.abort(); resolve(false); }, 3000);
-            fetch(`${url}/favicon.ico?_t=${Date.now()}`, {
-                method: 'HEAD',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                signal: ac.signal
-            }).then(() => {
-                clearTimeout(t); resolve(true);
-            }).catch((err) => {
-                clearTimeout(t);
-                // AbortError = 超时，视为不可用
-                resolve(err?.name === 'AbortError' ? false : true);
-            });
-        });
-
     const stopRetry = () => {
         if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
         retrying = false;
     };
+    // 每 3 秒直接尝试重建媒体元素（由 webview/iframe 自身的 did-fail-load/onerror 处理失败），
+    // 不再从父窗口发 fetch 探活，避免 ERR_CONNECTION_REFUSED 控制台噪音。
     const startRetry = (targetUrl: string) => {
         if (retryTimer || retrying) return;
         retrying = true;
         retryTimer = setInterval(() => {
             if (hasLoaded || targetUrl !== getUrl()) { stopRetry(); return; }
-            checkAvailable(targetUrl).then((ok) => {
-                if (ok && !hasLoaded && targetUrl === getUrl()) {
-                    stopRetry(); destroyMedia(); createMedia();
-                }
-            });
+            createMedia();
         }, 3000);
     };
 
