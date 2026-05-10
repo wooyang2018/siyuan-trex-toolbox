@@ -10,27 +10,7 @@ import { showMessage } from "siyuan";
 import { getBlockByID } from "@/api";
 import { getActiveDoc } from "@frostime/siyuan-plugin-kits";
 
-// ===== 类型 =====
-interface AIBridgeUrl { name: string; url: string; }
-
-interface PromptPreset {
-    id: string;
-    icon: string;
-    name: string;
-    template: string;
-}
-
-interface DockLayout {
-    tabBar: HTMLDivElement;
-    promptBar: HTMLDivElement;
-    chipsContainer: HTMLDivElement;
-    toggleBtn: HTMLButtonElement;
-    mediaContainer: HTMLDivElement;
-    dropHint: HTMLDivElement;
-    waitingEl: HTMLDivElement;
-    errorEl: HTMLDivElement;
-    retryBtn: HTMLButtonElement;
-}
+import { DockController, type DockConfig, type DockDeps, type AIBridgeUrl, type PromptPreset } from './dock-controller';
 
 // ===== 常量 =====
 const DOCK_TYPE = 'ai-agent-bridge-dock';
@@ -60,7 +40,7 @@ export const declareToggleEnabled = {
 };
 
 // ===== 模块配置 =====
-const config = {
+const config: DockConfig = {
     urls: [{ name: 'OpenCode', url: 'http://localhost:4096' }] as AIBridgeUrl[],
     activeIndex: 0,
     prompts: [...DEFAULT_PROMPTS] as PromptPreset[],
@@ -83,7 +63,7 @@ const blockIdFromTransfer = (dt: DataTransfer | null): string | null => {
     if (!dt) return null;
     for (const t of [BLOCK_ID_TEXT_TYPE, 'application/x-siyuan-node-id',
                      'application/x-siyuan-block-id', 'text/plain', 'text/uri-list', 'text/html']) {
-        try { const id = extractBlockId(dt.getData(t)); if (id) return id; } catch {}
+        try { const id = extractBlockId(dt.getData(t)); if (id) return id; } catch { /* ignore */ }
     }
     return null;
 };
@@ -95,97 +75,13 @@ const copyToClipboard = (text: string) => {
             { value: text, style: 'position:fixed;top:-9999px;left:-9999px;' });
         document.body.appendChild(ta);
         ta.select();
-        try { document.execCommand('copy'); } catch {}
+        try { document.execCommand('copy'); } catch { /* ignore */ }
         ta.remove();
     });
 };
 
 // ===== 辅助：Electron webview 检测 =====
 const isElectronEnv = (): boolean => /electron/i.test(navigator.userAgent);
-
-/**
- * 向 webview 注入脚本，在光标/落点/常用选择器处插入文本。
- */
-const injectTextToWebview = async (
-    webview: any,
-    text: string,
-    clientX: number,
-    clientY: number,
-): Promise<'ok' | 'clipboard'> => {
-    if (!webview || typeof webview.executeJavaScript !== 'function') return 'clipboard';
-
-    const rect = (webview as HTMLElement).getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    // execCommand('insertText') 是跨框架文本插入的标准做法：
-    // - 同时兼容 textarea/input 和 contenteditable
-    // - 会触发原生 beforeinput/input 事件，React/Vue/SolidJS 均能响应
-    // - 比手动操作 DOM 节点更可靠
-    const script = `
-(function(){
-    const text = ${JSON.stringify(text)};
-
-    function isEditable(el) {
-        if (!el || el === document.body) return false;
-        const tag = el.tagName;
-        if (tag === 'TEXTAREA') return true;
-        if (tag === 'INPUT' && !/checkbox|radio|button|submit|reset|file|image/i.test(el.type || '')) return true;
-        if (el.isContentEditable) return true;
-        return false;
-    }
-
-    function insert(el) {
-        if (!isEditable(el)) return false;
-        el.focus();
-        // execCommand('insertText') 触发原生 input 事件，兼容所有前端框架
-        const ok = document.execCommand('insertText', false, text);
-        if (ok) return true;
-        // execCommand 不可用时降级（textarea/input only）
-        if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-            const s = el.selectionStart ?? el.value.length;
-            const e2 = el.selectionEnd ?? el.value.length;
-            el.value = el.value.slice(0, s) + text + el.value.slice(e2);
-            el.selectionStart = el.selectionEnd = s + text.length;
-            el.dispatchEvent(new Event('input', {bubbles:true}));
-            el.dispatchEvent(new Event('change', {bubbles:true}));
-            return true;
-        }
-        return false;
-    }
-
-    // 1. 鼠标落点处元素（向上遍历，优先精确定位）
-    let node = document.elementFromPoint(${x}, ${y});
-    for (let i = 0; i < 8 && node; i++, node = node.parentElement) {
-        if (insert(node)) return 'point';
-    }
-
-    // 2. 当前焦点元素
-    if (insert(document.activeElement)) return 'focused';
-
-    // 3. 页面常用输入选择器（contenteditable 优先，现代 AI 工具多用富文本编辑器）
-    for (const sel of [
-        '[contenteditable="true"]',
-        'textarea',
-        '[role="textbox"]',
-        'input[type="text"]',
-        'input:not([type])'
-    ]) {
-        const el = document.querySelector(sel);
-        if (insert(el)) return 'selector';
-    }
-
-    return false;
-})()`;
-
-    try {
-        const result = await webview.executeJavaScript(script);
-        return result ? 'ok' : 'clipboard';
-    } catch (e) {
-        console.warn('[AI Bridge] executeJavaScript failed:', e);
-        return 'clipboard';
-    }
-};
 
 // ===== 辅助：模板变量解析 =====
 /**
@@ -223,7 +119,7 @@ const resolveTemplate = async (template: string): Promise<string> => {
 
 // ===== 模块状态 =====
 let plugin_: FMiscPlugin | null = null;
-let dockCleanup: (() => void) | null = null;
+let dockController: DockController | null = null;
 
 // ===== 配置持久化 =====
 const saveConfig = async () => {
@@ -337,24 +233,11 @@ function AIBridgeSettingPanel(): JSX.Element {
                                 style={{ width: '120px' }} fn_size={false}
                                 changed={(v) => handlePromptChange(i(), 'name', v)} />
                             {/* 模板 */}
-                            <textarea
-                                style={{
-                                    flex: '1',
-                                    'min-height': '60px',
-                                    'font-size': '12px',
-                                    padding: '4px 6px',
-                                    resize: 'vertical',
-                                    background: 'var(--b3-theme-background)',
-                                    color: 'var(--b3-theme-on-surface)',
-                                    border: '1px solid var(--b3-border-color)',
-                                    'border-radius': '4px',
-                                    'line-height': '1.4',
-                                    'font-family': 'var(--b3-font-family-code)',
-                                }}
-                                placeholder={"模板内容，支持 {{selection}} {{docTitle}} {{docId}}"}
+                            <Form.Input type="textarea" key={`ptemplate-${i()}`}
                                 value={entry.template}
-                                onInput={(e) => handlePromptChange(i(), 'template', e.currentTarget.value)}
-                            />
+                                placeholder="模板内容，支持 {{selection}} {{docTitle}} {{docId}}"
+                                style={{ flex: '1', 'min-height': '60px', 'font-size': '12px' }}
+                                changed={(v) => handlePromptChange(i(), 'template', v)} />
                             {/* 删除 */}
                             <button class="b3-button b3-button--outline"
                                 style={{ padding: '2px 8px', height: '26px', 'flex-shrink': '0' }}
@@ -382,6 +265,41 @@ export const declareSettingPanel: IFuncModule['declareSettingPanel'] = [{
     element: () => <AIBridgeSettingPanel />,
 }];
 
+// ===== Dock =====
+function createDock(plugin: FMiscPlugin) {
+    const useWebview = isElectronEnv();
+
+    const deps: DockDeps = {
+        resolveTemplate,
+        copyToClipboard,
+        blockIdFromElement,
+        blockIdFromTransfer,
+        saveConfig,
+        useWebview,
+    };
+
+    plugin.addDock({
+        config: {
+            position: 'RightTop',
+            size: { width: 300, height: 0 },
+            icon: 'iconAI',
+            title: 'AI Agent',
+            show: true,
+        },
+        data: null,
+        type: DOCK_TYPE,
+        init(dock: any) {
+            dockController = new DockController(dock.element, config, deps);
+            dockController.mount();
+        },
+        destroy() {
+            dockController?.dispose();
+            dockController = null;
+            console.log('[AI Bridge] dock destroyed');
+        },
+    });
+}
+
 // ===== 生命周期 =====
 export function load(plugin: FMiscPlugin) {
     if (enabled) return;
@@ -406,508 +324,7 @@ export function load(plugin: FMiscPlugin) {
 export function unload(_plugin?: FMiscPlugin) {
     if (!enabled) return;
     enabled = false;
-    dockCleanup?.();
-    dockCleanup = null;
+    dockController?.dispose();
+    dockController = null;
     plugin_ = null;
-}
-
-// ===== DOM 构建 =====
-
-/**
- * 创建并返回 dock 所需的全部 DOM 元素。
- * 不修改任何状态，不 append 到 document，仅负责构建。
- */
-function buildDockLayout(useWebview: boolean): DockLayout {
-    // 等待层与错误层共享的基础定位样式
-    const overlayBase =
-        'position:absolute;top:0;left:0;width:100%;height:100%;' +
-        'flex-direction:column;align-items:center;justify-content:center;padding:20px;' +
-        'text-align:center;color:var(--b3-theme-on-surface);' +
-        'background-color:var(--b3-theme-background);z-index:';
-
-    // 等待层与错误层共享的 SVG 图标（info 圆圈）
-    const infoIcon =
-        `<svg style="width:48px;height:48px;margin-bottom:16px;opacity:0.6;"` +
-        ` viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">` +
-        `<circle cx="12" cy="12" r="10"/>` +
-        `<line x1="12" y1="8" x2="12" y2="12"/>` +
-        `<line x1="12" y1="16" x2="12.01" y2="16"/>` +
-        `</svg>`;
-
-    // ── 标签栏 ──
-    const tabBar = document.createElement('div');
-    tabBar.style.cssText = 'display:none;flex:none;flex-wrap:nowrap;overflow-x:auto;' +
-        'border-bottom:1px solid var(--b3-border-color);background:var(--b3-theme-surface);' +
-        'min-height:30px;scrollbar-width:none;';
-
-    // ── 提示词栏 ──
-    const promptBar = document.createElement('div');
-    promptBar.style.cssText =
-        'flex:none;border-bottom:1px solid var(--b3-border-color);' +
-        'background:var(--b3-theme-surface);' +
-        'display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:3px 4px 3px 6px;';
-
-    const chipsContainer = document.createElement('div');
-    chipsContainer.style.cssText =
-        'display:flex;flex-wrap:wrap;gap:4px;flex:1;align-items:center;';
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.style.cssText =
-        'border:none;background:transparent;cursor:pointer;padding:1px 4px;' +
-        'color:var(--b3-theme-on-surface);font-size:10px;opacity:0.4;line-height:1;' +
-        'flex-shrink:0;margin-left:auto;';
-    toggleBtn.title = '收起/展开提示词栏';
-
-    promptBar.append(chipsContainer, toggleBtn);
-
-    // ── 媒体容器 ──
-    const mediaContainer = document.createElement('div');
-    mediaContainer.style.cssText = 'flex:1;position:relative;overflow:hidden;min-height:0;';
-
-    // ── 拖拽覆盖层 ──
-    const dropHint = document.createElement('div');
-    dropHint.style.cssText =
-        'display:none;position:absolute;inset:0;pointer-events:none;z-index:12;' +
-        'border:2px dashed var(--b3-theme-primary);border-radius:4px;' +
-        'background:color-mix(in srgb, var(--b3-theme-primary) 10%, transparent);' +
-        'color:var(--b3-theme-primary);font-size:13px;font-weight:500;' +
-        'flex-direction:column;align-items:center;justify-content:center;' +
-        'text-align:center;gap:6px;padding:16px;box-sizing:border-box;';
-    dropHint.innerHTML = useWebview
-        ? `<span style="font-size:22px;">⌨️</span>
-           <span>松开鼠标，将块 ID 插入光标处</span>
-           <span style="font-size:11px;opacity:0.7;">（桌面端直接注入，无需粘贴）</span>`
-        : `<span style="font-size:22px;">📋</span>
-           <span>松开鼠标，块 ID 将复制到剪贴板</span>
-           <span style="font-size:11px;opacity:0.7;">在 AI 输入框中 Ctrl+V 粘贴即可</span>`;
-
-    // ── 等待容器（z-index:10，等待服务启动时显示）──
-    const waitingEl = document.createElement('div');
-    waitingEl.style.cssText = 'display:flex;' + overlayBase + '10;';
-    waitingEl.innerHTML = infoIcon + `
-        <div style="font-size:16px;font-weight:500;margin-bottom:8px;">请先启动 AI Agent Web</div>
-        <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">等待服务启动中...</div>
-        <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;"></div>`;
-
-    // ── 错误容器（z-index:11，加载失败时显示）──
-    const errorEl = document.createElement('div');
-    errorEl.style.cssText = 'display:none;' + overlayBase + '11;';
-    const retryBtn = document.createElement('button');
-    retryBtn.className = 'b3-button b3-button--outline';
-    retryBtn.style.marginTop = '16px';
-    retryBtn.textContent = '重试';
-    errorEl.innerHTML = infoIcon + `
-        <div style="font-size:16px;font-weight:500;margin-bottom:8px;">页面加载失败</div>
-        <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">请检查 URL 是否正确或服务是否已启动</div>
-        <div class="ai-url" style="font-size:12px;opacity:0.5;font-family:monospace;word-break:break-all;margin-bottom:16px;"></div>`;
-    errorEl.appendChild(retryBtn);
-
-    mediaContainer.append(waitingEl, errorEl, dropHint);
-
-    return { tabBar, promptBar, chipsContainer, toggleBtn, mediaContainer, dropHint, waitingEl, errorEl, retryBtn };
-}
-
-// ===== Dock 初始化 =====
-
-/**
- * 初始化 dock 根元素：构建布局、绑定所有事件、启动媒体加载。
- * 返回 cleanup 函数，销毁时调用以注销所有监听器和定时器。
- */
-function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
-    dockEl.style.cssText =
-        'width:100%;height:100%;min-width:200px;min-height:180px;overflow:hidden;' +
-        'box-sizing:border-box;display:flex;flex-direction:column;' +
-        'border:1px solid var(--b3-border-color);border-radius:4px;';
-
-    const { tabBar, promptBar, chipsContainer, toggleBtn, mediaContainer, dropHint, waitingEl, errorEl, retryBtn } =
-        buildDockLayout(useWebview);
-
-    dockEl.append(tabBar, promptBar, mediaContainer);
-
-    // ── 运行状态 ──
-    let media: HTMLIFrameElement | any = null;
-    let loadTimeout: ReturnType<typeof setTimeout> | null = null;
-    let retryTimer: ReturnType<typeof setInterval> | null = null;
-    let hasLoaded = false;
-    let retrying = false;
-    let dragDepth = 0;
-    let activeDragId: string | null = null;
-    let currentIdx = Math.min(config.activeIndex, config.urls.length - 1);
-
-    const getUrl = () => config.urls[Math.min(currentIdx, config.urls.length - 1)]?.url ?? '';
-
-    // ── 标签栏渲染 ──
-    const renderTabs = () => {
-        tabBar.innerHTML = '';
-        if (config.urls.length <= 1) { tabBar.style.display = 'none'; return; }
-        tabBar.style.display = 'flex';
-        config.urls.forEach((e, idx) => {
-            const btn = document.createElement('button');
-            const active = idx === currentIdx;
-            btn.style.cssText =
-                'flex:none;padding:4px 14px;border:none;border-bottom:2px solid transparent;' +
-                'background:transparent;cursor:pointer;font-size:12px;white-space:nowrap;' +
-                'color:var(--b3-theme-on-surface);' +
-                (active ? 'border-bottom-color:var(--b3-theme-primary);color:var(--b3-theme-primary);font-weight:500;'
-                        : 'opacity:0.6;');
-            btn.textContent = e.name || e.url;
-            btn.title = e.url;
-            btn.addEventListener('click', () => switchTo(idx));
-            tabBar.appendChild(btn);
-        });
-    };
-
-    // ── 提示词栏渲染 ──
-    const updatePromptBarVisibility = () => {
-        const open = config.promptBarOpen;
-        chipsContainer.style.display = open ? 'flex' : 'none';
-        // 折叠时 promptBar 只剩 toggle 按钮，收紧高度
-        promptBar.style.paddingBottom = open ? '3px' : '0';
-        promptBar.style.paddingTop = open ? '3px' : '0';
-        toggleBtn.textContent = open ? '▲' : '▼';
-    };
-
-    const renderPromptBar = () => {
-        chipsContainer.innerHTML = '';
-
-        if (config.prompts.length === 0) {
-            promptBar.style.display = 'none';
-            return;
-        }
-        promptBar.style.display = 'flex';
-
-        config.prompts.forEach((preset) => {
-            const chip = document.createElement('button');
-            chip.className = 'b3-button b3-button--outline';
-            chip.style.cssText =
-                'padding:1px 8px;font-size:11px;height:22px;line-height:1;' +
-                'display:inline-flex;align-items:center;gap:3px;flex-shrink:0;cursor:pointer;';
-            chip.title = preset.template;
-
-            const iconSpan = document.createElement('span');
-            iconSpan.textContent = preset.icon;
-            iconSpan.style.fontSize = '12px';
-
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = preset.name || preset.id;
-
-            chip.append(iconSpan, nameSpan);
-
-            chip.addEventListener('click', async () => {
-                if (!preset.template.trim()) {
-                    showMessage('该提示词模板为空', 1500, 'error');
-                    return;
-                }
-
-                chip.disabled = true;
-                chip.style.opacity = '0.5';
-
-                try {
-                    const resolved = await resolveTemplate(preset.template);
-
-                    if (useWebview && media) {
-                        // 使用 webview 中心坐标，以命中焦点区域
-                        const rect = (media as HTMLElement).getBoundingClientRect();
-                        const cx = rect.left + rect.width / 2;
-                        const cy = rect.top + rect.height / 2;
-                        const result = await injectTextToWebview(media, resolved, cx, cy);
-                        if (result === 'ok') {
-                            showMessage(`✓ ${preset.name}`, 1500, 'info');
-                        } else {
-                            copyToClipboard(resolved);
-                            showMessage('已复制到剪贴板，请在 AI 输入框粘贴', 2500, 'info');
-                        }
-                    } else {
-                        copyToClipboard(resolved);
-                        showMessage('已复制到剪贴板，请在 AI 输入框粘贴', 2500, 'info');
-                    }
-                } finally {
-                    chip.disabled = false;
-                    chip.style.opacity = '';
-                }
-            });
-
-            chipsContainer.appendChild(chip);
-        });
-
-        updatePromptBarVisibility();
-    };
-
-    toggleBtn.addEventListener('click', () => {
-        config.promptBarOpen = !config.promptBarOpen;
-        updatePromptBarVisibility();
-        saveConfig();
-    });
-
-    // ── 状态显示 ──
-    // 等待/错误层已用 position:absolute + z-index:10/11 覆盖在 media 上方
-    // 不对 media 做 display 切换，避免破坏 webview/iframe 的尺寸计算
-    const setOverlay = (state: 'waiting' | 'error' | 'media') => {
-        const overlay = state === 'waiting' ? waitingEl : state === 'error' ? errorEl : null;
-        if (overlay) overlay.querySelector<HTMLElement>('.ai-url')!.textContent = getUrl();
-        waitingEl.style.display = state === 'waiting' ? 'flex' : 'none';
-        errorEl.style.display   = state === 'error'   ? 'flex' : 'none';
-    };
-
-    // ── 拖拽覆盖层 ──
-    const showDrop = () => {
-        if (!activeDragId) return;
-        dropHint.style.display = 'flex';
-        dropHint.style.pointerEvents = 'auto';
-    };
-    const hideDrop = () => {
-        dragDepth = 0;
-        dropHint.style.display = 'none';
-        dropHint.style.pointerEvents = 'none';
-        // 拖拽结束，恢复 webview/iframe 的指针事件
-        if (media?.style) media.style.pointerEvents = 'auto';
-    };
-
-    dropHint.addEventListener('dragover', (e: DragEvent) => {
-        e.preventDefault(); e.stopPropagation();
-    });
-
-    dropHint.addEventListener('drop', async (e: DragEvent) => {
-        e.preventDefault(); e.stopPropagation();
-        const blockId = activeDragId;
-        hideDrop();
-        activeDragId = null;
-        if (!blockId) return;
-
-        if (useWebview && media) {
-            const result = await injectTextToWebview(media, blockId, e.clientX, e.clientY);
-            if (result === 'ok') {
-                showMessage('块 ID 已插入', 1500, 'info');
-            } else {
-                copyToClipboard(blockId);
-                showMessage('未找到输入框，块 ID 已复制到剪贴板', 3000, 'info');
-            }
-        } else {
-            copyToClipboard(blockId);
-            showMessage('块 ID 已复制到剪贴板，在 AI 输入框粘贴即可', 3000, 'info');
-        }
-    });
-
-    // ── 全局拖拽监听 ──
-    const onDragStart = (e: DragEvent) => {
-        const id = blockIdFromElement(e.target) ?? blockIdFromTransfer(e.dataTransfer);
-        if (!id || !e.dataTransfer) { activeDragId = null; return; }
-        activeDragId = id;
-        try {
-            e.dataTransfer.setData('text/plain', id);
-            e.dataTransfer.setData(BLOCK_ID_TEXT_TYPE, id);
-        } catch {}
-        // 拖拽期间禁用 webview/iframe 的指针事件
-        // Electron webview 是独立嵌入窗口，z-index 无效，必须用 pointer-events:none
-        // 才能让外层 DOM 接收到 dragenter/drop 事件
-        if (media?.style) media.style.pointerEvents = 'none';
-    };
-    const onDragEnd = () => {
-        activeDragId = null;
-        hideDrop();
-        // hideDrop 内已恢复 pointer-events
-    };
-    const onDragEnter = () => { if (!activeDragId) return; dragDepth++; showDrop(); };
-    const onDragLeave = () => {
-        if (!activeDragId) return;
-        dragDepth = Math.max(0, dragDepth - 1);
-        if (dragDepth === 0) hideDrop();
-    };
-    const onDrop = () => { hideDrop(); activeDragId = null; };
-
-    const stopRetry = () => {
-        if (retryTimer) { clearInterval(retryTimer); retryTimer = null; }
-        retrying = false;
-    };
-    // 每 3 秒直接尝试重建媒体元素（由 webview/iframe 自身的 did-fail-load/onerror 处理失败），
-    // 不再从父窗口发 fetch 探活，避免 ERR_CONNECTION_REFUSED 控制台噪音。
-    const startRetry = (targetUrl: string) => {
-        if (retryTimer || retrying) return;
-        retrying = true;
-        retryTimer = setInterval(() => {
-            if (hasLoaded || targetUrl !== getUrl()) { stopRetry(); return; }
-            createMedia();
-        }, 3000);
-    };
-
-    // ── 媒体元素销毁 ──
-    const addDragListeners    = (el: Element) => { el.addEventListener('dragenter', onDragEnter); el.addEventListener('dragleave', onDragLeave); el.addEventListener('drop', onDrop); };
-    const removeDragListeners = (el: Element) => { el.removeEventListener('dragenter', onDragEnter); el.removeEventListener('dragleave', onDragLeave); el.removeEventListener('drop', onDrop); };
-
-    const destroyMedia = () => {
-        if (!media) return;
-        removeDragListeners(media);
-        // iframe 重置 src；webview 不能设置 about:blank（Electron 异步 IPC 会抛 ERR_FAILED）
-        if (!useWebview) { try { (media as HTMLIFrameElement).src = 'about:blank'; } catch {} }
-        else { try { (media as Electron.WebviewTag).stop(); } catch {} }
-        media.remove();
-        media = null;
-    };
-
-    // ── 媒体元素创建 ──
-    const createMedia = () => {
-        if (media) return;
-        const url = getUrl();
-        if (!url) { setOverlay('error'); return; }
-        setOverlay('waiting');
-
-        // 直接创建媒体元素；加载失败由 did-fail-load/onerror/loadTimeout 处理
-        // （不再做 checkAvailable 前置预检，避免多余的 favicon 请求）
-        // 加载失败的统一处理：先销毁媒体元素再显示等待界面。
-        // webview 是 Electron OS 级嵌入窗口，任何 HTML 覆盖层都会被它遮挡，
-        // 必须先 destroyMedia() 把它从 DOM 移除，setOverlay('waiting') 才可见。
-        const onFail = () => {
-            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-            hasLoaded = false;
-            destroyMedia();
-            setOverlay('waiting');
-            startRetry(url);
-        };
-        const onLoadSuccess = () => {
-            loaded = true; hasLoaded = true;
-            if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-            stopRetry(); setOverlay('media');
-        };
-
-        let loaded = false;
-
-        if (useWebview) {
-            const wv = document.createElement('webview') as any;
-            wv.src = url;
-            wv.style.cssText =
-                'position:absolute;top:0;left:0;right:0;bottom:0;border:none;z-index:0;';
-            wv.setAttribute('allowpopups', '');
-
-            wv.addEventListener('did-finish-load', onLoadSuccess);
-            wv.addEventListener('did-fail-load', (e: any) => {
-                if (e.errorCode === -3) return; // ERR_ABORTED，忽略
-                onFail();
-            });
-            addDragListeners(wv);
-            media = wv;
-            mediaContainer.appendChild(wv);
-
-            loadTimeout = setTimeout(() => {
-                if (!loaded && media) onFail();
-            }, 8000);
-
-        } else {
-            const fr = document.createElement('iframe');
-            fr.src = url;
-            fr.style.cssText =
-                'position:absolute;top:0;left:0;right:0;bottom:0;border:none;' +
-                'pointer-events:auto;z-index:0;';
-            fr.setAttribute('allow', 'clipboard-read; clipboard-write');
-
-            fr.onload = onLoadSuccess;
-            fr.onerror = () => onFail();
-            addDragListeners(fr);
-            media = fr;
-            mediaContainer.appendChild(fr);
-
-            loadTimeout = setTimeout(() => {
-                if (!loaded && media) onFail();
-            }, 5000);
-        }
-    };
-
-    // ── 切换标签 ──
-    const switchTo = (idx: number) => {
-        if (idx === currentIdx && media) return;
-        stopRetry(); hasLoaded = false;
-        if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-        destroyMedia();
-        currentIdx = idx;
-        config.activeIndex = idx;
-        renderTabs();
-        createMedia();
-    };
-
-    retryBtn.addEventListener('click', () => {
-        stopRetry(); hasLoaded = false; destroyMedia(); createMedia();
-    });
-
-    // ── ResizeObserver ──
-    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-    const ro = new ResizeObserver(() => {
-        if (media?.style) media.style.pointerEvents = 'none';
-        if (resizeTimer) clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            resizeTimer = null;
-            if (media?.style) media.style.pointerEvents = 'auto';
-        }, 200);
-    });
-    ro.observe(dockEl);
-
-    let edgeDrag = false;
-    const onMouseUp = () => {
-        if (!edgeDrag) return;
-        edgeDrag = false;
-        if (media?.style) media.style.pointerEvents = 'none';
-        if (resizeTimer) clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            resizeTimer = null;
-            if (media?.style) media.style.pointerEvents = 'auto';
-        }, 200);
-    };
-    dockEl.addEventListener('mousedown', (e: MouseEvent) => {
-        const r = dockEl.getBoundingClientRect(), th = 5;
-        if (e.clientX <= r.left + th || e.clientX >= r.right - th ||
-            e.clientY <= r.top + th  || e.clientY >= r.bottom - th) {
-            edgeDrag = true;
-            if (media?.style) media.style.pointerEvents = 'none';
-        }
-    });
-
-    document.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('dragstart', onDragStart, false);
-    document.addEventListener('dragend', onDragEnd, true);
-    mediaContainer.addEventListener('dragenter', onDragEnter);
-    mediaContainer.addEventListener('dragleave', onDragLeave);
-    mediaContainer.addEventListener('drop', onDrop);
-
-    renderTabs();
-    renderPromptBar();
-    createMedia();
-
-    // ── 清理 ──
-    return () => {
-        stopRetry();
-        if (loadTimeout) { clearTimeout(loadTimeout); loadTimeout = null; }
-        if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
-        ro.disconnect();
-        document.removeEventListener('mouseup', onMouseUp);
-        document.removeEventListener('dragstart', onDragStart, false);
-        document.removeEventListener('dragend', onDragEnd, true);
-        mediaContainer.removeEventListener('dragenter', onDragEnter);
-        mediaContainer.removeEventListener('dragleave', onDragLeave);
-        mediaContainer.removeEventListener('drop', onDrop);
-        hideDrop(); activeDragId = null;
-        destroyMedia();
-    };
-}
-
-// ===== Dock =====
-function createDock(plugin: FMiscPlugin) {
-    const useWebview = isElectronEnv();
-
-    plugin.addDock({
-        config: {
-            position: 'RightTop',
-            size: { width: 300, height: 0 },
-            icon: 'iconAI',
-            title: 'AI Agent',
-            show: true,
-        },
-        data: null,
-        type: DOCK_TYPE,
-        init(dock: any) {
-            dockCleanup = initDock(dock.element, useWebview);
-        },
-        destroy() {
-            dockCleanup?.();
-            dockCleanup = null;
-            console.log('[AI Bridge] dock destroyed');
-        },
-    });
 }
