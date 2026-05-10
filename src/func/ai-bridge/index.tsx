@@ -444,24 +444,20 @@ function buildDockLayout(useWebview: boolean): DockLayout {
     const promptBar = document.createElement('div');
     promptBar.style.cssText =
         'flex:none;border-bottom:1px solid var(--b3-border-color);' +
-        'background:var(--b3-theme-surface);';
+        'background:var(--b3-theme-surface);' +
+        'display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:3px 4px 3px 6px;';
 
-    const promptHeader = document.createElement('div');
-    promptHeader.style.cssText =
-        'display:flex;align-items:center;justify-content:flex-end;padding:1px 6px;min-height:20px;';
+    const chipsContainer = document.createElement('div');
+    chipsContainer.style.cssText =
+        'display:flex;flex-wrap:wrap;gap:4px;flex:1;align-items:center;';
 
     const toggleBtn = document.createElement('button');
     toggleBtn.style.cssText =
         'border:none;background:transparent;cursor:pointer;padding:1px 4px;' +
-        'color:var(--b3-theme-on-surface);font-size:10px;opacity:0.5;line-height:1;';
+        'color:var(--b3-theme-on-surface);font-size:10px;opacity:0.4;line-height:1;flex-shrink:0;';
     toggleBtn.title = '收起/展开提示词栏';
 
-    const chipsContainer = document.createElement('div');
-    chipsContainer.style.cssText =
-        'display:flex;flex-wrap:wrap;gap:4px;padding:4px 6px 6px;';
-
-    promptHeader.appendChild(toggleBtn);
-    promptBar.append(promptHeader, chipsContainer);
+    promptBar.append(chipsContainer, toggleBtn);
 
     // ── 媒体容器 ──
     const mediaContainer = document.createElement('div');
@@ -564,6 +560,9 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
     const updatePromptBarVisibility = () => {
         const open = config.promptBarOpen;
         chipsContainer.style.display = open ? 'flex' : 'none';
+        // 折叠时 promptBar 只剩 toggle 按钮，收紧高度
+        promptBar.style.paddingBottom = open ? '3px' : '0';
+        promptBar.style.paddingTop = open ? '3px' : '0';
         toggleBtn.textContent = open ? '▲' : '▼';
     };
 
@@ -574,7 +573,7 @@ function initDock(dockEl: HTMLElement, useWebview: boolean): () => void {
             promptBar.style.display = 'none';
             return;
         }
-        promptBar.style.display = '';
+        promptBar.style.display = 'flex';
 
         config.prompts.forEach((preset) => {
             const chip = document.createElement('button');
