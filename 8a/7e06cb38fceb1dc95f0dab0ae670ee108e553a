@@ -1,0 +1,32 @@
+siyuan/JS/管理Symbol图标.js
+  s_cab5a95be70fb7::t_f7e8f70870d95a 71
+  s_cab5a95be70fb7::t_08e099e77acab7 58-64,66-67,72-87
+  s_cab5a95be70fb7::t_dc01f4e390c57e 65
+  s_cab5a95be70fb7::t_745c36911dd54a 69-70
+  s_cab5a95be70fb7::t_75a04ffad50980 68
+.gitignore
+  h_cf037dcb817b82 18
+siyuan/JS/管理插件外观.js
+  s_cab5a95be70fb7::t_1e5bc1d80e9df0 54-56,63,71-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "8a7e06cb38fceb1dc95f0dab0ae670ee108e553a",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_cab5a95be70fb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dc4bbfe76cd4c3195ec75addbf32df4",
+        "model": "claude-opus-4.7-1m"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
