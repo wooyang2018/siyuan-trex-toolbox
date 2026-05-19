@@ -224,7 +224,7 @@ const escapeAttr = (s: string): string =>
  */
 const showDialog = (fmiscPlugin: FMiscPlugin) => {
     /** 重新从 window.siyuan.config.keymap 收集最新数据，并重算重复键 */
-    const collect = (): { types: ITypes; repeatedKeys: string[] } => {
+    const collect = (): { types: ITypes; repeatedKeys: string[]; pluginDisplayNames: Record<string, string> } => {
         const keys = (window as any).siyuan.config.keymap;
         const { general, editor, plugin } = keys;
         const keyCount: Record<string, string[]> = {};
@@ -233,6 +233,8 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             editor: {},
             plugin: {},
         };
+        // 插件分组标题：优先 app.plugins[name].displayName -> siyuan.languages[name] -> name
+        const pluginDisplayNames: Record<string, string> = {};
 
         for (const k in general) {
             const displayKey = (window as any).siyuan.languages[k] || k;
@@ -256,12 +258,20 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             const p = fmiscPlugin.app.plugins.find((n: any) => n.name === k) as any;
             const i18n = p?.i18n || {};
             const cmds: any[] = p?.commands || [];
+            // 收集插件分组标题：优先取 plugin.displayName（plugin.json 声明的 i18n 名）
+            const pluginDisplayName =
+                (typeof p?.displayName === 'string' && p.displayName.trim()) ? p.displayName.trim() :
+                ((window as any).siyuan?.languages?.[k] || k);
+            pluginDisplayNames[k] = pluginDisplayName;
 
             for (const j in plugin[k]) {
-                // 显示名优先级：ICommand.langText > plugin.i18n[langKey] > langKey
+                // 显示名优先级：ICommand.langText > plugin.i18n[langKey] > plugin.docks[langKey].config.title > langKey
                 const cmd = cmds.find((c: any) => c?.langKey === j);
                 const langText = typeof cmd?.langText === 'string' ? cmd.langText.trim() : '';
-                const displayKey = langText || i18n[j] || j;
+                const dockTitle = typeof p?.docks?.[j]?.config?.title === 'string'
+                    ? p.docks[j].config.title.trim()
+                    : '';
+                const displayKey = langText || i18n[j] || dockTitle || j;
                 const value = updateHotkeyTip(plugin[k][j]?.custom);
                 keyCount[value] = keyCount[value] ? [...keyCount[value], displayKey] : [displayKey];
                 types.plugin[k].push({
@@ -278,10 +288,10 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             .filter(([key, value]) => key && value.length > 1)
             .map(([key]) => key);
 
-        return { types, repeatedKeys };
+        return { types, repeatedKeys, pluginDisplayNames };
     };
 
-    let { types, repeatedKeys } = collect();
+    let { types, repeatedKeys, pluginDisplayNames } = collect();
 
     // 顶部搜索条与重复键追溯条；重复键追溯每次重渲会刷新
     const buildHeader = () => `
@@ -312,7 +322,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             </div>`;
     };
 
-    const render = () => {
+    const renderContent = () => {
         const generals = types.general.filter((v) =>
             !searchInput || v.displayKey.includes(searchInput)
         );
@@ -368,14 +378,12 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             innerHTML += `
             <div class="keymap-plugin-header">${(window as any).siyuan.languages["plugin"]}</div>
             ${Object.keys(pluginData).map((v) => `
-                <div class="keymap-plugin-header-2">${(window as any).siyuan.languages[v] || v}</div>
+                <div class="keymap-plugin-header-2">${escapeAttr(pluginDisplayNames[v] || v)}</div>
                 ${pluginData[v].map(renderItem).join("")}
             `).join("")}`;
         }
 
         const contentEl = dialog.element.querySelector('#keymap-plugin-content') as HTMLElement | null;
-        const headerEl = dialog.element.querySelector('#keymap-plugin-header') as HTMLElement | null;
-        if (headerEl) headerEl.innerHTML = buildHeader();
         if (contentEl) {
             contentEl.innerHTML = innerHTML;
             // 标注冲突项：value 出现在 repeatedKeys 集合里则加 conflict 类
@@ -389,6 +397,18 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
                 }
             });
         }
+    };
+
+    /** 仅重建顶部 header（搜索条 + 重复键追溯条）*/
+    const renderHeader = () => {
+        const headerEl = dialog.element.querySelector('#keymap-plugin-header') as HTMLElement | null;
+        if (headerEl) headerEl.innerHTML = buildHeader();
+    };
+
+    /** 全量重渲：header + content（保存快捷键后用） */
+    const render = () => {
+        renderHeader();
+        renderContent();
     };
 
     const dialog = new Dialog({
@@ -498,6 +518,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
                 const fresh = collect();
                 types = fresh.types;
                 repeatedKeys = fresh.repeatedKeys;
+                pluginDisplayNames = fresh.pluginDisplayNames;
                 render();
             } else {
                 exitEditing(input);
@@ -543,11 +564,16 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
     });
 
     // 搜索框 keyup（独立绑定，不和 keydown 编辑捕获冲突）
+    // 注意：仅刷新内容，不重建 header（避免搜索框 input 被销毁导致焦点丢失）
+    let searchDebounce: ReturnType<typeof setTimeout> | null = null;
     container.addEventListener('keyup', (e) => {
         const target = e.target as HTMLElement;
         if (target.id === 'keymap-plugin-search-input') {
             searchInput = (target as HTMLInputElement).value || '';
-            render();
+            if (searchDebounce) clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                renderContent();
+            }, 100);
         }
     });
 };

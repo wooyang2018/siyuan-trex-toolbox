@@ -13,7 +13,7 @@ import { getActiveDoc } from "@frostime/siyuan-plugin-kits";
 import { DockController, type DockConfig, type DockDeps, type AIBridgeUrl, type PromptPreset } from './dock-controller';
 
 // ===== 常量 =====
-const DOCK_TYPE = 'ai-agent-bridge-dock';
+const DOCK_TYPE = '-ai-bridge-dock';
 const BLOCK_ID_TEXT_TYPE = 'text/siyuan-block-id';
 const BLOCK_ID_PATTERN = /\b\d{14}-[0-9a-z]{7}\b/i;
 const CONFIG_STORAGE_NAME = 'ai-bridge-config.json';
