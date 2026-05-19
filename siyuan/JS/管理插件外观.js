@@ -51,13 +51,16 @@ whenElementExist(menuItemsSelector).then((menuItemsElement) => {
 });
 
 // ==========修改插件栏标签==========
+// key 支持两种形式：
+// 1. 普通字符串：按 label 文本精确匹配
+// 2. "data-id:xxx"：按 button 的 data-id 属性匹配
 const replaceTextMap = {
     "(伪)文档面包屑": "文档面包屑",
     "Query&View": "Query View",
     "在线图片文字识别(OCR)": "在线图片文字识别",
     "书签+": "书签增强",
-    "思源 sisyphus MCP & CLI": "思源MCP",
     "搜 easy": "搜索",
+    "data-id:siyuan-plugins-mcp-sisyphus": "思源MCP",
 };
 async function replaceMenuLabels() {
     await whenElementExist('#commonMenu .b3-menu__items .b3-menu__item');
@@ -65,7 +68,18 @@ async function replaceMenuLabels() {
     const items = menuItems.querySelectorAll('.b3-menu__item');
     items.forEach(item => {
         const label = item.querySelector('span.b3-menu__label');
-        if (label && replaceTextMap[label.textContent]) {
+        if (!label) return;
+        // 优先按 data-id 匹配
+        const dataId = item.getAttribute('data-id');
+        if (dataId) {
+            const dataIdKey = `data-id:${dataId}`;
+            if (replaceTextMap[dataIdKey]) {
+                label.textContent = replaceTextMap[dataIdKey];
+                return;
+            }
+        }
+        // 回退按文本匹配
+        if (replaceTextMap[label.textContent]) {
             label.textContent = replaceTextMap[label.textContent];
         }
     });

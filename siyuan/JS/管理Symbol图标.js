@@ -5,10 +5,6 @@ const replacements1 = [
         transform: "scale(0.95)"
     },
     {
-        id: "#iconList",
-        transform: "scale(0.95)"
-    },
-    {
         id: "#iconSmallNote",
         transform: "scale(1.25)"
     }
@@ -59,4 +55,34 @@ replacements2.forEach(replacement => {
         const newSymbolElement = parser.parseFromString(replacement.newSymbol, 'image/svg+xml').documentElement;
         existingSymbol.parentNode.replaceChild(newSymbolElement, existingSymbol);
     })
+});
+
+
+// ==========直接替换SVG图标==========
+// 通过 selector 定位页面上已存在的 <svg> 元素，整体替换为新的 svg 字符串
+const replacements3 = [
+    {
+        // 查看全部任务
+        selector: "#plugin_pinch_0 > svg",
+        newSvg: `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -35 380 490">
+                    <g fill="currentColor" stroke="currentColor" stroke-width="14" stroke-linejoin="round" fill-rule="evenodd">
+                        <path d="M185.469407,39.207713 L356.136074,39.207713 L356.136074,81.8743797 L185.469407,81.8743797 L185.469407,39.207713 Z M185.469407,188.541046 L356.136074,188.541046 L356.136074,231.207713 L185.469407,231.207713 L185.469407,188.541046 Z M14.8027404,295.207713 L121.469407,295.207713 L121.469407,401.87438 L14.8027404,401.87438 L14.8027404,295.207713 Z M46.8027404,327.207713 L46.8027404,369.87438 L89.4694071,369.87438 L89.4694071,327.207713 L46.8027404,327.207713 Z M185.469407,337.87438 L356.136074,337.87438 L356.136074,380.541046 L185.469407,380.541046 L185.469407,337.87438 Z M119.285384,-7.10542736e-15 L144.649352,19.5107443 L68.6167605,118.353113 L1.42108547e-14,58.3134476 L21.0721475,34.2309934 L64.0400737,71.8050464 L119.285384,-7.10542736e-15 Z M119.285384,149.333333 L144.649352,168.844078 L68.6167605,267.686446 L1.42108547e-14,207.646781 L21.0721475,183.564327 L64.0400737,221.13838 L119.285384,149.333333 Z"/>
+                    </g>
+                </svg>`
+    }
+];
+
+replacements3.forEach(replacement => {
+    whenElementExist(replacement.selector).then(existingSvg => {
+        const parser = new DOMParser();
+        const newSvgElement = parser.parseFromString(replacement.newSvg, 'image/svg+xml').documentElement;
+        // 保留原 svg 上的 class、style 等属性，避免破坏原有布局
+        for (const attr of existingSvg.attributes) {
+            if (!newSvgElement.hasAttribute(attr.name)) {
+                newSvgElement.setAttribute(attr.name, attr.value);
+            }
+        }
+        existingSvg.parentNode.replaceChild(newSvgElement, existingSvg);
+    });
 });
