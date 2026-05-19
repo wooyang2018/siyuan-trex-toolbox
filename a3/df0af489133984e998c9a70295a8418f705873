@@ -1,0 +1,19 @@
+src/func/keymap.ts
+  s_cab5a95be70fb7::t_c6b5cbb8759c7b 258,261-264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "a3df0af489133984e998c9a70295a8418f705873",
+  "prompts": {},
+  "sessions": {
+    "s_cab5a95be70fb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dc4bbfe76cd4c3195ec75addbf32df4",
+        "model": "claude-opus-4.7-1m"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
