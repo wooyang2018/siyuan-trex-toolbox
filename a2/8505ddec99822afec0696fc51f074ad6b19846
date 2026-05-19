@@ -1,0 +1,34 @@
+src/func/keymap.ts
+  s_cab5a95be70fb7::t_13a9463b4aa048 227,236-237
+  s_cab5a95be70fb7::t_26d4a37a9b5375 261-265
+  s_cab5a95be70fb7::t_6b1f6079a3c73d 381
+  s_cab5a95be70fb7::t_6b9317801f82de 521
+  s_cab5a95be70fb7::t_87dcd44666bf60 567-568,573-576
+  s_cab5a95be70fb7::t_818981b705c560 268,271-274
+  s_cab5a95be70fb7::t_7682e741d92ea5 291,294
+  s_cab5a95be70fb7::t_5334081a0bdd9c 325,403-411
+  h_cf037dcb817b82 402
+src/func/ai-bridge/index.tsx
+  h_cf037dcb817b82 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "a28505ddec99822afec0696fc51f074ad6b19846",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_cab5a95be70fb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dc4bbfe76cd4c3195ec75addbf32df4",
+        "model": "claude-opus-4.7-1m"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
