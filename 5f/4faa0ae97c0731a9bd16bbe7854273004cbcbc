@@ -1,0 +1,26 @@
+src/libs/hotkey.ts
+  s_cab5a95be70fb7::t_49b5e965190c27 70-131,134-136
+src/func/keymap.ts
+  h_cf037dcb817b82 2,4-9,12-13,78-82,105-120,128-146,167-209,211-220,226-228,231-241,243-251,254-257,259-277,279-283,286-289,291-295,299-310,313,315,317,320-321,325,327,330,338,341,343-344,349,351,354,362,365,367-368,372-374,377-386,388-390,393,397-406,408-425,427-432,434-438,440,443-452,454-455,457-501,504-525,528-549
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "5f4faa0ae97c0731a9bd16bbe7854273004cbcbc",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_cab5a95be70fb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dc4bbfe76cd4c3195ec75addbf32df4",
+        "model": "unknown"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
