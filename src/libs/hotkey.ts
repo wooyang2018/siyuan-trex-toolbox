@@ -67,7 +67,70 @@ const updateHotkeyTip = (hotkey) => {
 };
 
 
+/**
+ * 将 KeyboardEvent 转为思源 keymap 存储用的符号字符串（如 "⌘⇧A"）。
+ * 平台约定：
+ * - Mac: Meta -> ⌘、Ctrl -> ⌃
+ * - Win/Linux: Ctrl -> ⌘
+ * - Shift -> ⇧、Alt -> ⌥
+ * 若仅按下修饰键返回空串。
+ */
+const keyboardEventToHotkey = (e: KeyboardEvent): string => {
+    const isMac = /Mac/.test(navigator.platform) || navigator.platform === "iPhone";
+
+    let modifiers = "";
+    if (e.altKey) modifiers += "⌥";
+    if (e.shiftKey) modifiers += "⇧";
+    if (isMac) {
+        if (e.ctrlKey) modifiers += "⌃";
+        if (e.metaKey) modifiers += "⌘";
+    } else {
+        if (e.ctrlKey) modifiers += "⌘";
+    }
+
+    const key = e.key || "";
+    const code = e.code || "";
+
+    const modifierKeys = new Set([
+        "Shift", "Control", "Alt", "Meta",
+        "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight",
+        "AltLeft", "AltRight", "MetaLeft", "MetaRight",
+    ]);
+    if (modifierKeys.has(key) || modifierKeys.has(code)) {
+        return "";
+    }
+
+    const specialMap: Record<string, string> = {
+        "Backspace": "⌫",
+        "Delete": "⌦",
+        "Enter": "↩",
+        "Tab": "⇥",
+        "Escape": "Esc",
+        "ArrowUp": "↑",
+        "ArrowDown": "↓",
+        "ArrowLeft": "←",
+        "ArrowRight": "→",
+        " ": "Space",
+        "Spacebar": "Space",
+    };
+
+    let mainKey = "";
+    if (specialMap[key]) {
+        mainKey = specialMap[key];
+    } else if (/^F\d{1,2}$/.test(key)) {
+        mainKey = key;
+    } else if (key.length === 1) {
+        mainKey = key.toUpperCase();
+    } else {
+        mainKey = key;
+    }
+
+    return modifiers + mainKey;
+};
+
+
 export {
     translateHotkey,
-    updateHotkeyTip
+    updateHotkeyTip,
+    keyboardEventToHotkey,
 }
