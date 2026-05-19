@@ -255,9 +255,13 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             types.plugin[k] = [];
             const p = fmiscPlugin.app.plugins.find((n: any) => n.name === k) as any;
             const i18n = p?.i18n || {};
+            const cmds: any[] = p?.commands || [];
 
             for (const j in plugin[k]) {
-                const displayKey = i18n[j] || j;
+                // 显示名优先级：ICommand.langText > plugin.i18n[langKey] > langKey
+                const cmd = cmds.find((c: any) => c?.langKey === j);
+                const langText = typeof cmd?.langText === 'string' ? cmd.langText.trim() : '';
+                const displayKey = langText || i18n[j] || j;
                 const value = updateHotkeyTip(plugin[k][j]?.custom);
                 keyCount[value] = keyCount[value] ? [...keyCount[value], displayKey] : [displayKey];
                 types.plugin[k].push({
