@@ -1,0 +1,24 @@
+vite.config.ts
+  s_cab5a95be70fb7::t_9db437f499d2c7 25-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "9095a984bcad12c19ae217651671abfadd9c1555",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_cab5a95be70fb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dc4bbfe76cd4c3195ec75addbf32df4",
+        "model": "glm-5.1-ioa"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
