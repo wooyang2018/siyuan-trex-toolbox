@@ -1,13 +1,5 @@
 /* [0] */
 
-@font-face {
-    font-family: 'Twitter Emoji';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url("/public/Twemoji-15.1.0.ttf");
-}
-
 :root {
     --b3-font-family-emoji: 'Twitter Emoji', sans-serif !important;
     --b3-font-family-code: "Fira Code", "仓耳今楷01", "HarmonyOS SC", "JetBrainsMono-Regular", mononoki, Consolas, "Liberation Mono", Menlo, Courier, monospace, 'Twitter Emoji', "Apple Color Emoji", "Segoe UI Emoji", "Twitter Emoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols" !important;

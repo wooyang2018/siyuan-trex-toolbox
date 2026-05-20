@@ -22,6 +22,9 @@ console.log("isSrcmap=>", isSrcmap);
 console.log("outputDir=>", outputDir);
 
 export default defineConfig({
+    // 思源运行时把启用的插件以 /plugins/<pluginName>/ 暴露为静态服务路径；
+    base: '/plugins/siyuan-trex-toolbox/',
+
     resolve: {
         alias: {
             "@": resolve(__dirname, "src")
