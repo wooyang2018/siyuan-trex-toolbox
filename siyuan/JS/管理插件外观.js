@@ -61,6 +61,7 @@ const replaceTextMap = {
     "书签+": "书签增强",
     "搜 easy": "搜索",
     "data-id:siyuan-plugins-mcp-sisyphus": "思源MCP",
+    "data-id:siyuan-embed-excalidraw": "嵌入Excalidraw",
 };
 async function replaceMenuLabels() {
     await whenElementExist('#commonMenu .b3-menu__items .b3-menu__item');
