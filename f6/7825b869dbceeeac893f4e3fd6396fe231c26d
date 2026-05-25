@@ -1,0 +1,14 @@
+siyuan/JS/管理插件外观.js
+  h_cf037dcb817b82 64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "f67825b869dbceeeac893f4e3fd6396fe231c26d",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
