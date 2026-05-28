@@ -7,13 +7,6 @@
     margin-top: 32px !important;
 }
 
-/* 小记 */
-#dockRight span[data-type="quick-notessmall_notes_dock"][data-title="显示小记侧边栏"] {
-    & svg {
-        transform: scale(1.5);
-    }
-}
-
 /* 片趣打卡 */
 #dockRight span[data-type="pinchPinch-habit"][data-title="Pinch-habit"] {
     & svg {

@@ -3,10 +3,6 @@ const replacements1 = [
     {
         id: "#iconQueryView",
         transform: "scale(0.95)"
-    },
-    {
-        id: "#iconSmallNote",
-        transform: "scale(1.25)"
     }
 ];
 

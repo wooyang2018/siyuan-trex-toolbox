@@ -15,11 +15,6 @@
         display: none;
     }
 
-    /* 显示小记侧边栏 */
-    & button[data-id="quick-notessmall_notes_dock"] {
-        display: none;
-    }
-
     /* 在线图片文字识别 */
     & button[data-id="siyuan-plugin-online-ocronlineOcrJobs"] {
         display: none;
