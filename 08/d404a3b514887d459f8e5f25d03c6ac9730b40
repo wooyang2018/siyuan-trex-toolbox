@@ -1,0 +1,65 @@
+src/libs/components/Form/form-wrap.tsx
+  s_325901c149e7f8::t_dd700214a45261 8
+src/libs/components/Form/form-input.tsx
+  s_325901c149e7f8::t_9daaa61871be41 3
+src/func/pin-image/libs/EnvConfig.ts
+  s_325901c149e7f8::t_3f4dcbc7f8ed6b 3
+src/api/index.ts
+  s_325901c149e7f8::t_c99097b283d005 9
+tsconfig.json
+  s_325901c149e7f8::t_f4e929668e50be 17
+src/libs/components/floating-container.tsx
+  s_325901c149e7f8::t_5b63a991f26c92 9
+src/func/bq-callout/index.ts
+  s_325901c149e7f8::t_4b341aaedba0d3 7
+src/libs/dialog.ts
+  s_325901c149e7f8::t_db2d9701bb03b0 11
+src/libs/components/Elements/Flex.tsx
+  s_325901c149e7f8::t_081e21ca4f2b5b 1
+src/libs/components/Elements/CheckboxInput.tsx
+  s_325901c149e7f8::t_748a1531dd3e93 1
+src/index.ts
+  s_325901c149e7f8::t_554179af4853a3 11,16
+  s_325901c149e7f8::t_e5af4bd22a7dfb 294-295,301-303,312,317-319
+src/func/doc-context.tsx
+  s_325901c149e7f8::t_84460d6f70e8a8 7
+src/func/pin-image/libs/util/pathName.ts
+  s_325901c149e7f8::t_8d5a7cd71a18a5 5-16,18-34,69
+src/func/websocket/components.tsx
+  s_325901c149e7f8::t_bf5f71300438da 7
+src/settings/settings.tsx
+  s_325901c149e7f8::t_c86c1187addc5f 1
+src/libs/components/setting-panel.tsx
+  s_325901c149e7f8::t_91ced72aca26bf 8
+vite.config.ts
+  s_325901c149e7f8::t_310d59880cc085 34-43
+src/func/bq-callout/api.ts
+  s_325901c149e7f8::t_b3e5e791a586ba 10
+src/func/insert-index/index.ts
+  s_325901c149e7f8::t_6d41145045872f 1
+src/func/pin-image/utils/api.ts
+  s_325901c149e7f8::t_3d919ae39fee5d 1
+src/func/claude-note/ClaudeNotePanel.svelte
+  s_325901c149e7f8::t_59be7fe8d52e2c 5-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "08d404a3b514887d459f8e5f25d03c6ac9730b40",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_325901c149e7f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bfcf2cf-389c-4855-a945-43ac7c910eb7",
+        "model": "claude-4.7-opus"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
