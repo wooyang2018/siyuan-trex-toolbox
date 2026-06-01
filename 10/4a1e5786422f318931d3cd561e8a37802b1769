@@ -1,0 +1,19 @@
+src/func/claude-note/index.scss
+  s_325901c149e7f8::t_30572df32258cb 1176,1180-1181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "104a1e5786422f318931d3cd561e8a37802b1769",
+  "prompts": {},
+  "sessions": {
+    "s_325901c149e7f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bfcf2cf-389c-4855-a945-43ac7c910eb7",
+        "model": "claude-4.7-opus"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
