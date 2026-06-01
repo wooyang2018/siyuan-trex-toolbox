@@ -111,18 +111,32 @@ export function detectDefaultSettings(): DetectedDefaults {
             defaults.homedir = homedir;
             const platform = os.platform();
 
+            // Claude CLI 默认路径（按平台）
             if (platform === "win32") {
                 defaults.cliPath = path.join(homedir, "AppData", "Roaming", "npm", "claude.cmd");
-                defaults.workingDir = path.join(homedir, "Documents", "SiYuan", "data");
             } else {
                 defaults.cliPath = path.join(homedir, ".local", "bin", "claude");
-                const siyuanCandidates = [
+            }
+
+            // workingDir 优先用思源运行时已知的数据目录，避免猜测
+            const siyuanDataDir = (window as any)?.siyuan?.config?.system?.dataDir;
+            if (siyuanDataDir && typeof siyuanDataDir === "string" && fs.existsSync(siyuanDataDir)) {
+                defaults.workingDir = siyuanDataDir;
+            } else if (platform === "win32") {
+                const winCandidates = [
+                    path.join(homedir, "Documents", "SiYuan", "data"),
+                    path.join(homedir, "SiYuan", "data"),
+                ];
+                defaults.workingDir = winCandidates.find((c: string) => fs.existsSync(c)) || "";
+            } else {
+                const unixCandidates = [
                     path.join(homedir, "SiYuan", "data"),
                     path.join(homedir, "siyuan", "data"),
                     path.join(homedir, "Documents", "SiYuan", "data"),
                 ];
-                defaults.workingDir = siyuanCandidates.find((candidate: string) => fs.existsSync(candidate)) || siyuanCandidates[0];
+                defaults.workingDir = unixCandidates.find((c: string) => fs.existsSync(c)) || "";
             }
+            // 如果探测失败，留空——用户必须手动配置（避免兜底假路径误导）
 
             // claudeHomeDir 必须基于 cliPath 才能判断（默认 cliPath 是普通版 claude，所以默认会推 ~/.claude）
             defaults.claudeHomeDir = detectClaudeHomeDir(homedir, defaults.cliPath);

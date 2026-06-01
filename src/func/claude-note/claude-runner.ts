@@ -156,6 +156,58 @@ function getClaudeProjectDir(workingDir: string, claudeHomeDir: string): string 
     return path.join(root, "projects", projectName);
 }
 
+/**
+ * 获取当前 (workingDir, claudeHomeDir) 配置下查找会话文件的实际目录及其状态。
+ * 供 UI 在历史面板空状态时给出明确提示。
+ */
+export interface ClaudeSessionDirInfo {
+    /** 解析后的会话目录绝对路径（root/projects/<encoded-cwd>） */
+    dir: string;
+    /** Claude home 根（如 ~/.claude 或 ~/.claude-internal） */
+    root: string;
+    /** dir 是否真实存在 */
+    exists: boolean;
+    /** dir 存在但里面是否有 .jsonl 会话文件 */
+    hasJsonl: boolean;
+    /** 失败原因（仅在 exists=false 时填，便于诊断） */
+    reason?: string;
+}
+
+export function describeClaudeSessionDir(workingDir: string, claudeHomeDir: string): ClaudeSessionDirInfo {
+    const fs = nodeRequire<typeof import("fs")>("fs");
+    const path = nodeRequire<typeof import("path")>("path");
+    const root = resolveClaudeHomeDir(claudeHomeDir);
+    const dir = getClaudeProjectDir(workingDir, claudeHomeDir);
+
+    const info: ClaudeSessionDirInfo = { dir, root, exists: false, hasJsonl: false };
+    if (!root) {
+        info.reason = "未配置 Claude 会话目录根";
+        return info;
+    }
+    if (!dir) {
+        info.reason = "无法计算会话目录路径";
+        return info;
+    }
+    try {
+        if (!fs.existsSync(dir)) {
+            // 检查上一级 root/projects 是否存在
+            const projectsDir = path.join(root, "projects");
+            if (!fs.existsSync(projectsDir)) {
+                info.reason = `Claude 会话根目录不存在: ${projectsDir}`;
+            } else {
+                info.reason = `当前工作目录尚未在 Claude CLI 中产生过会话: ${dir}`;
+            }
+            return info;
+        }
+        info.exists = true;
+        const entries = fs.readdirSync(dir);
+        info.hasJsonl = entries.some((name: string) => name.endsWith(".jsonl"));
+    } catch (e) {
+        info.reason = `读取会话目录失败: ${(e as Error).message}`;
+    }
+    return info;
+}
+
 function readJsonLines(filePath: string): any[] {
     const fs = nodeRequire<typeof import("fs")>("fs");
     try {

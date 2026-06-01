@@ -5,7 +5,7 @@
     // svelte-preprocess + TypeScript isolatedModules 在 lang="ts" 模式下，
     // 若 default import 仅在模板中使用，可能被 TS elision 移除（误判为 unused）。
     void MarkdownBlock;
-    import { loadClaudeSessionMessages, listClaudeSessions, runClaude, deleteClaudeSession, renameClaudeSession, type ClaudeRunHandle, type ClaudeSessionSummary, type ClaudeStreamEvent } from "./claude-runner";
+    import { loadClaudeSessionMessages, listClaudeSessions, runClaude, deleteClaudeSession, renameClaudeSession, describeClaudeSessionDir, type ClaudeRunHandle, type ClaudeSessionSummary, type ClaudeStreamEvent } from "./claude-runner";
     import { buildClaudeModelOptions, defaultSettings, mergeSettings, type ClaudeNoteSettings } from "./settings";
     import { buildBlockContext, findCurrentDocumentId, formatContext, getSelectedTextContext, searchDocuments, getHPathByID, getTitleFromHPath, getDocTitle, getBlockKramdown, summarizeBlockMarkdown, type ContextItem } from "./siyuan-api";
 
@@ -1202,10 +1202,23 @@
 
     <!-- Floating History Popover Top relative to cn-shell -->
     {#if historyOpen}
+        {@const dirInfo = describeClaudeSessionDir(localSettings.workingDir, localSettings.claudeHomeDir)}
         <div class="cn-popover-backdrop" on:click={() => historyOpen = false}></div>
         <div class="cn-history-popover-top">
             {#if sessions.length === 0}
-                <div class="cn-history-empty">{i18n.noSessionInDir || "当前工作目录暂无 Claude Code 会话。"}</div>
+                <div class="cn-history-empty">
+                    <div>{i18n.noSessionInDir || "当前工作目录暂无 Claude Code 会话。"}</div>
+                    <div class="cn-history-empty-detail">
+                        {#if !dirInfo.exists}
+                            <div>查找路径: <code>{dirInfo.dir || "(未配置)"}</code></div>
+                            {#if dirInfo.reason}<div class="cn-history-empty-reason">{dirInfo.reason}</div>{/if}
+                            <div class="cn-history-empty-hint">请检查"工作目录"和"Claude 会话目录根"是否设置正确。</div>
+                        {:else if !dirInfo.hasJsonl}
+                            <div>查找路径: <code>{dirInfo.dir}</code></div>
+                            <div class="cn-history-empty-reason">目录存在但没有 .jsonl 会话文件。</div>
+                        {/if}
+                    </div>
+                </div>
             {:else}
                 {#each sessions as session (session.id)}
                     <div class="cn-history-item-row" class:active={activeSessionId === session.id}>
