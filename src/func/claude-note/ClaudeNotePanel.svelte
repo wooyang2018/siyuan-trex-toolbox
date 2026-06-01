@@ -980,18 +980,36 @@
             const found = sessions.find(s => s.id === id);
             if (found) {
                 loadSession(found);
+                return;
+            }
+            // 列表里没找到（可能 sessions 数组过期），先刷新列表再找一次
+            sessions = listFilteredSessions();
+            const foundRefresh = sessions.find(s => s.id === id);
+            if (foundRefresh) {
+                loadSession(foundRefresh);
+                return;
+            }
+            // 磁盘上找不到这个会话文件，但 UI 内存里可能仍有 sessionStates 缓存
+            // （Claude CLI resume 时会换 session id；或文件被外部删除）
+            // 优先用缓存切 tab，不删 tab、不清空消息，避免误删用户上下文
+            const cachedState = sessionStates[id];
+            if (cachedState) {
+                activeSessionId = id;
+                activeDraftSessionId = "";
+                currentTabKey = id;
+                applySessionState(id, cachedState);
+                console.warn("[ClaudeNote] session file missing, using cached state:", id);
+                return;
+            }
+            // 既没磁盘文件也没缓存：说明这个 tab id 已经无效，提示并关闭
+            showMessage(i18n.sessionFileNotFound || "未找到会话文件");
+            activeSessionIds = activeSessionIds.filter(tid => tid !== id);
+            if (activeSessionIds.length === 0) {
+                newSession();
             } else {
-                sessions = listFilteredSessions();
-                const foundRefresh = sessions.find(s => s.id === id);
-                if (foundRefresh) {
-                    loadSession(foundRefresh);
-                } else {
-                    showMessage(i18n.sessionFileNotFound || "未找到会话文件");
-                    activeSessionIds = activeSessionIds.filter(tid => tid !== id);
-                    if (activeSessionIds.length === 0) {
-                        newSession();
-                    }
-                }
+                // 切到下一个有效的 tab，避免悬空
+                const nextId = activeSessionIds[0];
+                if (nextId) selectSessionTab(nextId);
             }
         }
     }

@@ -451,12 +451,19 @@ export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionI
     const args = ["-p", "--output-format", "stream-json", "--verbose"];
     const siyuanCliPath = getBundledSiyuanCliPath();
 
+    // 检测是否是定制版 claude-internal —— 它不支持 --model/--no-chrome 这类参数
+    const isClaudeInternal = /claude-internal/i.test(cliPath);
+
     const resolvedModel = resolveClaudeModelValue(settings.model);
-    if (resolvedModel) {
+    if (resolvedModel && !isClaudeInternal) {
         args.push("--model", resolvedModel);
     }
     if (settings.effort) {
-        args.push("--effort", settings.effort);
+        // claude-internal 帮助里只列了 low/medium/high，xhigh/max 静默忽略
+        const effort = isClaudeInternal && !["low", "medium", "high"].includes(settings.effort)
+            ? "high"
+            : settings.effort;
+        args.push("--effort", effort);
     }
     if (settings.permissionMode) {
         args.push("--permission-mode", settings.permissionMode);
@@ -466,7 +473,10 @@ export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionI
         args.push("--append-system-prompt", builtinPrompt);
     }
     args.push("--setting-sources", settings.loadUserSettings ? "user,project,local" : "project,local");
-    args.push("--no-chrome");
+    if (!isClaudeInternal) {
+        // --no-chrome 是 Anthropic 官方 claude 的参数；claude-internal 不支持，避免污染
+        args.push("--no-chrome");
+    }
     if (sessionId) {
         args.push("--resume", sessionId);
     }
