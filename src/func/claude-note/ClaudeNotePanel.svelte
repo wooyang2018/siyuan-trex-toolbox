@@ -191,6 +191,7 @@
         return {
             limit: source.historyLimit,
             days: source.historyDays,
+            claudeHomeDir: source.claudeHomeDir,
         };
     }
 

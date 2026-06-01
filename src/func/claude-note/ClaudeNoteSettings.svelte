@@ -62,6 +62,7 @@
         <div class="cn-setting-section">
             <label><span>{i18n.cliPath || "Claude CLI 路径"}</span><input class="b3-text-field fn__block" bind:value={localSettings.cliPath} placeholder={detected.cliPath || (i18n.cliPathPlaceholder || "留空默认为系统 PATH 中的 claude")} /></label>
             <label><span>{i18n.workingDir || "工作目录"}</span><input class="b3-text-field fn__block" bind:value={localSettings.workingDir} on:change={syncInstructionsFromWorkingDir} placeholder={detected.workingDir || (i18n.workingDirPlaceholder || "留空默认为思源 data 目录")} /></label>
+            <label><span>{i18n.claudeHomeDir || "Claude 会话目录根"}</span><input class="b3-text-field fn__block" bind:value={localSettings.claudeHomeDir} placeholder={detected.claudeHomeDir || (i18n.claudeHomeDirPlaceholder || "留空将根据 CLI 路径自动推断（claude → ~/.claude，claude-internal → ~/.claude-internal）")} /></label>
             <label><span>{i18n.projectInstructions || "项目指令（对应工作目录 CLAUDE.md）"}</span><textarea class="b3-text-field fn__block" rows="7" bind:value={localSettings.projectInstructions} placeholder={i18n.projectInstructionsPlaceholder || "保存后会同步到工作目录下的 CLAUDE.md；留空也会生成空文件。"}></textarea></label>
             <label><span>{i18n.envVars || "环境变量"}</span><textarea class="b3-text-field fn__block" rows="4" bind:value={localSettings.environmentVariables} placeholder="ANTHROPIC_BASE_URL=https://...&#10;HTTPS_PROXY=http://127.0.0.1:7890"></textarea></label>
         </div>

@@ -22,6 +22,8 @@ export interface ClaudeNoteI18n {
     cliPathPlaceholder?: string;
     workingDir?: string;
     workingDirPlaceholder?: string;
+    claudeHomeDir?: string;
+    claudeHomeDirPlaceholder?: string;
     projectInstructions?: string;
     projectInstructionsPlaceholder?: string;
     envVars?: string;

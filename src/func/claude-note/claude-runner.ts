@@ -135,12 +135,25 @@ function buildClaudeNoteSystemPrompt(helperPath: string): string {
     ].join("\n");
 }
 
-function getClaudeProjectDir(workingDir: string): string {
+/**
+ * 解析 Claude CLI 的会话目录根（不含 projects 子目录）。
+ *
+ * 调用方应在 settings 层（settings.ts 的 mergeSettings/detectClaudeHomeDir）
+ * 根据 cliPath 把 claudeHomeDir 推断好；这里只做简单兜底：
+ *   - 传入了 claudeHomeDir → 直接用它
+ *   - 没传 → 返回空字符串（调用方处理）
+ */
+function resolveClaudeHomeDir(claudeHomeDir: string): string {
+    return (claudeHomeDir || "").trim();
+}
+
+function getClaudeProjectDir(workingDir: string, claudeHomeDir: string): string {
     const path = nodeRequire<typeof import("path")>("path");
-    const home = String((globalThis as any)?.process?.env?.HOME || "");
+    const root = resolveClaudeHomeDir(claudeHomeDir);
+    if (!root) return "";
     const normalized = path.resolve(workingDir || ".");
     const projectName = normalized === "/" ? "-" : normalized.replace(/\//g, "-");
-    return path.join(home, ".claude", "projects", projectName);
+    return path.join(root, "projects", projectName);
 }
 
 function readJsonLines(filePath: string): any[] {
@@ -204,10 +217,19 @@ function stripClaudeNoteRuntimeInstruction(text: string): string {
         .trim();
 }
 
-export function listClaudeSessions(workingDir: string, options: ClaudeSessionListOptions = {}): ClaudeSessionSummary[] {
+/**
+ * 列出 Claude CLI 的历史会话。
+ * @param workingDir Claude 运行的工作目录（路径里的 / 会被替换成 - 用作子目录名）
+ * @param options.limit / options.days 过滤条件
+ * @param options.claudeHomeDir Claude CLI 会话根目录（默认自动探测；公司定制版可能用 ~/.claude-internal）
+ */
+export function listClaudeSessions(
+    workingDir: string,
+    options: ClaudeSessionListOptions & { claudeHomeDir?: string } = {},
+): ClaudeSessionSummary[] {
     const fs = nodeRequire<typeof import("fs")>("fs");
     const path = nodeRequire<typeof import("path")>("path");
-    const dir = getClaudeProjectDir(workingDir);
+    const dir = getClaudeProjectDir(workingDir, options.claudeHomeDir || "");
     const limit = Number.isFinite(Number(options.limit)) && Number(options.limit) > 0
         ? Math.min(200, Math.floor(Number(options.limit)))
         : 30;

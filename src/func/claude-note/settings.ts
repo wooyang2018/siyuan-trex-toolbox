@@ -4,6 +4,14 @@ export interface ClaudeNoteSettings {
     chatPlacement: "dock" | "tab";
     cliPath: string;
     workingDir: string;
+    /**
+     * Claude CLI 的会话目录根（默认 ~/.claude）。
+     * 公司定制版可能用 ~/.claude-internal 等。留空则自动探测：
+     *   - 如果 ~/.claude/projects 存在则用它；
+     *   - 否则若 ~/.claude-internal/projects 存在则用它；
+     *   - 否则回退到 ~/.claude（即使不存在）。
+     */
+    claudeHomeDir: string;
     model: string;
     effort: "low" | "medium" | "high" | "xhigh" | "max";
     permissionMode: PermissionMode;
@@ -47,6 +55,41 @@ interface DetectedDefaults {
     cliPath: string;
     workingDir: string;
     homedir: string;
+    claudeHomeDir: string;
+}
+
+/**
+ * 根据 Claude CLI 路径推断会话目录根。
+ *   - cliPath 形如 .../claude-internal、.../claude-internal-cli、claude-internal.cmd
+ *     → 返回 ~/.claude-internal
+ *   - cliPath 形如 .../claude、claude.cmd
+ *     → 返回 ~/.claude
+ *   - cliPath 既不含 claude 也无法识别 → 返回 ""，调用方自行处理
+ */
+export function detectClaudeHomeDir(homedir: string, cliPath?: string): string {
+    if (!homedir) return "";
+    try {
+        const requireFn = (window as any).require;
+        if (typeof requireFn !== "function") return "";
+        const path = requireFn("path");
+
+        const cli = (cliPath || "").trim();
+        if (cli) {
+            // 取最后一段文件名（去扩展名），与已知变体匹配
+            const baseName = path.basename(cli).replace(/\.(cmd|bat|exe|sh)$/i, "");
+            // 注意：先匹配 internal，避免被普通 claude 提前 match
+            if (/claude-internal\b/i.test(baseName)) {
+                return path.join(homedir, ".claude-internal");
+            }
+            if (/\bclaude\b/i.test(baseName)) {
+                return path.join(homedir, ".claude");
+            }
+        }
+        return "";
+    } catch (e) {
+        console.warn("Failed to detect Claude home dir", e);
+        return "";
+    }
 }
 
 export function detectDefaultSettings(): DetectedDefaults {
@@ -54,6 +97,7 @@ export function detectDefaultSettings(): DetectedDefaults {
         cliPath: "claude",
         workingDir: "",
         homedir: "",
+        claudeHomeDir: "",
     };
 
     try {
@@ -62,11 +106,11 @@ export function detectDefaultSettings(): DetectedDefaults {
             const os = requireFn("os");
             const path = requireFn("path");
             const fs = requireFn("fs");
-            
+
             const homedir = os.homedir();
             defaults.homedir = homedir;
             const platform = os.platform();
-            
+
             if (platform === "win32") {
                 defaults.cliPath = path.join(homedir, "AppData", "Roaming", "npm", "claude.cmd");
                 defaults.workingDir = path.join(homedir, "Documents", "SiYuan", "data");
@@ -79,6 +123,9 @@ export function detectDefaultSettings(): DetectedDefaults {
                 ];
                 defaults.workingDir = siyuanCandidates.find((candidate: string) => fs.existsSync(candidate)) || siyuanCandidates[0];
             }
+
+            // claudeHomeDir 必须基于 cliPath 才能判断（默认 cliPath 是普通版 claude，所以默认会推 ~/.claude）
+            defaults.claudeHomeDir = detectClaudeHomeDir(homedir, defaults.cliPath);
         }
     } catch (e) {
         console.warn("Failed to detect Node.js environment paths, using fallback defaults", e);
@@ -165,6 +212,7 @@ export const defaultSettings: ClaudeNoteSettings = {
     chatPlacement: "dock",
     cliPath: detected.cliPath,
     workingDir: detected.workingDir,
+    claudeHomeDir: detected.claudeHomeDir,
     model: "sonnet",
     effort: "high",
     permissionMode: "auto",
@@ -269,6 +317,11 @@ export function mergeSettings(input: Partial<ClaudeNoteSettings> | null | undefi
 
     if (!merged.workingDir?.trim() || isLegacyUserPath(merged.workingDir) || merged.workingDir.includes("AI-workspace")) {
         merged.workingDir = detectedDefaults.workingDir;
+    }
+
+    // claudeHomeDir 留空时，根据用户当前配的 cliPath 推断（公司定制 CLI 通常是 claude-internal）
+    if (!merged.claudeHomeDir?.trim() || isLegacyUserPath(merged.claudeHomeDir)) {
+        merged.claudeHomeDir = detectClaudeHomeDir(detectedDefaults.homedir, merged.cliPath);
     }
 
     if (merged.appendSystemPrompt === legacyDefaultSystemPrompt || /称用户/.test(merged.appendSystemPrompt || "")) {
