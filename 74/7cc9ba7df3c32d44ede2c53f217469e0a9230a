@@ -1,0 +1,35 @@
+src/func/claude-note/ClaudeNoteSettings.svelte
+  s_325901c149e7f8::t_5426989e3d8532 65
+src/func/claude-note/settings.ts
+  s_325901c149e7f8::t_1096c4271b6142 126-128
+  s_325901c149e7f8::t_b867adf49602ec 62-67,69,75-86,88
+  s_325901c149e7f8::t_dc86c052ba73e8 7-14
+  s_325901c149e7f8::t_7281c3616d2b9a 215
+  s_325901c149e7f8::t_caa9e7abb38b33 322,324
+  s_325901c149e7f8::t_e34530b8b7139a 58-61,68,70-74,87,89-92,100,109,113
+  s_325901c149e7f8::t_34b998c91bd5d4 323,325-326
+src/func/claude-note/claude-runner.ts
+  s_325901c149e7f8::t_8d676921f7da45 138,145-146,148-150,152,156
+  s_325901c149e7f8::t_be9e6a3e620d19 139-144,147,153
+  s_325901c149e7f8::t_8695b66dfea29d 220-229,232
+src/func/claude-note/ClaudeNotePanel.svelte
+  s_325901c149e7f8::t_2916313ee6149e 194
+src/func/claude-note/types.ts
+  s_325901c149e7f8::t_60411eaf639714 25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "747cc9ba7df3c32d44ede2c53f217469e0a9230a",
+  "prompts": {},
+  "sessions": {
+    "s_325901c149e7f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bfcf2cf-389c-4855-a945-43ac7c910eb7",
+        "model": "claude-4.7-opus"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
