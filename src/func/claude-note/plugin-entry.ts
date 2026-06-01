@@ -53,10 +53,6 @@ const state: ModuleState = {
     registered: false,
 };
 
-export function getCurrentPlugin(): FMiscPlugin | null {
-    return state.plugin;
-}
-
 // =============================================================================
 // 模块生命周期
 // =============================================================================

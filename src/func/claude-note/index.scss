@@ -255,6 +255,15 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
     color: var(--cn-muted);
 }
 
+.cn-setting-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--cn-muted);
+    opacity: 0.75;
+    line-height: 1.4;
+    margin-top: 2px;
+}
+
 .cn-setting-section input,
 .cn-setting-section select,
 .cn-setting-section textarea {

@@ -5,9 +5,34 @@
     // svelte-preprocess + TypeScript isolatedModules 在 lang="ts" 模式下，
     // 若 default import 仅在模板中使用，可能被 TS elision 移除（误判为 unused）。
     void MarkdownBlock;
-    import { loadClaudeSessionMessages, listClaudeSessions, runClaude, deleteClaudeSession, renameClaudeSession, describeClaudeSessionDir, type ClaudeRunHandle, type ClaudeSessionSummary, type ClaudeStreamEvent } from "./claude-runner";
-    import { buildClaudeModelOptions, defaultSettings, mergeSettings, type ClaudeNoteSettings } from "./settings";
-    import { buildBlockContext, findCurrentDocumentId, formatContext, getSelectedTextContext, searchDocuments, getHPathByID, getTitleFromHPath, getDocTitle, getBlockKramdown, summarizeBlockMarkdown, type ContextItem } from "./siyuan-api";
+    import {
+        deleteClaudeSession,
+        describeClaudeSessionDir,
+        listClaudeSessions,
+        loadClaudeSessionMessages,
+        renameClaudeSession,
+        runClaude,
+        type ClaudeRunHandle,
+        type ClaudeSessionSummary,
+        type ClaudeStreamEvent,
+    } from "./claude-runner";
+    import {
+        buildClaudeModelOptions,
+        defaultSettings,
+        mergeSettings,
+        type ClaudeNoteSettings,
+    } from "./settings";
+    import {
+        buildBlockContext,
+        findCurrentDocumentId,
+        formatContext,
+        getBlockKramdown,
+        getDocTitle,
+        getSelectedTextContext,
+        searchDocuments,
+        summarizeBlockMarkdown,
+        type ContextItem,
+    } from "./siyuan-api";
 
     export let settings: ClaudeNoteSettings = defaultSettings;
     export let saveSettings: (settings: ClaudeNoteSettings) => Promise<void>;
@@ -142,10 +167,6 @@
     let isRenamingCurrent = false;
     let renameCurrentTitle = "";
     let renameCurrentInput: HTMLInputElement;
-
-    export function syncFromState(_state: any) {
-        // No-op: each panel instance is independent
-    }
 
     onMount(() => {
         randomizeGreeting();
@@ -507,24 +528,6 @@
         return `${(ms / 1000).toFixed(1)}s`;
     }
 
-    function formatTokens(usage: { input_tokens?: number; output_tokens?: number; input?: number; output?: number } | undefined): string {
-        if (!usage) return "";
-        const inp = usage.input_tokens ?? usage.input ?? 0;
-        const out = usage.output_tokens ?? usage.output ?? 0;
-        const sum = inp + out;
-        if (sum >= 1000) return `${(sum / 1000).toFixed(1)}k`;
-        return String(sum);
-    }
-
-    function getStepTitle(role: string, meta: string | undefined): string {
-        if (role === "thinking") return i18n.thinkingProcess || "思考过程";
-        if (role === "tool") {
-            if (meta === "tool_result") return i18n.toolOutput || "工具输出";
-            return getToolLabel(meta);
-        }
-        return meta || (i18n.systemEvent || "系统事件");
-    }
-
     function getToolLabel(meta: string | undefined): string {
         if (!meta || meta === "tool") return i18n.callTool || "调用工具";
         if (meta === "tool_result") return i18n.toolOutput || "工具输出";
@@ -593,10 +596,6 @@
             userManuallyDetached: false,
             options
         };
-    }
-
-    function replaceDraftWithSession(sessionId: string) {
-        replaceSessionKey(currentTabKey, sessionId);
     }
 
     function replaceSessionKey(oldKey: string, sessionId: string): string {

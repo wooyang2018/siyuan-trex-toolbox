@@ -250,7 +250,7 @@ export const defaultSettings: ClaudeNoteSettings = {
     siyuanApiPort: "6806",
 };
 
-function getNodeRequire(): ((id: string) => any) | null {
+export function getNodeRequire(): ((id: string) => any) | null {
     const requireFn = (globalThis as any)?.window?.require || (globalThis as any)?.require;
     return typeof requireFn === "function" ? requireFn : null;
 }

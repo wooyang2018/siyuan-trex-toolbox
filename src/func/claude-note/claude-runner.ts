@@ -1,4 +1,20 @@
-import { readClaudeSettingsEnv, resolveClaudeModelValue, type ClaudeNoteSettings } from "./settings";
+import { getNodeRequire, readClaudeSettingsEnv, resolveClaudeModelValue, type ClaudeNoteSettings } from "./settings";
+
+// 通用 Node 模块获取助手：优先 window.require（Electron），回退 globalThis.require
+function nodeRequire<T = any>(id: string): T {
+    const requireFn = getNodeRequire();
+    if (requireFn) return requireFn(id);
+    if (typeof require === "function") return require(id);
+    throw new Error(`nodeRequire("${id}") unavailable: not running in Electron`);
+}
+
+function getFs() {
+    return nodeRequire<typeof import("fs")>("fs");
+}
+
+function getPath() {
+    return nodeRequire<typeof import("path")>("path");
+}
 
 export type ClaudeStreamEvent = {
     type: string;
@@ -42,12 +58,6 @@ export interface ClaudeSessionListOptions {
     days?: number;
 }
 
-function nodeRequire<T = any>(id: string): T {
-    const globalRequire = (globalThis as any)?.require;
-    if (typeof globalRequire === "function") return globalRequire(id);
-    return require(id);
-}
-
 function isWindows(): boolean {
     return (globalThis as any)?.process?.platform === "win32";
 }
@@ -65,8 +75,8 @@ function parseEnvironmentVariables(text: string): Record<string, string> {
 }
 
 function getBundledSiyuanCliPath(): string {
-    const path = nodeRequire<typeof import("path")>("path");
-    const fs = nodeRequire<typeof import("fs")>("fs");
+    const path = getPath();
+    const fs = getFs();
 
     // 1. 优先：思源 workspace + 插件名固定路径（trex-toolbox 中的实际部署路径）
     const workspaceDir = (globalThis as any)?.window?.siyuan?.config?.system?.workspaceDir || "";
@@ -148,7 +158,7 @@ function resolveClaudeHomeDir(claudeHomeDir: string): string {
 }
 
 function getClaudeProjectDir(workingDir: string, claudeHomeDir: string): string {
-    const path = nodeRequire<typeof import("path")>("path");
+    const path = getPath();
     const root = resolveClaudeHomeDir(claudeHomeDir);
     if (!root) return "";
     const normalized = path.resolve(workingDir || ".");
@@ -188,8 +198,8 @@ export interface ClaudeSessionDirInfo {
 }
 
 export function describeClaudeSessionDir(workingDir: string, claudeHomeDir: string): ClaudeSessionDirInfo {
-    const fs = nodeRequire<typeof import("fs")>("fs");
-    const path = nodeRequire<typeof import("path")>("path");
+    const fs = getFs();
+    const path = getPath();
     const root = resolveClaudeHomeDir(claudeHomeDir);
     const dir = getClaudeProjectDir(workingDir, claudeHomeDir);
 
@@ -223,7 +233,7 @@ export function describeClaudeSessionDir(workingDir: string, claudeHomeDir: stri
 }
 
 function readJsonLines(filePath: string): any[] {
-    const fs = nodeRequire<typeof import("fs")>("fs");
+    const fs = getFs();
     try {
         return fs.readFileSync(filePath, "utf8")
             .split(/\r?\n/)
@@ -242,7 +252,7 @@ function readJsonLines(filePath: string): any[] {
 }
 
 function readJsonLinesTail(filePath: string): any[] {
-    const fs = nodeRequire<typeof import("fs")>("fs");
+    const fs = getFs();
     try {
         const stat = fs.statSync(filePath);
         const limit = 50 * 1024; // 50KB
@@ -293,8 +303,8 @@ export function listClaudeSessions(
     workingDir: string,
     options: ClaudeSessionListOptions & { claudeHomeDir?: string } = {},
 ): ClaudeSessionSummary[] {
-    const fs = nodeRequire<typeof import("fs")>("fs");
-    const path = nodeRequire<typeof import("path")>("path");
+    const fs = getFs();
+    const path = getPath();
     const dir = getClaudeProjectDir(workingDir, options.claudeHomeDir || "");
     const limit = Number.isFinite(Number(options.limit)) && Number(options.limit) > 0
         ? Math.min(200, Math.floor(Number(options.limit)))
@@ -333,7 +343,7 @@ export function listClaudeSessions(
 }
 
 export function deleteClaudeSession(sessionPath: string): boolean {
-    const fs = nodeRequire<typeof import("fs")>("fs");
+    const fs = getFs();
     try {
         if (fs.existsSync(sessionPath)) {
             fs.unlinkSync(sessionPath);
@@ -346,7 +356,7 @@ export function deleteClaudeSession(sessionPath: string): boolean {
 }
 
 export function renameClaudeSession(sessionPath: string, newTitle: string): boolean {
-    const fs = nodeRequire<typeof import("fs")>("fs");
+    const fs = getFs();
     try {
         if (fs.existsSync(sessionPath)) {
             const content = fs.readFileSync(sessionPath, "utf8");
@@ -430,7 +440,7 @@ function resolveClaudeCli(configuredPath: string): string {
         // fall through to fixed locations
     }
 
-    const fs = nodeRequire<typeof import("fs")>("fs");
+    const fs = getFs();
     const home = String((globalThis as any)?.process?.env?.HOME || "");
     const candidates = [
         `${home}/.local/bin/claude`,
@@ -511,11 +521,8 @@ export function normalizeClaudeEvent(raw: any): ClaudeStreamEvent[] {
     return events;
 }
 
-export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionId: string | undefined, onEvent: (event: ClaudeStreamEvent) => void): ClaudeRunHandle {
-    const childProcess = nodeRequire<typeof import("child_process")>("child_process");
-    const cliPath = resolveClaudeCli(settings.cliPath);
+function buildClaudeArgs(settings: ClaudeNoteSettings, cliPath: string, sessionId: string | undefined, siyuanCliPath: string): string[] {
     const args = ["-p", "--output-format", "stream-json", "--verbose"];
-    const siyuanCliPath = getBundledSiyuanCliPath();
 
     // 检测是否是定制版 claude-internal —— 它不支持 --model/--no-chrome 这类参数
     const isClaudeInternal = /claude-internal/i.test(cliPath);
@@ -546,15 +553,19 @@ export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionI
     if (sessionId) {
         args.push("--resume", sessionId);
     }
+    return args;
+}
 
+function buildClaudeEnv(settings: ClaudeNoteSettings, siyuanCliPath: string): Record<string, string> {
     const windowApi = (globalThis as any).window?.siyuan?.config?.api;
     const token = settings.siyuanApiToken || windowApi?.token || "";
     const port = settings.siyuanApiPort && settings.siyuanApiPort !== "6806"
         ? settings.siyuanApiPort
         : (windowApi?.port || settings.siyuanApiPort || "6806");
     const siyuanApiUrl = `http://127.0.0.1:${port}`;
+    const resolvedModel = resolveClaudeModelValue(settings.model);
 
-    const env = {
+    return {
         ...readClaudeSettingsEnv(),
         ...((globalThis as any)?.process?.env || {}),
         SIYUAN_API_TOKEN: token,
@@ -565,6 +576,27 @@ export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionI
         ANTHROPIC_MODEL: resolvedModel || settings.model,
         CLAUDE_CODE_EFFORT_LEVEL: settings.effort,
     };
+}
+
+function parseStreamLine(line: string, emit: (event: ClaudeStreamEvent) => void) {
+    if (!line.trim()) return;
+    try {
+        const raw = JSON.parse(line);
+        for (const event of normalizeClaudeEvent(raw)) {
+            emit(event);
+        }
+    } catch {
+        emit({ type: "stderr", text: line });
+    }
+}
+
+export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionId: string | undefined, onEvent: (event: ClaudeStreamEvent) => void): ClaudeRunHandle {
+    const childProcess = nodeRequire<typeof import("child_process")>("child_process");
+    const cliPath = resolveClaudeCli(settings.cliPath);
+    const siyuanCliPath = getBundledSiyuanCliPath();
+
+    const args = buildClaudeArgs(settings, cliPath, sessionId, siyuanCliPath);
+    const env = buildClaudeEnv(settings, siyuanCliPath);
     const child = childProcess.spawn(cliPath, args, {
         cwd: settings.workingDir || (globalThis as any)?.process?.cwd?.() || ".",
         env,
@@ -596,15 +628,7 @@ export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionI
             if (index < 0) break;
             const line = buffer.slice(0, index).replace(/\r$/, "");
             buffer = buffer.slice(index + 1);
-            if (!line.trim()) continue;
-            try {
-                const raw = JSON.parse(line);
-                for (const event of normalizeClaudeEvent(raw)) {
-                    emitEvent(event);
-                }
-            } catch {
-                emitEvent({ type: "stderr", text: line });
-            }
+            parseStreamLine(line, emitEvent);
         }
     });
 
@@ -637,14 +661,7 @@ export function runClaude(settings: ClaudeNoteSettings, prompt: string, sessionI
     const completed = new Promise<{ exitCode: number | null; signal: string | null; sessionId?: string; hasClaudeError?: boolean; errorText?: string; aborted?: boolean }>((resolve) => {
         child.on("close", (exitCode: number | null, signal: string | null) => {
             // Flush remaining buffer
-            if (buffer.trim()) {
-                try {
-                    const raw = JSON.parse(buffer);
-                    for (const event of normalizeClaudeEvent(raw)) {
-                        emitEvent(event);
-                    }
-                } catch { /* ignore parse errors on close */ }
-            }
+            if (buffer.trim()) parseStreamLine(buffer, emitEvent);
             resolve({ exitCode, signal, sessionId: capturedSessionId, hasClaudeError, errorText, aborted });
         });
         child.on("error", (error: Error) => {
