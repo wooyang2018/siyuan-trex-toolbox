@@ -1,8 +1,7 @@
 import { confirm, fetchSyncPost, showMessage } from "siyuan";
 import type { BlockId } from "@/types";
 import type FMiscPlugin from "@/index";
-import { getChildBlocks, updateBlock } from "@/api";
-import { getBlockKramdownContent } from "@/api/claude-note-async";
+import { getBlockKramdown, getChildBlocks, updateBlock } from "@/api";
 import { formatUtil } from "./utils";
 
 export let name = "Typography";
@@ -119,7 +118,8 @@ async function formatDoc(parentId: string) {
             continue;
         }
 
-        const result = await getBlockKramdownContent(id);
+        const kramdown = await getBlockKramdown(id);
+        const result = kramdown?.kramdown || "";
         if (!result) continue;
 
         // 空内容块删除

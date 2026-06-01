@@ -62,4 +62,5 @@ section.doc-context {
 }
 
 /******************** claude note ********************/
-@import './func/claude-note/styles.scss';
+// claude-note 模块的样式由 src/func/claude-note/module.ts 内部 import "./index.scss" 引入
+// 不在这里 @import，避免重复加载

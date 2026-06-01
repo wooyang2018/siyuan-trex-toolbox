@@ -15,6 +15,7 @@ import {
     showMessage,
     ICommand
 } from "siyuan";
+import type { IMenuItem } from "siyuan/types";
 
 import { load, unload, addStatus } from "./func";
 
@@ -287,6 +288,34 @@ export default class FMiscPlugin extends Plugin {
 
     addLayoutReadyCallback(cb: ((p: FMiscPlugin) => void)) {
         this.callbacksOnLayoutReady.push(cb);
+    }
+
+    // ===== Protyle 工具栏贡献机制（供各功能模块注册按钮）=====
+    private protyleToolbarContributors: Array<(toolbar: Array<string | IMenuItem>) => Array<string | IMenuItem>> = [];
+
+    public registerProtyleToolbarContribution(
+        contributor: (toolbar: Array<string | IMenuItem>) => Array<string | IMenuItem>
+    ): void {
+        if (!this.protyleToolbarContributors.includes(contributor)) {
+            this.protyleToolbarContributors.push(contributor);
+        }
+    }
+
+    public unregisterProtyleToolbarContribution(
+        contributor: (toolbar: Array<string | IMenuItem>) => Array<string | IMenuItem>
+    ): void {
+        this.protyleToolbarContributors = this.protyleToolbarContributors.filter(c => c !== contributor);
+    }
+
+    updateProtyleToolbar(toolbar: Array<string | IMenuItem>): Array<string | IMenuItem> {
+        for (const contributor of this.protyleToolbarContributors) {
+            try {
+                toolbar = contributor(toolbar) || toolbar;
+            } catch (error) {
+                console.error("[FMisc] protyle toolbar contributor failed:", error);
+            }
+        }
+        return toolbar;
     }
 }
 

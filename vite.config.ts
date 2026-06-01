@@ -56,6 +56,10 @@ export default defineConfig({
                     src: "./icon.png",
                     dest: "./",
                 },
+                {
+                    src: "./src/func/claude-note/asset/siyuan-cli.py",
+                    dest: "./func/claude-note/asset/",
+                },
             ],
         }),
         process.env.ANALYZE_BUNDLE === 'true' &&

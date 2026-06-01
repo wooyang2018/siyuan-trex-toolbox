@@ -1,13 +1,5 @@
-/**
- * Claude Note 特定的 SiYuan API 封装
- * 移植自 claude-note 项目，提供上下文管理和文档查找功能
- */
+import { fetchSyncPost } from "siyuan";
 
-// 类型已在全局定义，无需导入
-
-/**
- * 上下文项接口
- */
 export interface ContextItem {
     kind: "selection" | "block" | "doc";
     id?: string;
@@ -16,18 +8,62 @@ export interface ContextItem {
     markdown: string;
 }
 
-/**
- * 搜索到的文档接口
- */
-export interface SearchedDoc {
-    id: string;
-    title: string;
-    hpath: string;
+async function request<T = any>(url: string, payload: any): Promise<T | null> {
+    const response = await fetchSyncPost(url, payload);
+    if (response?.code !== 0) {
+        console.warn("Claude Note SiYuan API failed", url, response);
+        return null;
+    }
+    return response.data as T;
 }
 
-/**
- * 检查元素是否隐藏
- */
+export async function getBlockKramdown(id: string): Promise<string> {
+    const data = await request<{ kramdown?: string }>("/api/block/getBlockKramdown", { id });
+    return data?.kramdown || "";
+}
+
+export async function getHPathByID(id: string): Promise<string> {
+    const data = await request<string>("/api/filetree/getHPathByID", { id });
+    return data || "";
+}
+
+export async function getDocTitle(id: string): Promise<string> {
+    // Validate id format to prevent SQL injection
+    if (!/^\d{14}-[a-z0-9]{7}$/.test(id)) {
+        return "未命名文档";
+    }
+    const stmt = `SELECT content FROM blocks WHERE id = '${id}' AND type = 'd'`;
+    try {
+        const rows = await request<any[]>("/api/query/sql", { stmt });
+        if (rows && rows.length > 0) {
+            const title = rows[0].content?.trim();
+            if (title) return title;
+            return "未命名文档";
+        }
+    } catch (e) {
+        console.warn("SQL doc title query failed", e);
+    }
+    // Fallback to HPath
+    const hpath = await getHPathByID(id);
+    return getTitleFromHPath(hpath) || "未命名文档";
+}
+
+export async function getBlockBreadcrumb(id: string): Promise<string> {
+    const hpath = await getHPathByID(id);
+    return hpath || id;
+}
+
+export function summarizeBlockMarkdown(markdown: string, limit = 24): string {
+    const text = markdown
+        .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/[`*_~#>\-[\]()+.!]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (!text) return "空块";
+    return text.length > limit ? `${text.slice(0, limit)}...` : text;
+}
+
 function isElementHidden(el: HTMLElement): boolean {
     let curr: HTMLElement | null = el;
     while (curr && curr !== document.body) {
@@ -39,9 +75,6 @@ function isElementHidden(el: HTMLElement): boolean {
     return false;
 }
 
-/**
- * 从 Protyle 元素中提取文档 ID
- */
 function extractProtyleDocId(protyle: HTMLElement): string {
     const candidates = [
         protyle.querySelector(".protyle-title[data-node-id]"),
@@ -59,9 +92,6 @@ function extractProtyleDocId(protyle: HTMLElement): string {
     return "";
 }
 
-/**
- * 查找当前文档 ID
- */
 export function findCurrentDocumentId(): string {
     // 1. 检查当前获得焦点的元素是否在某个未隐藏的 protyle 编辑区内
     const active = document.activeElement instanceof HTMLElement ? document.activeElement.closest(".protyle") : null;
@@ -94,18 +124,31 @@ export function findCurrentDocumentId(): string {
     return "";
 }
 
-/**
- * 从 HPath 获取标题
- */
 export function getTitleFromHPath(hpath: string): string {
     if (!hpath) return "";
     const segments = hpath.split("/").filter(Boolean);
     return segments[segments.length - 1] || "";
 }
 
-/**
- * 从元素中提取块 ID
- */
+export interface SearchedDoc {
+    id: string;
+    title: string;
+    hpath: string;
+}
+
+export async function searchDocuments(keyword: string): Promise<SearchedDoc[]> {
+    if (!keyword.trim()) return [];
+    const sanitized = keyword.replace(/'/g, "''");
+    const stmt = `SELECT id, content, hpath FROM blocks WHERE type = 'd' AND (content LIKE '%${sanitized}%' OR hpath LIKE '%${sanitized}%') LIMIT 15`;
+    const rows = await request<any[]>("/api/query/sql", { stmt });
+    if (!rows || !Array.isArray(rows)) return [];
+    return rows.map((row) => ({
+        id: row.id || "",
+        title: row.content || "",
+        hpath: row.hpath || "",
+    }));
+}
+
 export function extractBlockIdFromElement(element: Element | null | undefined): string {
     if (!element) return "";
     const target = element.closest("[data-node-id]");
@@ -114,9 +157,6 @@ export function extractBlockIdFromElement(element: Element | null | undefined): 
     return /^\d{14}-[a-z0-9]{7}$/.test(id) ? id : "";
 }
 
-/**
- * 查找选中的块 ID
- */
 export function findSelectedBlockId(root?: Element | null): string {
     const scope = root || document;
     const selectors = [
@@ -137,9 +177,6 @@ export function findSelectedBlockId(root?: Element | null): string {
     return extractBlockIdFromElement(selectedElement);
 }
 
-/**
- * 获取选中文本的上下文
- */
 export function getSelectedTextContext(): ContextItem | null {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
@@ -152,23 +189,19 @@ export function getSelectedTextContext(): ContextItem | null {
     };
 }
 
-/**
- * 摘要块 Markdown 内容
- */
-export function summarizeBlockMarkdown(markdown: string, limit = 24): string {
-    const text = markdown
-        .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-        .replace(/[`*_~#>\-[\]()+.!]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    if (!text) return "空块";
-    return text.length > limit ? `${text.slice(0, limit)}...` : text;
+export async function buildBlockContext(id: string, kind: "block" | "doc" = "block"): Promise<ContextItem | null> {
+    const markdown = await getBlockKramdown(id);
+    if (!markdown.trim()) return null;
+    const hpath = await getBlockBreadcrumb(id);
+    return {
+        kind,
+        id,
+        hpath,
+        title: hpath || id,
+        markdown,
+    };
 }
 
-/**
- * 转义属性值
- */
 function escapeAttribute(value: string): string {
     return value
         .replace(/&/g, "&amp;")
@@ -177,9 +210,6 @@ function escapeAttribute(value: string): string {
         .replace(/>/g, "&gt;");
 }
 
-/**
- * 格式化上下文内容
- */
 export function formatContext(items: ContextItem[], maxChars: number): string {
     if (items.length === 0) return "";
     let output = "";
