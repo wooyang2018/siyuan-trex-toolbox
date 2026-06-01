@@ -4,7 +4,7 @@
  */
 
 import type { FMiscPlugin } from "@/index";
-import { load as loadIntegration, unload as unloadIntegration, declareSettingPanel } from "./integration";
+import { load as loadIntegration, unload as unloadIntegration, declareSettingPanel } from "./integration.tsx";
 
 // ===== 模块元数据 =====
 export const name = 'ClaudeNote';

@@ -110,9 +110,6 @@ export type NotebookConf = {
  * - 'query_embed' (Query Embed): 查询嵌入块 - 嵌入查询结果
  * - 'html' (HTML): HTML块 - 直接编写和渲染HTML代码
  * - 'f' (Footnote): 脚注块 - 文档脚注内容
- *
- * 推荐使用 block-type-enhance.ts 中的增强工具函数和常量
- * @see ./block-type-enhance.ts
  */
 export type BlockType =
     | 'c'

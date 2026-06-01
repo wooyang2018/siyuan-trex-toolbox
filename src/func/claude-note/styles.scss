@@ -30,15 +30,16 @@
     font-size: 12px;
     border-bottom: 2px solid transparent;
     transition: all 0.2s ease;
+    color: var(--b3-theme-on-surface);
 
     &:hover {
-      background: var(--b3-theme-surface-hover);
+      background: var(--b3-list-hover);
     }
 
     &.active {
       border-bottom-color: var(--b3-theme-primary);
       color: var(--b3-theme-primary);
-      background: var(--b3-theme-surface-selected);
+      background: var(--b3-list-hover);
     }
   }
 
@@ -55,6 +56,13 @@
     gap: 12px;
   }
 
+  &__panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
   &__panel-title {
     font-size: 14px;
     font-weight: 600;
@@ -62,9 +70,24 @@
     margin-bottom: 8px;
   }
 
+  &__clear-btn {
+    background: transparent;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--b3-list-hover);
+      border-color: var(--b3-theme-error);
+    }
+  }
+
   &__textarea {
     width: 100%;
-    min-height: 120px;
+    min-height: 100px;
     padding: 8px;
     border: 1px solid var(--b3-border-color);
     border-radius: 4px;
@@ -73,16 +96,84 @@
     font-size: 13px;
     background: var(--b3-theme-surface);
     color: var(--b3-theme-on-surface);
+    box-sizing: border-box;
 
     &:focus {
       outline: none;
       border-color: var(--b3-theme-primary);
-      box-shadow: 0 0 0 2px var(--b3-theme-primary-light);
+      box-shadow: 0 0 0 2px var(--b3-theme-primary-lighter);
     }
 
     &::placeholder {
       color: var(--b3-theme-on-surface-light);
     }
+  }
+
+  &__search {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    background: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    box-sizing: border-box;
+    margin-bottom: 8px;
+
+    &:focus {
+      outline: none;
+      border-color: var(--b3-theme-primary);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    background: var(--b3-theme-surface-light);
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    min-height: 200px;
+    max-height: 400px;
+    margin-bottom: 8px;
+  }
+
+  &__chat-item {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--b3-theme-background);
+
+    &--user {
+      background: var(--b3-theme-primary-lighter);
+      margin-left: 20px;
+    }
+
+    &--assistant {
+      background: var(--b3-theme-surface);
+      margin-right: 20px;
+      border: 1px solid var(--b3-border-color);
+    }
+  }
+
+  &__chat-role {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--b3-theme-on-surface-light);
+    margin-bottom: 4px;
+  }
+
+  &__chat-content {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--b3-theme-on-background);
+    word-wrap: break-word;
+    white-space: pre-wrap;
   }
 
   &__notes-list {
@@ -97,10 +188,11 @@
     margin-bottom: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
+    background: var(--b3-theme-surface);
 
     &:hover {
-      background: var(--b3-theme-surface-hover);
-      border-color: var(--b3-theme-primary-light);
+      background: var(--b3-list-hover);
+      border-color: var(--b3-theme-primary-lighter);
     }
   }
 
@@ -109,6 +201,9 @@
     font-weight: 500;
     color: var(--b3-theme-on-surface);
     margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__note-date {
@@ -131,12 +226,27 @@
       border: none;
 
       &:hover:not(:disabled) {
-        background: var(--b3-theme-primary-dark);
+        background: var(--b3-theme-primary-light);
       }
 
       &:disabled {
-        background: var(--b3-theme-surface-disabled);
-        color: var(--b3-theme-on-surface-disabled);
+        background: var(--b3-theme-surface);
+        color: var(--b3-theme-on-surface-light);
+        cursor: not-allowed;
+      }
+    }
+
+    &--outline {
+      background: transparent;
+      color: var(--b3-theme-on-surface);
+      border: 1px solid var(--b3-border-color);
+
+      &:hover:not(:disabled) {
+        background: var(--b3-list-hover);
+      }
+
+      &:disabled {
+        opacity: 0.5;
         cursor: not-allowed;
       }
     }
@@ -161,6 +271,8 @@
 // 设置面板样式
 .config__tab-container {
   .claude-note-settings {
+    padding: 8px;
+
     &__section {
       margin-bottom: 24px;
       padding: 16px;
@@ -193,21 +305,35 @@
         font-size: 13px;
         font-weight: 500;
         color: var(--b3-theme-on-surface);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
-      input, textarea, select {
+      input[type="text"],
+      input[type="password"],
+      input[type="number"],
+      textarea,
+      select {
         padding: 8px 12px;
         border: 1px solid var(--b3-border-color);
         border-radius: 4px;
         background: var(--b3-theme-background);
         color: var(--b3-theme-on-background);
         font-size: 13px;
+        box-sizing: border-box;
 
         &:focus {
           outline: none;
           border-color: var(--b3-theme-primary);
-          box-shadow: 0 0 0 2px var(--b3-theme-primary-light);
+          box-shadow: 0 0 0 2px var(--b3-theme-primary-lighter);
         }
+      }
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
       }
 
       textarea {
@@ -223,28 +349,6 @@
 
       button {
         flex: 1;
-      }
-    }
-  }
-}
-
-// 主题适配
-[data-theme-mode="dark"] {
-  .claude-note-dock {
-    background: var(--b3-theme-background-dark);
-
-    &__textarea {
-      background: var(--b3-theme-surface-dark);
-      color: var(--b3-theme-on-surface-dark);
-      border-color: var(--b3-border-color-dark);
-    }
-
-    &__note-item {
-      border-color: var(--b3-border-color-dark);
-      background: var(--b3-theme-surface-dark);
-
-      &:hover {
-        background: var(--b3-theme-surface-hover-dark);
       }
     }
   }
