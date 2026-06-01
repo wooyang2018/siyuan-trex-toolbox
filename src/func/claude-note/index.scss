@@ -27,6 +27,8 @@
     font-family: var(--cn-font-ui);
     user-select: text !important;
     -webkit-user-select: text !important;
+    /* 让浏览器以浅色模式渲染原生 UI；深色模式下被覆盖为 dark */
+    color-scheme: light;
 }
 
 html[data-theme-mode="dark"] .cn-shell {
@@ -38,6 +40,8 @@ html[data-theme-mode="dark"] .cn-shell {
     --cn-muted: #9c9990;
     --cn-accent: #e06b43;
     --cn-code-bg: #191918;
+    /* 让浏览器以深色模式渲染原生 UI（select 下拉、滚动条、input 等） */
+    color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -50,6 +54,7 @@ html[data-theme-mode="dark"] .cn-shell {
         --cn-muted: #9c9990;
         --cn-accent: #e06b43;
         --cn-code-bg: #191918;
+        color-scheme: dark;
     }
 }
 
@@ -1163,6 +1168,15 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
     font: inherit;
     cursor: pointer;
     box-sizing: border-box;
+    /* 让浏览器跟随当前主题渲染原生下拉面板（深色模式下不再显示白色 popup） */
+    color-scheme: light dark;
+}
+
+/* 原生 <option> 浮层是浏览器渲染的，不继承父容器样式；
+   显式声明背景和文字色，避免深色模式下下拉项变成纯白 */
+.cn-toolbar-select option {
+    background-color: var(--cn-panel);
+    color: var(--cn-text);
 }
 
 .cn-ctx-pill {
