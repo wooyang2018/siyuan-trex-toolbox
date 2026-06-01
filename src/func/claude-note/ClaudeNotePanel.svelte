@@ -962,6 +962,28 @@
             return;
         }
         sessions = listFilteredSessions();
+        // 拉不到会话时把诊断信息打到 console（不在 UI 上喧宾夺主）
+        if (sessions.length === 0) {
+            try {
+                const dirInfo = describeClaudeSessionDir(localSettings.workingDir, localSettings.claudeHomeDir);
+                if (!dirInfo.exists) {
+                    console.warn(
+                        "[Claude Note] 当前工作目录暂无 Claude Code 会话。\n" +
+                        `  查找路径: ${dirInfo.dir || "(未配置)"}\n` +
+                        (dirInfo.reason ? `  原因: ${dirInfo.reason}\n` : "") +
+                        '  提示: 请检查"工作目录"和"Claude 会话目录根"是否设置正确。'
+                    );
+                } else if (!dirInfo.hasJsonl) {
+                    console.warn(
+                        "[Claude Note] 当前工作目录暂无 Claude Code 会话。\n" +
+                        `  查找路径: ${dirInfo.dir}\n` +
+                        "  原因: 目录存在但没有 .jsonl 会话文件。"
+                    );
+                }
+            } catch (e) {
+                console.warn("[Claude Note] describeClaudeSessionDir failed:", e);
+            }
+        }
         historyOpen = true;
     }
 
@@ -1202,23 +1224,10 @@
 
     <!-- Floating History Popover Top relative to cn-shell -->
     {#if historyOpen}
-        {@const dirInfo = describeClaudeSessionDir(localSettings.workingDir, localSettings.claudeHomeDir)}
         <div class="cn-popover-backdrop" on:click={() => historyOpen = false}></div>
         <div class="cn-history-popover-top">
             {#if sessions.length === 0}
-                <div class="cn-history-empty">
-                    <div>{i18n.noSessionInDir || "当前工作目录暂无 Claude Code 会话。"}</div>
-                    <div class="cn-history-empty-detail">
-                        {#if !dirInfo.exists}
-                            <div>查找路径: <code>{dirInfo.dir || "(未配置)"}</code></div>
-                            {#if dirInfo.reason}<div class="cn-history-empty-reason">{dirInfo.reason}</div>{/if}
-                            <div class="cn-history-empty-hint">请检查"工作目录"和"Claude 会话目录根"是否设置正确。</div>
-                        {:else if !dirInfo.hasJsonl}
-                            <div>查找路径: <code>{dirInfo.dir}</code></div>
-                            <div class="cn-history-empty-reason">目录存在但没有 .jsonl 会话文件。</div>
-                        {/if}
-                    </div>
-                </div>
+                <div class="cn-history-empty">{i18n.noSessionInDir || "当前工作目录暂无 Claude Code 会话。"}</div>
             {:else}
                 {#each sessions as session (session.id)}
                     <div class="cn-history-item-row" class:active={activeSessionId === session.id}>

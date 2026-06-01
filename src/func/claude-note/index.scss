@@ -313,33 +313,6 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
     font-size: 12px;
 }
 
-.cn-history-empty-detail {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--b3-border-color);
-    font-size: 11px;
-    line-height: 1.5;
-
-    code {
-        background: var(--b3-theme-surface);
-        padding: 1px 6px;
-        border-radius: 3px;
-        font-family: var(--b3-font-family-code);
-        word-break: break-all;
-    }
-}
-
-.cn-history-empty-reason {
-    margin-top: 4px;
-    color: var(--cn-warning, #d97706);
-}
-
-.cn-history-empty-hint {
-    margin-top: 4px;
-    color: var(--cn-muted);
-    font-style: italic;
-}
-
 .cn-history-item-row {
     display: flex;
     align-items: center;

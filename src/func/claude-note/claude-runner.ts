@@ -152,8 +152,22 @@ function getClaudeProjectDir(workingDir: string, claudeHomeDir: string): string 
     const root = resolveClaudeHomeDir(claudeHomeDir);
     if (!root) return "";
     const normalized = path.resolve(workingDir || ".");
-    const projectName = normalized === "/" ? "-" : normalized.replace(/\//g, "-");
+    const projectName = encodeProjectDirName(normalized);
     return path.join(root, "projects", projectName);
+}
+
+/**
+ * 把绝对路径编码成 Claude CLI 用的 projects 子目录名。
+ * Claude CLI 的规则是：把路径里所有的 `/`、`\`、`:` 都替换成 `-`。
+ *
+ * 示例：
+ *   Linux:   /data/home/user/proj  → -data-home-user-proj
+ *   Windows: C:\Users\me\Docs      → C--Users-me-Docs
+ *   根目录:  /                     → -
+ */
+function encodeProjectDirName(absolutePath: string): string {
+    if (absolutePath === "/" || absolutePath === "\\") return "-";
+    return absolutePath.replace(/[\/\\:]/g, "-");
 }
 
 /**
