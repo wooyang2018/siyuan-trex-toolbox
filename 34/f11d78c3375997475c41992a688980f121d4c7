@@ -1,0 +1,52 @@
+src/func/claude-note/plugin-entry.ts
+  s_325901c149e7f8::t_5bf27eb40cfbfe 1-366
+src/func/claude-note/claude-runner.ts
+  s_325901c149e7f8::t_af920e85ee2a79 1,14-27,30,45-48,51-53,55-62,64-65,67-69,88-92,102-103,105-136,138-144,146-161,163,165-196,199-205,207-242,245,247-255,257-258,260-268,270-271,273-274,278-287,289-290,292-312,315-318,321-323,326-327,329-331,333-342,345-358,361-362,364-375,377-378,380-409,411-414,416-421,423-424,426-430,432-434,436-449,452-523,526-559
+  s_325901c149e7f8::t_55fd599c859eb2 70-83,87,93-99
+src/func/claude-note/asset/siyuan-cli.py
+  s_325901c149e7f8::t_af920e85ee2a79 1-245
+src/func/claude-note/siyuan-api.ts
+  s_325901c149e7f8::t_af920e85ee2a79 1-227
+src/func/claude-note/types.ts
+  s_325901c149e7f8::t_3450e6ef2a1e33 1-30
+src/index.ts
+  s_325901c149e7f8::t_4bcff0c6c5b3f4 292-319
+  s_325901c149e7f8::t_a79ca09bc51dc0 18
+src/func/claude-note/settings.ts
+  s_325901c149e7f8::t_af920e85ee2a79 1-301
+src/func/claude-note/module.ts
+  s_325901c149e7f8::t_0befcba5d4813a 2-7,10-12,15,19-21,26-28,30-36,40,42,44,52,54,56,60-61
+src/func/typography/index.ts
+  s_325901c149e7f8::t_6c9e52e606efff 4
+  s_325901c149e7f8::t_c723abe240e88b 121-122
+src/index.scss
+  s_325901c149e7f8::t_948b838d19bafa 65-66
+src/func/claude-note/ClaudeNotePanel.svelte
+  s_325901c149e7f8::t_af920e85ee2a79 1-1549
+vite.config.ts
+  s_325901c149e7f8::t_2a20ffe218bd5b 59-61
+src/func/claude-note/icon.ts
+  s_325901c149e7f8::t_d6b64d7ca66372 1-9
+src/func/claude-note/MarkdownBlock.svelte
+  s_325901c149e7f8::t_af920e85ee2a79 1-58
+src/func/claude-note/index.scss
+  s_325901c149e7f8::t_af920e85ee2a79 1-2232
+src/func/claude-note/ClaudeNoteSettings.svelte
+  s_325901c149e7f8::t_af920e85ee2a79 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "34f11d78c3375997475c41992a688980f121d4c7",
+  "prompts": {},
+  "sessions": {
+    "s_325901c149e7f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bfcf2cf-389c-4855-a945-43ac7c910eb7",
+        "model": "claude-4.7-opus"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
