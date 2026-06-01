@@ -1161,24 +1161,32 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
     min-width: 0;
     height: 24px;
     padding: 0 4px;
-    border: 0;
-    border-radius: 4px;
+    border: 1px solid var(--cn-border);
+    border-radius: 6px;
     color: inherit;
-    background: transparent;
+    background: var(--cn-panel-soft);
     font: inherit;
     cursor: pointer;
     box-sizing: border-box;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
     /* 让浏览器跟随当前主题渲染原生下拉面板（深色模式下不再显示白色 popup） */
     color-scheme: light dark;
 }
 
+.cn-toolbar-select:focus,
+.cn-toolbar-select:focus-visible {
+    outline: none;
+    border-color: var(--cn-accent);
+}
+
 /* 原生 <option> 浮层是浏览器渲染的，不继承父容器样式；
-   显式声明背景和文字色 + 圆角，避免深色模式下下拉项变成纯白且更美观 */
+   显式声明背景和文字色，避免深色模式下下拉项变成纯白
+   注：option 的 border-radius 在 Chromium 上不会生效（浏览器原生绘制），
+   只能保证背景/文字色跟主题一致 */
 .cn-toolbar-select option {
     background-color: var(--cn-panel);
     color: var(--cn-text);
-    border-radius: 4px;
-    padding: 2px 6px;
+    padding: 4px 8px;
 }
 
 .cn-ctx-pill {
@@ -1203,7 +1211,10 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
     min-width: 0;
 }
 
-.cn-toolbar-select:hover,
+.cn-toolbar-select:hover {
+    border-color: var(--cn-muted);
+}
+
 .cn-ctx-pill:hover {
     background: var(--cn-panel-soft);
 }
