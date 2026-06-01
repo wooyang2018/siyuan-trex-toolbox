@@ -1173,10 +1173,12 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
 }
 
 /* 原生 <option> 浮层是浏览器渲染的，不继承父容器样式；
-   显式声明背景和文字色，避免深色模式下下拉项变成纯白 */
+   显式声明背景和文字色 + 圆角，避免深色模式下下拉项变成纯白且更美观 */
 .cn-toolbar-select option {
     background-color: var(--cn-panel);
     color: var(--cn-text);
+    border-radius: 4px;
+    padding: 2px 6px;
 }
 
 .cn-ctx-pill {
