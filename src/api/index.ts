@@ -6,7 +6,7 @@
  * API 文档见 [API_zh_CN.md](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
  */
 
-import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
+import { fetchPost, fetchSyncPost, type IWebSocketData } from "siyuan";
 import type { NotebookId, Notebook, NotebookConf, ITheme, BlockId, DocumentId, Block, PreviousID, ParentID } from "./../types/index";
 import type { IReslsNotebooks, IResGetNotebookConf, IDocTreeNode, IResUpload, IResdoOperations, IResGetBlockKramdown, IResGetChildBlock, IResGetTemplates, IResReadDir, IResExportResources, IResForwardProxy, IResBootProgress } from "./../types/api";
 import { validateBlockId, withErrorHandling } from "./error-handler";

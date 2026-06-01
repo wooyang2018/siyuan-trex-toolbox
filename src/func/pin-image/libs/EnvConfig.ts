@@ -1,6 +1,6 @@
 import { getNotebookMapByApi } from "../utils/api";
 import Instance from "../utils/Instance";
-import { App, Plugin, getFrontend } from "siyuan";
+import { type App, type Plugin, getFrontend } from "siyuan";
 import { getNotebookMap } from "../utils/api";
 
 export class EnvConfig {

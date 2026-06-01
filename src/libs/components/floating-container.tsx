@@ -6,7 +6,7 @@
  * @Description  : 全局浮动容器组件
  */
 
-import { type Component, createSignal, onCleanup, onMount, JSXElement } from 'solid-js';
+import { type Component, createSignal, onCleanup, onMount, type JSXElement } from 'solid-js';
 import { render } from 'solid-js/web';
 import { IconSymbol } from './Elements';
 import { debounce } from '@frostime/siyuan-plugin-kits';

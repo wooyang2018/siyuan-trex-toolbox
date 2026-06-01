@@ -31,6 +31,16 @@ export default defineConfig({
         }
     },
 
+    css: {
+        preprocessorOptions: {
+            scss: {
+                // 使用现代 Sass JS API，消除 legacy-js-api deprecation 警告
+                api: 'modern-compiler',
+                silenceDeprecations: ['legacy-js-api'],
+            },
+        },
+    },
+
     plugins: [
         svelte({
             preprocess: sveltePreprocess()

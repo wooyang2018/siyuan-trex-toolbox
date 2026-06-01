@@ -1,4 +1,4 @@
-import { showMessage, Protyle } from "siyuan";
+import { showMessage, type Protyle } from "siyuan";
 import type FMiscPlugin from "@/index";
 import {
     sql,

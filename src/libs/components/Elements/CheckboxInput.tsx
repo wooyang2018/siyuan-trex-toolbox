@@ -1,4 +1,4 @@
-import { createMemo, JSX } from "solid-js";
+import { createMemo, type JSX } from "solid-js";
 
 interface ICheckboxInputProps {
     checked?: boolean;

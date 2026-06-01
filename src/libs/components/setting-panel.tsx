@@ -5,7 +5,7 @@
 // LastEditTime : 2024-06-08 18:25:34
 // Description  :
 
-import { Component, For, JSXElement, children } from "solid-js";
+import { type Component, For, type JSXElement, children } from "solid-js";
 import Form from "./Form";
 import type { ISettingItem } from "@/types";
 

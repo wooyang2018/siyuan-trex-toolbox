@@ -8,7 +8,7 @@
  */
 
 import { simpleDialog } from "@frostime/siyuan-plugin-kits";
-import { JSXElement } from "solid-js";
+import type { JSXElement } from "solid-js";
 import { render } from "solid-js/web";
 
 export const solidDialog = (args: {

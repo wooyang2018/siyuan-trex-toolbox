@@ -8,12 +8,12 @@ import type { Block, BlockId, DocumentId, NotebookId, Notebook, NotebookConf, IT
  * @Description  : 
  */
 import {
-    IMenu,
+    type IMenu,
     Menu,
     Plugin,
     getFrontend,
     showMessage,
-    ICommand
+    type ICommand
 } from "siyuan";
 import type { IMenuItem } from "siyuan/types";
 
@@ -291,11 +291,16 @@ export default class FMiscPlugin extends Plugin {
     }
 
     // ===== Protyle 工具栏贡献机制（供各功能模块注册按钮）=====
+    // 注意：思源会在 Plugin 构造期就触发 updateProtyleToolbar，此时类字段初始化器
+    // 可能尚未执行，因此本函数和字段都需要防御式处理。
     private protyleToolbarContributors: Array<(toolbar: Array<string | IMenuItem>) => Array<string | IMenuItem>> = [];
 
     public registerProtyleToolbarContribution(
         contributor: (toolbar: Array<string | IMenuItem>) => Array<string | IMenuItem>
     ): void {
+        if (!this.protyleToolbarContributors) {
+            this.protyleToolbarContributors = [];
+        }
         if (!this.protyleToolbarContributors.includes(contributor)) {
             this.protyleToolbarContributors.push(contributor);
         }
@@ -304,11 +309,14 @@ export default class FMiscPlugin extends Plugin {
     public unregisterProtyleToolbarContribution(
         contributor: (toolbar: Array<string | IMenuItem>) => Array<string | IMenuItem>
     ): void {
+        if (!this.protyleToolbarContributors) return;
         this.protyleToolbarContributors = this.protyleToolbarContributors.filter(c => c !== contributor);
     }
 
     updateProtyleToolbar(toolbar: Array<string | IMenuItem>): Array<string | IMenuItem> {
-        for (const contributor of this.protyleToolbarContributors) {
+        const contributors = this.protyleToolbarContributors;
+        if (!contributors || contributors.length === 0) return toolbar;
+        for (const contributor of contributors) {
             try {
                 toolbar = contributor(toolbar) || toolbar;
             } catch (error) {

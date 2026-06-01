@@ -4,7 +4,7 @@
  * @description 为引用块添加自定义样式和图标
  * @author Yp Z (frostime)
  */
-import { Menu, Protyle } from "siyuan";
+import { type Menu, type Protyle } from "siyuan";
 import type { BlockId, Block, ICallout } from "@/types";
 import "./index.scss";
 import FMiscPlugin from "@/index";

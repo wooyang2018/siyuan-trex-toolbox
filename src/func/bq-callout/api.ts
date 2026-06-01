@@ -7,7 +7,7 @@
  * @see API_zh_CN.md https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md
  */
 
-import { fetchSyncPost, IWebSocketData } from "siyuan";
+import { fetchSyncPost, type IWebSocketData } from "siyuan";
 import type { BlockId } from "@/types";
 
 /**

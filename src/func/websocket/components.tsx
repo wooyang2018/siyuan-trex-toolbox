@@ -4,7 +4,7 @@
  * @description WebSocket 状态显示和配置管理组件
  * @author frostime
  */
-import { Component, createSignal, onCleanup } from "solid-js";
+import { type Component, createSignal, onCleanup } from "solid-js";
 import { getAlive } from ".";
 import FormWrap from "@/libs/components/Form/form-wrap";
 import { thisPlugin } from "@frostime/siyuan-plugin-kits";

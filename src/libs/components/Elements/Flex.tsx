@@ -1,4 +1,4 @@
-import { JSX, Component, children } from 'solid-js';
+import { type JSX, type Component, children } from 'solid-js';
 
 // Rows 组件，水平排列子元素
 export const Rows: Component<{

@@ -2,6 +2,9 @@
     import { tick, onMount, onDestroy } from "svelte";
     import { showMessage } from "siyuan";
     import MarkdownBlock from "./MarkdownBlock.svelte";
+    // svelte-preprocess + TypeScript isolatedModules 在 lang="ts" 模式下，
+    // 若 default import 仅在模板中使用，可能被 TS elision 移除（误判为 unused）。
+    void MarkdownBlock;
     import { loadClaudeSessionMessages, listClaudeSessions, runClaude, deleteClaudeSession, renameClaudeSession, type ClaudeRunHandle, type ClaudeSessionSummary, type ClaudeStreamEvent } from "./claude-runner";
     import { buildClaudeModelOptions, defaultSettings, mergeSettings, type ClaudeNoteSettings } from "./settings";
     import { buildBlockContext, findCurrentDocumentId, formatContext, getSelectedTextContext, searchDocuments, getHPathByID, getTitleFromHPath, getDocTitle, getBlockKramdown, summarizeBlockMarkdown, type ContextItem } from "./siyuan-api";

@@ -4,7 +4,7 @@
  * @description 提供文档上下文查看和导航功能，支持父子文档和同级文档切换
  * @author frostime
  */
-import { createSignal, For, JSXElement, Match, onMount, Show, Switch } from 'solid-js';
+import { createSignal, For, type JSXElement, Match, onMount, Show, Switch } from 'solid-js';
 import type { BlockId } from "@/types";
 import { render } from 'solid-js/web';
 import { simpleDialog } from "@frostime/siyuan-plugin-kits";

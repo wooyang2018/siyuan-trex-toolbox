@@ -5,7 +5,7 @@
 // LastEditTime : 2024-06-07 19:14:28
 // Description  : The setting item container
 
-import { children, Component, createMemo, JSX } from "solid-js";
+import { children, type Component, createMemo, type JSX } from "solid-js";
 
 import css from './form-wrap.module.css';
 

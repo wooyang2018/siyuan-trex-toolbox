@@ -1,4 +1,4 @@
-import { Component, For, JSX, Show, createSignal, onCleanup } from "solid-js";
+import { type Component, For, type JSX, Show, createSignal, onCleanup } from "solid-js";
 import type { ISettingItem } from "@/types";
 import SettingPanel from "@/libs/components/setting-panel";
 
