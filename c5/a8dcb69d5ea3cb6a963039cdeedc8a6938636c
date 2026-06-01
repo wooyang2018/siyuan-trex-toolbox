@@ -1,0 +1,180 @@
+src/func/claude-note/errors.ts
+  s_325901c149e7f8::t_5cc72cd32f693b 1-187
+  s_325901c149e7f8::t_a8649d6c401048 188-214
+  s_325901c149e7f8::t_5b7f38f6906611 215
+src/api/index.ts
+  s_325901c149e7f8::t_976075def118a8 31-50
+  s_325901c149e7f8::t_7900150da3fad1 10-11
+  s_325901c149e7f8::t_2326399edb1f63 442-462,464
+  s_325901c149e7f8::t_7d921efb1bc0d5 226-252
+  s_325901c149e7f8::t_ca6a8ce2e0d3e8 12
+  s_325901c149e7f8::t_f578a10d747676 14-30
+  s_325901c149e7f8::t_b4cfdd68167c8f 54-65
+  s_325901c149e7f8::t_65b3980342a14d 470-494
+  s_325901c149e7f8::t_f420b1284f620c 365-391
+src/types/block-type-examples.ts
+  s_325901c149e7f8::t_e4be6abe16085e 1-25,27-256
+  s_325901c149e7f8::t_954f66b1bf6e76 26
+src/func/convert-inline/index.ts
+  s_325901c149e7f8::t_39389e54c218d6 6
+src/func/bq-callout/callout.ts
+  s_325901c149e7f8::t_39389e54c218d6 8
+src/func/claude-note/integration-validator.ts
+  s_325901c149e7f8::t_0ab3d473bf2ede 1-298
+src/func/bq-callout/index.ts
+  s_325901c149e7f8::t_39389e54c218d6 8
+src/func/claude-note/config.ts
+  s_325901c149e7f8::t_e9eb655d92a0ea 1-5,11-324
+  s_325901c149e7f8::t_892c56dde5d595 6-10
+src/types/api.d.ts
+  s_325901c149e7f8::t_ab5348cc88f04e 9,15,20,33,37,42,47,52,58,63,69,74,79,88,93,97
+src/func/pin-image/utils/api.ts
+  s_325901c149e7f8::t_39389e54c218d6 2
+src/func/index.ts
+  s_325901c149e7f8::t_40f7286774ff5b 25
+  s_325901c149e7f8::t_8a6316b73db1fe 22
+src/func/mini-window.ts
+  s_325901c149e7f8::t_39389e54c218d6 9
+src/libs/components/Form/form-input.tsx
+  s_325901c149e7f8::t_39389e54c218d6 2
+src/func/claude-note/claude-runner.ts
+  s_325901c149e7f8::t_cdcb72cdb08af9 1-432
+src/func/claude-note/services.ts
+  s_325901c149e7f8::t_d03945d9d72eed 6-10
+  s_325901c149e7f8::t_97c00568cf306d 1-5,11-13,15-102,104-106,108-127,130-133,135,194-205,208-210,241-425
+  s_325901c149e7f8::t_b816eb5e5e2754 14
+  s_325901c149e7f8::t_c6225b667e94e3 103,107,128-129,134,136-193,206-207,211-240
+src/func/claude-note/index.ts
+  s_325901c149e7f8::t_68d6857e675617 338
+  s_325901c149e7f8::t_f2531660f40752 290-294
+  s_325901c149e7f8::t_4039e4e73b2b2d 22
+  s_325901c149e7f8::t_f472c09412c91c 20
+  s_325901c149e7f8::t_46f6c097340be6 1,3,11,23-33,37,39-42,53,75-79,87-89,133,240-241,243,245-246,255,257,260,273-274,276,280,283,289,304,330,371-372,386
+  s_325901c149e7f8::t_c8e91ee7f51f9a 401
+  s_325901c149e7f8::t_2d409e9bfeb081 13-17
+  s_325901c149e7f8::t_c9a45813f20b7b 2,4-10,12,18-19,21,34-36,38,43-52,54-74,80-86,90-132,134-239,242,244,247-254,256,258-259,261-272,275,277-279,281-282,284-288,295-303,305-329,331-337,339-370,373-385,387-388,390-400,402-427
+  s_325901c149e7f8::t_16d74fce46d909 389
+  s_325901c149e7f8::t_31a350c553cb50 428-566
+  s_325901c149e7f8::t_64e66370515541 567-568
+src/libs/components/setting-panel.tsx
+  s_325901c149e7f8::t_c759a913ea6534 10
+src/settings/index.ts
+  s_325901c149e7f8::t_90fed9a1a29af4 10
+src/types/claude-note.d.ts
+  s_325901c149e7f8::t_0de71a26b5d113 1-23
+src/libs/dailynote.ts
+  s_325901c149e7f8::t_90fed9a1a29af4 10
+src/index.ts
+  s_325901c149e7f8::t_69d3dd8c42c063 1
+src/func/bq-callout/api.ts
+  s_325901c149e7f8::t_39389e54c218d6 11
+src/func/claude-note/plugin-types.ts
+  s_325901c149e7f8::t_4b74f655311c47 1-77
+src/func/claude-note/dock.tsx
+  s_325901c149e7f8::t_dca9ae2cc44a63 1-235
+src/func/typography/index.ts
+  s_325901c149e7f8::t_39389e54c218d6 2
+  s_325901c149e7f8::t_e2f425164f9d47 4-5
+  s_325901c149e7f8::t_f5f553b774e76e 122
+src/func/claude-note/module.ts
+  s_325901c149e7f8::t_6a70365ad1c8f1 1-156
+pnpm-workspace.yaml
+  s_325901c149e7f8::t_d38a772f996403 2-4
+  s_325901c149e7f8::t_1bfc4ac83f1c93 1
+src/func/claude-note/__tests__/basic.test.ts
+  s_325901c149e7f8::t_a1ab9149c2174b 1-5,7-14,17-200
+  s_325901c149e7f8::t_0214e86b6e6d3d 6,15-16
+src/func/doc-context.tsx
+  s_325901c149e7f8::t_39389e54c218d6 8
+src/api/all.ts
+  s_325901c149e7f8::t_e3c45058db456e 10,12-15
+  s_325901c149e7f8::t_a3c010e4f9efff 31-32
+  s_325901c149e7f8::t_f0b1267b6011f4 1-9,11,16-30,33
+src/settings/settings.tsx
+  s_325901c149e7f8::t_90fed9a1a29af4 2
+src/func/claude-note/integration.ts
+  s_325901c149e7f8::t_2610eac2503f46 1-5,9-243,245,387-452
+  s_325901c149e7f8::t_d07f5ca7a49e2b 6-8
+  s_325901c149e7f8::t_18d20c77cb542b 244,246-386
+src/func/claude-note/testing.ts
+  s_325901c149e7f8::t_8da6c3c4dbdf80 1-403
+src/func/claude-note/validate.ts
+  s_325901c149e7f8::t_ff22f789755e10 1-231
+src/types/block-type-enhance.ts
+  s_325901c149e7f8::t_ccceb999675add 6-7
+  s_325901c149e7f8::t_f88dde2622bdda 30-31
+  s_325901c149e7f8::t_bc3e86e19b94ec 321,340
+  s_325901c149e7f8::t_f9909bd1638d35 65
+  s_325901c149e7f8::t_8a8dafb0071acb 368-369
+  s_325901c149e7f8::t_a776f83b8b1b7a 1-5,8-29,32-64,66-89,91-320,322-339,341-367,370
+  s_325901c149e7f8::t_c9d61d6e027a98 90
+src/types/validate-improvements.ts
+  s_325901c149e7f8::t_e886e2fda0b04f 1-21,23,25-333,336-337
+  s_325901c149e7f8::t_80f13643a6f01d 22,24
+  s_325901c149e7f8::t_45b8d293e2c04d 334-335
+src/api/claude-note.ts
+  s_325901c149e7f8::t_176679157e41c3 1-5,7-197
+  s_325901c149e7f8::t_7b2c2d844c4df1 6
+src/types/simple-validation.cjs
+  s_325901c149e7f8::t_b1a8a5aac2e598 52
+  s_325901c149e7f8::t_ba2e08f5403735 51
+tsconfig.json
+  s_325901c149e7f8::t_45fb801668ca46 33
+src/func/claude-note/validate-integration.ts
+  s_325901c149e7f8::t_d53b2794ba5931 1-143
+src/api/error-handler.ts
+  s_325901c149e7f8::t_3876a42dfcbe12 1-118
+src/func/adjust-title-level.ts
+  s_325901c149e7f8::t_77d9a365cc1c85 4
+src/func/claude-note/demo.ts
+  s_325901c149e7f8::t_d0e7e9a9d2757b 1-199
+src/libs/index.ts
+  s_325901c149e7f8::t_90fed9a1a29af4 2
+src/func/claude-note/__tests__/claude-runner.test.ts
+  s_325901c149e7f8::t_f9bd705246fbfc 1-213
+src/func/claude-note/styles.scss
+  s_325901c149e7f8::t_c5d161de6a70c8 1-251
+src/api/claude-note-async.ts
+  s_325901c149e7f8::t_a4b74edf7c21f3 25-27,29
+  s_325901c149e7f8::t_215cfdedacc99e 48-64
+  s_325901c149e7f8::t_8f814a577beece 39
+  s_325901c149e7f8::t_3940986268c802 87,95
+  s_325901c149e7f8::t_0bdcd6f9064548 13
+  s_325901c149e7f8::t_d9eaa9dbc9b308 7
+  s_325901c149e7f8::t_093d4b1b05aeb6 46
+  s_325901c149e7f8::t_de7e3de6dc3da9 1-6,8-12,14-24,28,30-38,40-45,47,65-69,73-86,88-94,96-98
+  s_325901c149e7f8::t_eb286681cc218e 70-72
+src/types/index.d.ts
+  s_325901c149e7f8::t_1e7ffed92eb6d6 238,242-243
+  s_325901c149e7f8::t_6635676c70d47c 15
+  s_325901c149e7f8::t_84def5c5bc2421 138-165
+  s_325901c149e7f8::t_765f445894dbbd 31,35,43-44,51,56,61,67-71,73,81,166,168,193,202,223,230
+  s_325901c149e7f8::t_e8f5c8e648e1fc 10
+  s_325901c149e7f8::t_a26ca3f53136a3 239-241
+  s_325901c149e7f8::t_735f9da9cafff5 90-116
+  s_325901c149e7f8::t_2925304ecd8392 117
+  s_325901c149e7f8::t_477a3adcd362a9 118-136
+src/func/claude-note/types.d.ts
+  s_325901c149e7f8::t_aba8b757db6f52 1-147
+  s_325901c149e7f8::t_1ca3e13a4834a0 148-154
+src/func/claude-note/IMPROVEMENT_SUMMARY.md
+  s_325901c149e7f8::t_2d3ebe12e9c284 1-172
+src/index.scss
+  s_325901c149e7f8::t_70e905d1834156 63-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "c5a8dcb69d5ea3cb6a963039cdeedc8a6938636c",
+  "prompts": {},
+  "sessions": {
+    "s_325901c149e7f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bfcf2cf-389c-4855-a945-43ac7c910eb7",
+        "model": "deepseek-v3.1-terminus"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
