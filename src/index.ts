@@ -1,3 +1,4 @@
+import type { Block, BlockId, DocumentId, NotebookId, Notebook, NotebookConf, ITheme, ISettingItem, doOperation } from "@/types";
 /*
  * Copyright (c) 2024 by frostime. All Rights Reserved.
  * @Author       : frostime

@@ -5,6 +5,7 @@
  * @author frostime
  */
 import { sql } from "./api";
+import type { BlockId, Block, ICallout } from "@/types";
 
 /**
  * Callout 名称映射表

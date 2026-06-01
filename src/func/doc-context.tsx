@@ -5,6 +5,7 @@
  * @author frostime
  */
 import { createSignal, For, JSXElement, Match, onMount, Show, Switch } from 'solid-js';
+import type { BlockId } from "@/types";
 import { render } from 'solid-js/web';
 import { simpleDialog } from "@frostime/siyuan-plugin-kits";
 

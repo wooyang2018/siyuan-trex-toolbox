@@ -8,6 +8,7 @@
  */
 
 import { fetchSyncPost, IWebSocketData } from "siyuan";
+import type { BlockId } from "@/types";
 
 /**
  * 通用请求封装

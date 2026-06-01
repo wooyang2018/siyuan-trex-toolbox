@@ -1,4 +1,5 @@
 import { id2block } from "@frostime/siyuan-plugin-kits";
+import type { Block, BlockId } from "@/types";
 import { request } from "@frostime/siyuan-plugin-kits/api";
 
 /**

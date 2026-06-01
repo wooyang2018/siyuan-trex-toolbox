@@ -6,6 +6,7 @@
  * @author frostime
  */
 import { openWindow } from "siyuan";
+import type { BlockId } from "@/types";
 import { updateStyleDom } from "@frostime/siyuan-plugin-kits";
 
 

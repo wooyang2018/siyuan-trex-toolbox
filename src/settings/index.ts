@@ -7,6 +7,7 @@
  * @Description  : 
  */
 import type FMiscPlugin from '@/index';
+import type { ISettingItem } from "@/types";
 import { toggleEnable, ModulesAlwaysEnable, ModulesToEnable } from '@/func';
 
 import Settings from "@/settings/settings";

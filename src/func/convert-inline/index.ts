@@ -3,6 +3,7 @@
  * 将选中块的行内元素（加粗、斜体、标注、标签、链接、块引等）转换为纯文本
  */
 import type FMiscPlugin from "@/index";
+import type { BlockId } from "@/types";
 
 export let name = "ConvertInline";
 export let enabled = false;

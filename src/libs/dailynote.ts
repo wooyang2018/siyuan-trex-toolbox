@@ -7,6 +7,7 @@
  * @Description  : From git@github.com:frostime/siyuan-dailynote-today.git
  */
 import { formatDateTime } from "@frostime/siyuan-plugin-kits";
+import type { NotebookId } from "@/types";
 import { getNotebookConf, renderSprig } from "@/api";
 
 export const getPastDNHPath = async (boxId: NotebookId, date: Date): Promise<string> => {

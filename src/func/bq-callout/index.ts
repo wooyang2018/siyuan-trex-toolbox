@@ -5,6 +5,7 @@
  * @author Yp Z (frostime)
  */
 import { Menu, Protyle } from "siyuan";
+import type { BlockId, Block, ICallout } from "@/types";
 import "./index.scss";
 import FMiscPlugin from "@/index";
 import { setBlockAttrs } from "./api"

@@ -1,6 +1,7 @@
 import { showMessage } from "siyuan";
 import type FMiscPlugin from "@/index";
 import { request, sql } from "@/api";
+import type { doOperation } from "@/types";
 
 export let name = "AdjustTitleLevel";
 export let enabled = false;

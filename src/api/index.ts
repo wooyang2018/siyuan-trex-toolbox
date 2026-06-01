@@ -7,12 +7,62 @@
  */
 
 import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
+import type { NotebookId, Notebook, NotebookConf, ITheme, BlockId, DocumentId, Block, PreviousID, ParentID } from "./../types/index";
+import type { IReslsNotebooks, IResGetNotebookConf, IDocTreeNode, IResUpload, IResdoOperations, IResGetBlockKramdown, IResGetChildBlock, IResGetTemplates, IResReadDir, IResExportResources, IResForwardProxy, IResBootProgress } from "./../types/api";
+import { validateBlockId, withErrorHandling } from "./error-handler";
+
+// 简单的内存缓存
+const cache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+function getCache(key: string): any {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+    }
+    cache.delete(key);
+    return null;
+}
+
+function setCache(key: string, data: any): void {
+    cache.set(key, { data, timestamp: Date.now() });
+}
+
+// 缓存管理函数
+export function clearCache(pattern?: string): void {
+    if (!pattern) {
+        cache.clear();
+        return;
+    }
+
+    for (const key of cache.keys()) {
+        if (key.includes(pattern)) {
+            cache.delete(key);
+        }
+    }
+}
+
+export function getCacheStats(): { size: number, keys: string[] } {
+    return {
+        size: cache.size,
+        keys: Array.from(cache.keys())
+    };
+}
 
 
 export async function request(url: string, data: any, returnType: 'data' | 'response' = 'data') {
-    let response: IWebSocketData = await fetchSyncPost(url, data);
-    let res = response.code === 0 ? response.data : null;
-    return returnType === 'data' ? res : response;
+    try {
+        let response: IWebSocketData = await fetchSyncPost(url, data);
+        if (response.code !== 0) {
+            console.error(`API request failed: ${url}`, response);
+            throw new Error(`API Error: ${response.msg || 'Unknown error'}`);
+        }
+        let res = response.data;
+        return returnType === 'data' ? res : response;
+    } catch (error) {
+        console.error(`API request error: ${url}`, error);
+        throw new Error(`Network error: ${error.message}`);
+    }
 }
 
 export const postMessage = async(channel: string, message: any) => {
@@ -173,13 +223,33 @@ export async function getHPathByPath(notebook: NotebookId, path: string): Promis
 }
 
 
-export async function getHPathByID(id: BlockId): Promise<string> {
-    let data = {
-        id: id
-    };
-    let url = '/api/filetree/getHPathByID';
-    return request(url, data);
-}
+export const getHPathByID = withErrorHandling(
+    async (id: BlockId): Promise<string> => {
+        // 验证 ID 格式
+        validateBlockId(id);
+
+        // 检查缓存
+        const cacheKey = `hpath:${id}`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        let data = {
+            id: id
+        };
+        let url = '/api/filetree/getHPathByID';
+        const result = await request(url, data);
+
+        // 设置缓存
+        if (result) {
+            setCache(cacheKey, result);
+        }
+
+        return result;
+    },
+    "Failed to get HPath by ID"
+);
 
 
 export async function getIDsByHPath(notebook: NotebookId, path: string): Promise<BlockId[]> {
@@ -292,13 +362,33 @@ export async function unfoldBlock(id: BlockId) {
 }
 
 
-export async function getBlockKramdown(id: BlockId): Promise<IResGetBlockKramdown> {
-    let data = {
-        id: id
-    }
-    let url = '/api/block/getBlockKramdown';
-    return request(url, data);
-}
+export const getBlockKramdown = withErrorHandling(
+    async (id: BlockId): Promise<IResGetBlockKramdown> => {
+        // 验证 ID 格式
+        validateBlockId(id);
+
+        // 检查缓存
+        const cacheKey = `kramdown:${id}`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        let data = {
+            id: id
+        }
+        let url = '/api/block/getBlockKramdown';
+        const result = await request(url, data);
+
+        // 设置缓存
+        if (result) {
+            setCache(cacheKey, result);
+        }
+
+        return result;
+    },
+    "Failed to get block kramdown"
+);
 
 
 export async function getChildBlocks(id: BlockId): Promise<IResGetChildBlock[]> {
@@ -349,19 +439,59 @@ export async function getBlockAttrs(id: BlockId): Promise<{ [key: string]: strin
 
 // **************************************** SQL ****************************************
 
-export async function sql(sql: string): Promise<any[]> {
+export async function sql(sql: string, params?: any[]): Promise<any[]> {
+    // 参数化查询支持
+    let processedSql = sql;
+    if (params && params.length > 0) {
+        // 简单的参数替换，实际应该由后端处理参数化查询
+        // 这里主要是为了保持接口一致性
+        processedSql = sql.replace(/\?/g, (match, index) => {
+            if (index < params.length) {
+                const param = params[index];
+                if (typeof param === 'string') {
+                    return `'${param.replace(/'/g, "''")}'`;
+                } else if (typeof param === 'number') {
+                    return param.toString();
+                } else {
+                    return `'${JSON.stringify(param).replace(/'/g, "''")}'`;
+                }
+            }
+            return match;
+        });
+    }
+
     let sqldata = {
-        stmt: sql,
+        stmt: processedSql,
     };
     let url = '/api/query/sql';
     return request(url, sqldata);
 }
 
-export async function getBlockByID(blockId: string): Promise<Block> {
-    let sqlScript = `select * from blocks where id ='${blockId}'`;
-    let data = await sql(sqlScript);
-    return data[0];
-}
+export const getBlockByID = withErrorHandling(
+    async (blockId: string): Promise<Block> => {
+        // 验证 blockId 格式，防止 SQL 注入
+        validateBlockId(blockId);
+
+        // 检查缓存
+        const cacheKey = `block:${blockId}`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        let sqlScript = `select * from blocks where id ='${blockId}'`;
+        let data = await sql(sqlScript);
+        const result = data?.[0] || null;
+
+        // 设置缓存
+        if (result) {
+            setCache(cacheKey, result);
+        }
+
+        return result;
+    },
+    "Failed to get block by ID"
+);
 
 // **************************************** Template ****************************************
 

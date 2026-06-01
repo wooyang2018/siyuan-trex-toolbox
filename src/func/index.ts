@@ -19,9 +19,10 @@ import * as cv from './convert-inline';
 import * as ii from './insert-index';
 import * as srp from './sireader-patch';
 import * as ab from './ai-bridge';
+import * as cn from './claude-note/module';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, cn];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq, srp];

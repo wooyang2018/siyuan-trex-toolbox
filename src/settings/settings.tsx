@@ -1,4 +1,5 @@
 import { Component, For, JSX, Show, createSignal, onCleanup } from "solid-js";
+import type { ISettingItem } from "@/types";
 import SettingPanel from "@/libs/components/setting-panel";
 
 import Form, { FormWrap as SettingItemWrap } from '@/libs/components/Form';

@@ -30,7 +30,7 @@
             "solid-js",
             "svelte"
         ],
-        // "baseUrl": "./src",
+        "baseUrl": ".",
         "paths": {
             "@/*": [
                 "./src/*"

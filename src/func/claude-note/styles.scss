@@ -1,0 +1,251 @@
+/**
+ * Claude Note 模块样式
+ */
+
+.claude-note-dock {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--b3-theme-background);
+  border-left: 1px solid var(--b3-border-color);
+
+  &__container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__tabs {
+    display: flex;
+    border-bottom: 1px solid var(--b3-border-color);
+    background: var(--b3-theme-surface);
+  }
+
+  &__tab {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--b3-theme-surface-hover);
+    }
+
+    &.active {
+      border-bottom-color: var(--b3-theme-primary);
+      color: var(--b3-theme-primary);
+      background: var(--b3-theme-surface-selected);
+    }
+  }
+
+  &__content {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+  }
+
+  &__panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--b3-theme-on-surface);
+    margin-bottom: 8px;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 8px;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    resize: vertical;
+    font-family: var(--b3-font-family);
+    font-size: 13px;
+    background: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+
+    &:focus {
+      outline: none;
+      border-color: var(--b3-theme-primary);
+      box-shadow: 0 0 0 2px var(--b3-theme-primary-light);
+    }
+
+    &::placeholder {
+      color: var(--b3-theme-on-surface-light);
+    }
+  }
+
+  &__notes-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  &__note-item {
+    padding: 8px 12px;
+    border: 1px solid var(--b3-border-color);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--b3-theme-surface-hover);
+      border-color: var(--b3-theme-primary-light);
+    }
+  }
+
+  &__note-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--b3-theme-on-surface);
+    margin-bottom: 4px;
+  }
+
+  &__note-date {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface-light);
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--b3-theme-on-surface-light);
+    font-size: 13px;
+  }
+
+  // 按钮样式增强
+  .b3-button {
+    &--primary {
+      background: var(--b3-theme-primary);
+      color: white;
+      border: none;
+
+      &:hover:not(:disabled) {
+        background: var(--b3-theme-primary-dark);
+      }
+
+      &:disabled {
+        background: var(--b3-theme-surface-disabled);
+        color: var(--b3-theme-on-surface-disabled);
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 768px) {
+    &__tabs {
+      flex-direction: column;
+    }
+
+    &__tab {
+      text-align: center;
+    }
+
+    &__content {
+      padding: 12px;
+    }
+  }
+}
+
+// 设置面板样式
+.config__tab-container {
+  .claude-note-settings {
+    &__section {
+      margin-bottom: 24px;
+      padding: 16px;
+      border: 1px solid var(--b3-border-color);
+      border-radius: 6px;
+      background: var(--b3-theme-surface);
+
+      &-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--b3-theme-on-surface);
+      }
+
+      &-description {
+        font-size: 13px;
+        color: var(--b3-theme-on-surface-light);
+        margin-bottom: 16px;
+        line-height: 1.4;
+      }
+    }
+
+    &__input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+
+      label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--b3-theme-on-surface);
+      }
+
+      input, textarea, select {
+        padding: 8px 12px;
+        border: 1px solid var(--b3-border-color);
+        border-radius: 4px;
+        background: var(--b3-theme-background);
+        color: var(--b3-theme-on-background);
+        font-size: 13px;
+
+        &:focus {
+          outline: none;
+          border-color: var(--b3-theme-primary);
+          box-shadow: 0 0 0 2px var(--b3-theme-primary-light);
+        }
+      }
+
+      textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+    }
+
+    &__actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+
+      button {
+        flex: 1;
+      }
+    }
+  }
+}
+
+// 主题适配
+[data-theme-mode="dark"] {
+  .claude-note-dock {
+    background: var(--b3-theme-background-dark);
+
+    &__textarea {
+      background: var(--b3-theme-surface-dark);
+      color: var(--b3-theme-on-surface-dark);
+      border-color: var(--b3-border-color-dark);
+    }
+
+    &__note-item {
+      border-color: var(--b3-border-color-dark);
+      background: var(--b3-theme-surface-dark);
+
+      &:hover {
+        background: var(--b3-theme-surface-hover-dark);
+      }
+    }
+  }
+}

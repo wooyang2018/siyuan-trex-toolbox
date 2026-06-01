@@ -7,6 +7,7 @@
 
 import { Component, For, JSXElement, children } from "solid-js";
 import Form from "./Form";
+import type { ISettingItem } from "@/types";
 
 interface SettingPanelProps {
     group: string;

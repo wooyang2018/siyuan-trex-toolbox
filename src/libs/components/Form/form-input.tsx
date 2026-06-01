@@ -1,4 +1,5 @@
 import { createSignalRef } from "@frostime/solid-signal-ref";
+import type { ISettingItemCore } from "@/types";
 import { createMemo, For, JSX } from "solid-js";
 
 interface IProps extends Partial<ISettingItemCore> {
