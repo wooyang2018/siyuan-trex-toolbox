@@ -1,0 +1,26 @@
+src/func/claude-note/settings.ts
+  s_325901c149e7f8::t_581ff3632303a3 114,119-132,137,139
+src/func/claude-note/index.scss
+  s_325901c149e7f8::t_b71c44a502fd77 316-342
+src/func/claude-note/claude-runner.ts
+  s_325901c149e7f8::t_2686c37eff6764 159-210
+src/func/claude-note/ClaudeNotePanel.svelte
+  s_325901c149e7f8::t_7f297a3b025c8e 8
+  s_325901c149e7f8::t_3b52375b1d51bd 1205,1209-1221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "a647e4fc7dc28facdf4498e996d0f1a2bc77d340",
+  "prompts": {},
+  "sessions": {
+    "s_325901c149e7f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bfcf2cf-389c-4855-a945-43ac7c910eb7",
+        "model": "claude-4.7-opus"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
