@@ -1,0 +1,14 @@
+src/func/claude-note/ClaudeNotePanel.svelte
+  h_cf037dcb817b82 895-931,936-941,943,948,953
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "24737d44df448203498d81ade1d9ab2aba581c2a",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
