@@ -1,0 +1,22 @@
+src/func/claude-note/ClaudeNotePanel.svelte
+  s_8fc7cf64677576::t_75d41e135b9421 1529
+  s_8fc7cf64677576::t_8079ae4298c543 1516
+src/func/claude-note/ClaudeNoteSettings.svelte
+  s_8fc7cf64677576::t_080014a07fa7e5 146,148,156,158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "c4c4e3a9beee24ea3037f12b2dd3bdc2f113edfa",
+  "prompts": {},
+  "sessions": {
+    "s_8fc7cf64677576": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5a47404fa809431892508e52dee3236f",
+        "model": "claude-sonnet-4.6-1m"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
