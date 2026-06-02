@@ -207,11 +207,18 @@
                 }
             }
         }, 1200);
+
+        // 全局监听 dragstart / dragend（capture 阶段，先于其他监听器）
+        // 这样在思源拖动一个块时，我们能在 e.target 还指向源元素时立即抓到块 ID
+        document.addEventListener("dragstart", onGlobalDragStart, true);
+        document.addEventListener("dragend", onGlobalDragEnd, true);
     });
 
     onDestroy(() => {
         componentDestroyed = true;
         if (pollInterval) clearInterval(pollInterval);
+        document.removeEventListener("dragstart", onGlobalDragStart, true);
+        document.removeEventListener("dragend", onGlobalDragEnd, true);
         abortAllRuns();
     });
 
@@ -885,83 +892,63 @@
     }
 
     // ===== Drag-drop context =====
+    // 参考 ai-bridge 实现：在 dragstart 阶段从 e.target.closest('[data-node-id]')
+    // 直接拿到被拖动块的 ID，避免 drop 时解析 dataTransfer 的复杂性。
 
+    const BLOCK_ID_PATTERN = /\b\d{14}-[0-9a-z]{7}\b/i;
+    const BLOCK_ID_TEXT_TYPE = "text/siyuan-block-id";
+    /** 拖拽源块 ID（dragstart 时设置，drop 时消费） */
+    let activeDragBlockId = "";
 
-    // 完整块 ID：14位数字 + 7位小写字母数字
-    const BLOCK_ID_EXACT_RE = /^\d{14}-[a-z0-9]{7}$/;
-    // siyuan:// 协议链接里的块 ID
-    const BLOCK_ID_IN_URL_RE = /siyuan:\/\/blocks\/(\d{14}-[a-z0-9]{7})/;
+    function extractBlockId(value: string | null | undefined): string {
+        if (!value) return "";
+        const m = value.match(BLOCK_ID_PATTERN);
+        return m ? m[0] : "";
+    }
 
-    /**
-     * 从思源拖拽的 HTML 中提取真正被用户选中拖动的块 ID。
-     *
-     * 思源在拖动一个选中块时，dataTransfer 的 text/html 里会附带相邻的
-     * 多个块的 HTML（甚至整个文档片段），但**只有用户实际选中的那个块**
-     * 的根 div 上带有 `protyle-wysiwyg--select` class。
-     *
-     * 解析顺序：
-     * 1. 找带 `protyle-wysiwyg--select` 的元素 → 它的 data-node-id
-     * 2. 找带 `protyle-wysiwyg--hl` 的元素 → 它的 data-node-id
-     * 3. 找第一个有 data-node-id 的元素（最后兜底）
-     */
-    function extractBlockIdFromHtml(html: string): string {
-        if (!html) return "";
-        try {
-            const doc = new DOMParser().parseFromString(html, "text/html");
-            const candidates = [
-                ".protyle-wysiwyg--select[data-node-id]",
-                "[data-node-id].protyle-wysiwyg--select",
-                ".protyle-wysiwyg--hl[data-node-id]",
-                "[data-node-id].protyle-wysiwyg--hl",
-            ];
-            for (const sel of candidates) {
-                const el = doc.querySelector(sel);
-                const id = el?.getAttribute("data-node-id") || "";
-                if (BLOCK_ID_EXACT_RE.test(id)) return id;
-            }
-            // 兜底：取第一个有 data-node-id 的（注意：可能不是用户的真实意图）
-            const fallback = doc.querySelector("[data-node-id]");
-            const id = fallback?.getAttribute("data-node-id") || "";
-            if (BLOCK_ID_EXACT_RE.test(id)) return id;
-        } catch (err) {
-            console.warn("[ClaudeNote] parse drag html failed:", err);
+    function blockIdFromElement(target: EventTarget | null): string {
+        if (!(target instanceof Element)) return "";
+        return target.closest("[data-node-id]")?.getAttribute("data-node-id") ?? "";
+    }
+
+    function blockIdFromTransfer(dt: DataTransfer | null): string {
+        if (!dt) return "";
+        const mimes = [
+            BLOCK_ID_TEXT_TYPE,
+            "application/x-siyuan-node-id",
+            "application/x-siyuan-block-id",
+            "text/plain",
+            "text/uri-list",
+            "text/html",
+        ];
+        for (const t of mimes) {
+            try {
+                const id = extractBlockId(dt.getData(t));
+                if (id) return id;
+            } catch { /* ignore */ }
         }
         return "";
     }
 
-    function extractDragBlockId(e: DragEvent): string {
-        const dt = e.dataTransfer;
-        if (!dt) return "";
-
-        // 优先 1：解析 text/html 中带 protyle-wysiwyg--select 的块
-        try {
-            const html = dt.getData("text/html") || "";
-            const idFromHtml = extractBlockIdFromHtml(html);
-            if (idFromHtml) return idFromHtml;
-        } catch { /* ignore */ }
-
-        // 优先 2：text/plain 的值恰好是一个裸块 ID
-        try {
-            const plain = (dt.getData("text/plain") || "").trim();
-            if (BLOCK_ID_EXACT_RE.test(plain)) return plain;
-
-            // 匹配 siyuan://blocks/<id> 协议链接（用户拖动一个块引用时）
-            const urlMatch = plain.match(BLOCK_ID_IN_URL_RE);
-            if (urlMatch) return urlMatch[1];
-        } catch { /* ignore */ }
-
-        // 优先 3：遍历未知 MIME，只在值本身是裸块 ID 时命中
-        for (const type of Array.from(dt.types || [])) {
-            if (type === "text/plain" || type === "text/html") continue;
-            try {
-                const val = (dt.getData(type) || "").trim();
-                if (BLOCK_ID_EXACT_RE.test(val)) return val;
-                const urlMatch = val.match(BLOCK_ID_IN_URL_RE);
-                if (urlMatch) return urlMatch[1];
-            } catch { /* ignore */ }
+    /** 全局 dragstart 监听：思源拖动一个块时，e.target 就是被拖动的元素本身 */
+    function onGlobalDragStart(e: DragEvent) {
+        // 优先从 DOM 节点拿（最可靠，因为 e.target 就是源元素）
+        const id = blockIdFromElement(e.target) || blockIdFromTransfer(e.dataTransfer);
+        if (!id) {
+            activeDragBlockId = "";
+            return;
         }
+        activeDragBlockId = id;
+        // 主动写入 dataTransfer，避免被思源默认的 HTML/text 内容覆盖
+        try {
+            e.dataTransfer?.setData("text/plain", id);
+            e.dataTransfer?.setData(BLOCK_ID_TEXT_TYPE, id);
+        } catch { /* ignore */ }
+    }
 
-        return "";
+    function onGlobalDragEnd() {
+        // 拖拽结束（无论是否成功 drop）清空状态，避免下次误用
+        activeDragBlockId = "";
     }
 
     function onInputCardDragOver(e: DragEvent) {
@@ -972,7 +959,6 @@
     }
 
     function onInputCardDragLeave(e: DragEvent) {
-        // 只有真正离开 input-card（不是进入子元素）时才取消高亮
         const related = e.relatedTarget as Node | null;
         const card = (e.currentTarget as HTMLElement);
         if (related && card.contains(related)) return;
@@ -983,29 +969,31 @@
         e.preventDefault();
         e.stopPropagation();
         dropActive = false;
-        const dt = e.dataTransfer;
 
-        // Debug: 收集所有 MIME 数据，打印到 console 帮助排查
-        if (dt) {
-            const debugInfo: Record<string, string> = {};
-            for (const type of Array.from(dt.types || [])) {
-                try { debugInfo[type] = dt.getData(type); } catch { /* skip */ }
-            }
-            console.log("[ClaudeNote] drop dataTransfer:", debugInfo);
-        }
+        // 优先用 dragstart 阶段抓到的 activeDragBlockId（最可靠）
+        // 否则回退到从 dataTransfer 解析
+        const blockId = activeDragBlockId || blockIdFromTransfer(e.dataTransfer);
+        activeDragBlockId = "";
 
-        const blockId = extractDragBlockId(e);
         if (blockId) {
             if (!pendingRefs.some(r => r.kind === "block" && r.id === blockId)) {
                 pendingRefs = [...pendingRefs, { kind: "block", id: blockId }];
             }
             showMessage("已将块加入上下文");
-        } else if (dt) {
-            // 没有块 ID，尝试把 text/plain 内容作为选中文本上下文
-            const plainText = dt.getData("text/plain").trim();
+            return;
+        }
+
+        // 没有块 ID，把 text/plain 内容当作选中文本上下文
+        const dt = e.dataTransfer;
+        if (dt) {
+            const plainText = (dt.getData("text/plain") || "").trim();
             if (plainText) {
                 const id = generateUUID();
-                manualContexts = [...manualContexts, { id, title: plainText.slice(0, 30) + (plainText.length > 30 ? "…" : ""), markdown: plainText }];
+                manualContexts = [...manualContexts, {
+                    id,
+                    title: plainText.slice(0, 30) + (plainText.length > 30 ? "…" : ""),
+                    markdown: plainText,
+                }];
                 showMessage("已将选中文本加入上下文");
             }
         }
