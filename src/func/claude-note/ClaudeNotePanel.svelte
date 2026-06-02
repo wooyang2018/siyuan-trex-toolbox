@@ -887,35 +887,36 @@
     // ===== Drag-drop context =====
 
 
-    const BLOCK_ID_RE = /\b(\d{14}-[a-z0-9]{7})\b/;
+    // 完整块 ID：14位数字 + 7位小写字母数字
+    const BLOCK_ID_EXACT_RE = /^\d{14}-[a-z0-9]{7}$/;
+    // siyuan:// 协议链接里的块 ID
+    const BLOCK_ID_IN_URL_RE = /siyuan:\/\/blocks\/(\d{14}-[a-z0-9]{7})/;
 
     function extractDragBlockId(e: DragEvent): string {
         const dt = e.dataTransfer;
         if (!dt) return "";
-        // 尝试所有可能的 MIME 类型
-        const candidates = [
-            "text/plain",
-            "text/html",
-            "application/json",
-        ];
-        for (const mime of candidates) {
-            try {
-                const val = dt.getData(mime);
-                if (!val) continue;
-                // 直接匹配 blockId 格式
-                const m = val.match(BLOCK_ID_RE);
-                if (m) return m[1];
-            } catch { /* ignore */ }
-        }
-        // 也尝试 types 列表里未知的 MIME
+
+        // 优先：text/plain 里的值恰好就是一个裸块 ID（思源拖拽块时的标准格式）
+        try {
+            const plain = (dt.getData("text/plain") || "").trim();
+            if (BLOCK_ID_EXACT_RE.test(plain)) return plain;
+
+            // 也匹配 siyuan://blocks/<id> 协议链接
+            const urlMatch = plain.match(BLOCK_ID_IN_URL_RE);
+            if (urlMatch) return urlMatch[1];
+        } catch { /* ignore */ }
+
+        // 其次：遍历未知 MIME 类型，只在值本身是裸块 ID 时命中
         for (const type of Array.from(dt.types || [])) {
+            if (type === "text/plain" || type === "text/html") continue;
             try {
-                const val = dt.getData(type);
-                if (!val) continue;
-                const m = val.match(BLOCK_ID_RE);
-                if (m) return m[1];
+                const val = (dt.getData(type) || "").trim();
+                if (BLOCK_ID_EXACT_RE.test(val)) return val;
+                const urlMatch = val.match(BLOCK_ID_IN_URL_RE);
+                if (urlMatch) return urlMatch[1];
             } catch { /* ignore */ }
         }
+
         return "";
     }
 
@@ -938,13 +939,31 @@
         e.preventDefault();
         e.stopPropagation();
         dropActive = false;
+        const dt = e.dataTransfer;
+
+        // Debug: 收集所有 MIME 数据，打印到 console 帮助排查
+        if (dt) {
+            const debugInfo: Record<string, string> = {};
+            for (const type of Array.from(dt.types || [])) {
+                try { debugInfo[type] = dt.getData(type); } catch { /* skip */ }
+            }
+            console.log("[ClaudeNote] drop dataTransfer:", debugInfo);
+        }
+
         const blockId = extractDragBlockId(e);
         if (blockId) {
-            // 直接操作响应式变量，不走 export function（export 是给外部调的）
             if (!pendingRefs.some(r => r.kind === "block" && r.id === blockId)) {
                 pendingRefs = [...pendingRefs, { kind: "block", id: blockId }];
             }
             showMessage("已将块加入上下文");
+        } else if (dt) {
+            // 没有块 ID，尝试把 text/plain 内容作为选中文本上下文
+            const plainText = dt.getData("text/plain").trim();
+            if (plainText) {
+                const id = generateUUID();
+                manualContexts = [...manualContexts, { id, title: plainText.slice(0, 30) + (plainText.length > 30 ? "…" : ""), markdown: plainText }];
+                showMessage("已将选中文本加入上下文");
+            }
         }
     }
 
