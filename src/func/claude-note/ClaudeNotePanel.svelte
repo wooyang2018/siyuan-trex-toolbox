@@ -372,6 +372,25 @@
         preview: string;
     }
 
+    function cleanKramdownPreview(raw: string): string {
+        return raw
+            // 删除 IAL 属性标记 {: id="..." updated="..." ...}
+            .replace(/\{:[^}]*\}/g, "")
+            // 删除 markdown 图片 ![alt](url)
+            .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+            // 把 [text](url) 只保留 text
+            .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+            // 删除行内代码反引号包裹（保留内容）
+            .replace(/`([^`]*)`/g, "$1")
+            // 删除 markdown 粗体 / 斜体标记
+            .replace(/\*{1,3}([^*]*)\*{1,3}/g, "$1")
+            // 删除 HTML 标签
+            .replace(/<[^>]+>/g, "")
+            // 压缩空白
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
     function parseContextItems(contextText: string): ParsedContext[] {
         const result: ParsedContext[] = [];
         const re = /<siyuan-context[^>]*source="([^"]*)"[^>]*>([\s\S]*?)<\/siyuan-context>/g;
@@ -381,8 +400,8 @@
             // source 格式: "kind | id | hpath/title"，取最后一段作为显示名
             const parts = rawSource.split(" | ");
             const displaySource = parts[parts.length - 1] || rawSource;
-            const bodyText = m[2].trim();
-            const preview = bodyText.length > 120 ? bodyText.slice(0, 120) + "…" : bodyText;
+            const cleaned = cleanKramdownPreview(m[2]);
+            const preview = cleaned.length > 150 ? cleaned.slice(0, 150) + "…" : cleaned;
             result.push({ source: displaySource, preview });
         }
         return result;
