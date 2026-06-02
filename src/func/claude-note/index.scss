@@ -2515,3 +2515,79 @@ html[data-theme-mode="dark"] .cn-search-overlay {
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
 }
+
+/* ==========================================================================
+   Tool call structured fields
+   ========================================================================== */
+
+.cn-tool-empty {
+    padding: 4px 8px;
+    color: var(--cn-muted);
+    font-size: 11px;
+    font-style: italic;
+}
+
+.cn-tool-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cn-tool-field-inline {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    flex-wrap: wrap;
+
+    .cn-tool-field-key {
+        color: var(--cn-accent);
+        font-family: var(--cn-font-mono);
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .cn-tool-field-value-inline {
+        color: var(--cn-text);
+        font-family: var(--cn-font-mono);
+        word-break: break-all;
+    }
+}
+
+.cn-tool-field-long {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    .cn-tool-field-key {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--cn-accent);
+        font-family: var(--cn-font-mono);
+        text-transform: lowercase;
+    }
+
+    .cn-tool-field-value {
+        margin: 0;
+        padding: 8px 10px;
+        max-height: 240px;
+        overflow: auto;
+        border: 1px solid color-mix(in srgb, var(--cn-border) 75%, transparent);
+        border-radius: 5px;
+        background: var(--cn-code-bg);
+        color: color-mix(in srgb, var(--cn-text) 85%, var(--cn-muted));
+        font-family: var(--cn-font-mono);
+        font-size: 11.5px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+
+        code {
+            background: transparent;
+            padding: 0;
+            font-family: inherit;
+        }
+    }
+}
+

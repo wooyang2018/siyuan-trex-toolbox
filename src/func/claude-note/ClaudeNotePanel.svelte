@@ -588,6 +588,57 @@
         return meta.replace(/^mcp__/, "").replace(/__/g, " / ");
     }
 
+    /**
+     * 工具调用的"长字符串字段"——这些值通常含 \n、是源代码或多行文本，
+     * 应作为代码块单独展示。其他字段作为元数据键值对一行展示。
+     */
+    const LONG_TOOL_FIELDS = new Set([
+        "content", "code", "command", "data", "markdown", "text",
+        "pattern", "query", "sql", "stmt", "script", "body", "html",
+        "input", "output", "stdin", "stdout", "stderr",
+        "old_str", "new_str", "old_string", "new_string",
+        "file_text", "edits", "regex",
+    ]);
+
+    interface ToolField {
+        key: string;
+        value: string;
+        isLong: boolean;
+    }
+
+    /**
+     * 把工具调用的 JSON 字符串解析并格式化为可读结构。
+     * - 长字段（如 content/code/command）单独成块，反转义 \n 为真实换行
+     * - 元数据字段（如 file_path/id）以"key: value"形式平铺
+     * 解析失败时回退到原文
+     */
+    function formatToolContent(raw: string): { fields: ToolField[]; fallback: string } {
+        if (!raw) return { fields: [], fallback: "" };
+        let parsed: any;
+        try {
+            parsed = JSON.parse(raw);
+        } catch {
+            return { fields: [], fallback: raw };
+        }
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return { fields: [], fallback: raw };
+        }
+        const fields: ToolField[] = [];
+        for (const [key, val] of Object.entries(parsed)) {
+            let valStr: string;
+            if (typeof val === "string") {
+                valStr = val;
+            } else if (val === null || val === undefined) {
+                valStr = String(val);
+            } else {
+                valStr = JSON.stringify(val, null, 2);
+            }
+            const isLong = LONG_TOOL_FIELDS.has(key) || /\n/.test(valStr) || valStr.length > 80;
+            fields.push({ key, value: valStr, isLong });
+        }
+        return { fields, fallback: "" };
+    }
+
     function activeSessionKey(): string {
         return currentTabKey;
     }
@@ -1540,6 +1591,7 @@
                         </div>
                     {:else if msg.role === "tool" && localSettings.showToolCalls}
                         {@const isExpanded = shouldAutoExpand || expandedItems.has(msg.id)}
+                        {@const formatted = formatToolContent(msg.content)}
                         <div class="cn-working-process tool">
                             <details open={isExpanded} on:toggle={(e) => {
                                 const details = e.currentTarget;
@@ -1555,7 +1607,27 @@
                                     <span>{getToolLabel(msg.meta)}</span>
                                 </summary>
                                 <div class="cn-working-content select-text">
-                                    <pre class="cn-tool-call"><code>{msg.content}</code></pre>
+                                    {#if formatted.fallback}
+                                        <pre class="cn-tool-call"><code>{formatted.fallback}</code></pre>
+                                    {:else if formatted.fields.length === 0}
+                                        <div class="cn-tool-empty">（无参数）</div>
+                                    {:else}
+                                        <div class="cn-tool-fields">
+                                            {#each formatted.fields as field (field.key)}
+                                                {#if field.isLong}
+                                                    <div class="cn-tool-field cn-tool-field-long">
+                                                        <div class="cn-tool-field-key">{field.key}</div>
+                                                        <pre class="cn-tool-field-value"><code>{field.value}</code></pre>
+                                                    </div>
+                                                {:else}
+                                                    <div class="cn-tool-field cn-tool-field-inline">
+                                                        <span class="cn-tool-field-key">{field.key}:</span>
+                                                        <span class="cn-tool-field-value-inline">{field.value}</span>
+                                                    </div>
+                                                {/if}
+                                            {/each}
+                                        </div>
+                                    {/if}
                                 </div>
                             </details>
                         </div>
