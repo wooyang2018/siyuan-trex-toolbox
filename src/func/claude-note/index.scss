@@ -2385,32 +2385,6 @@ html[data-theme-mode="dark"] .cn-search-overlay {
 }
 
 /* ==========================================================================
-   Template picker overlay (reuses search-overlay layout)
-   ========================================================================== */
-
-.cn-template-picker-overlay {
-    position: absolute;
-    bottom: calc(100% + 4px);
-    right: 0;
-    width: 300px;
-    max-height: 260px;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--cn-border);
-    border-radius: 8px;
-    background: var(--cn-panel);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 3px 10px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    animation: cnPopoverScaleIn 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transform-origin: bottom right;
-}
-
-html[data-theme-mode="dark"] .cn-template-picker-overlay {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(0, 0, 0, 0.25);
-}
-
-/* ==========================================================================
    Code block copy button (injected by MarkdownBlock.svelte)
    ========================================================================== */
 

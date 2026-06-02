@@ -1,29 +1,5 @@
 export type PermissionMode = "auto" | "bypassPermissions" | "plan";
 
-export interface PromptTemplate {
-    id: string;
-    title: string;
-    content: string;
-}
-
-export const DEFAULT_PROMPT_TEMPLATES: PromptTemplate[] = [
-    {
-        id: "summarize",
-        title: "总结文档",
-        content: "请帮我总结以下文档的核心内容，以要点形式输出：\n\n文档标题：{{currentDocTitle}}",
-    },
-    {
-        id: "translate",
-        title: "翻译为中文",
-        content: "请将以下内容翻译为简体中文，保持原文格式：\n\n{{selectedText}}",
-    },
-    {
-        id: "explain",
-        title: "解释概念",
-        content: "请解释以下内容，用通俗易懂的语言说明其含义和应用场景：\n\n{{selectedText}}",
-    },
-];
-
 export interface ClaudeNoteSettings {
     chatPlacement: "dock" | "tab";
     cliPath: string;
@@ -57,7 +33,6 @@ export interface ClaudeNoteSettings {
     enableBangBash: boolean;
     siyuanApiToken: string;
     siyuanApiPort: string;
-    promptTemplates: PromptTemplate[];
 }
 
 export const SETTINGS_FILE = "settings.json";
@@ -85,11 +60,6 @@ interface DetectedDefaults {
 
 /**
  * 根据 Claude CLI 路径推断会话目录根。
- *   - cliPath 形如 .../claude-internal、.../claude-internal-cli、claude-internal.cmd
- *     → 返回 ~/.claude-internal
- *   - cliPath 形如 .../claude、claude.cmd
- *     → 返回 ~/.claude
- *   - cliPath 既不含 claude 也无法识别 → 返回 ""，调用方自行处理
  */
 export function detectClaudeHomeDir(homedir: string, cliPath?: string): string {
     if (!homedir) return "";
@@ -100,9 +70,7 @@ export function detectClaudeHomeDir(homedir: string, cliPath?: string): string {
 
         const cli = (cliPath || "").trim();
         if (cli) {
-            // 取最后一段文件名（去扩展名），与已知变体匹配
             const baseName = path.basename(cli).replace(/\.(cmd|bat|exe|sh)$/i, "");
-            // 注意：先匹配 internal，避免被普通 claude 提前 match
             if (/claude-internal\b/i.test(baseName)) {
                 return path.join(homedir, ".claude-internal");
             }
@@ -136,14 +104,12 @@ export function detectDefaultSettings(): DetectedDefaults {
             defaults.homedir = homedir;
             const platform = os.platform();
 
-            // Claude CLI 默认路径（按平台）
             if (platform === "win32") {
                 defaults.cliPath = path.join(homedir, "AppData", "Roaming", "npm", "claude.cmd");
             } else {
                 defaults.cliPath = path.join(homedir, ".local", "bin", "claude");
             }
 
-            // workingDir 优先用思源运行时已知的数据目录，避免猜测
             const siyuanDataDir = (window as any)?.siyuan?.config?.system?.dataDir;
             if (siyuanDataDir && typeof siyuanDataDir === "string" && fs.existsSync(siyuanDataDir)) {
                 defaults.workingDir = siyuanDataDir;
@@ -161,9 +127,7 @@ export function detectDefaultSettings(): DetectedDefaults {
                 ];
                 defaults.workingDir = unixCandidates.find((c: string) => fs.existsSync(c)) || "";
             }
-            // 如果探测失败，留空——用户必须手动配置（避免兜底假路径误导）
 
-            // claudeHomeDir 必须基于 cliPath 才能判断（默认 cliPath 是普通版 claude，所以默认会推 ~/.claude）
             defaults.claudeHomeDir = detectClaudeHomeDir(homedir, defaults.cliPath);
         }
     } catch (e) {
@@ -273,7 +237,6 @@ export const defaultSettings: ClaudeNoteSettings = {
     appendSystemPrompt: "",
     siyuanApiToken: "",
     siyuanApiPort: "6806",
-    promptTemplates: DEFAULT_PROMPT_TEMPLATES,
 };
 
 export function getNodeRequire(): ((id: string) => any) | null {
@@ -342,11 +305,9 @@ export function mergeSettings(input: Partial<ClaudeNoteSettings> | null | undefi
 
     const currentHomedir = detectedDefaults.homedir;
 
-    // 智能处理空路径或者其他用户路径残留，防止泄露个人隐私且支持自适应重置
     const isLegacyUserPath = (p: string | undefined): boolean => {
         if (!p) return false;
         if (!currentHomedir) return false;
-        // 如果是绝对路径且包含常见的多用户目录，但却不以当前 homedir 开头，说明是其他用户的路径残留
         const hasUserPrefix = p.includes("/Users/") || p.includes("\\Users\\") || p.includes("/home/");
         return hasUserPrefix && !p.startsWith(currentHomedir);
     };
@@ -359,7 +320,6 @@ export function mergeSettings(input: Partial<ClaudeNoteSettings> | null | undefi
         merged.workingDir = detectedDefaults.workingDir;
     }
 
-    // claudeHomeDir 留空时，根据用户当前配的 cliPath 推断（公司定制 CLI 通常是 claude-internal）
     if (!merged.claudeHomeDir?.trim() || isLegacyUserPath(merged.claudeHomeDir)) {
         merged.claudeHomeDir = detectClaudeHomeDir(detectedDefaults.homedir, merged.cliPath);
     }
@@ -389,11 +349,6 @@ export function mergeSettings(input: Partial<ClaudeNoteSettings> | null | undefi
     }
     if (!["safe", "default", "yolo"].includes(merged.safeMode)) {
         merged.safeMode = defaultSettings.safeMode;
-    }
-    // 如果 input 里完全没有 promptTemplates 字段（旧版 settings.json 升级场景），才注入默认值
-    const inputHasTemplates = input != null && Object.prototype.hasOwnProperty.call(input, "promptTemplates");
-    if (!Array.isArray(merged.promptTemplates) || (!inputHasTemplates && merged.promptTemplates.length === 0)) {
-        merged.promptTemplates = DEFAULT_PROMPT_TEMPLATES;
     }
     return merged;
 }

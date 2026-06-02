@@ -18,11 +18,9 @@
     } from "./claude-runner";
     import {
         buildClaudeModelOptions,
-        DEFAULT_PROMPT_TEMPLATES,
         defaultSettings,
         mergeSettings,
         type ClaudeNoteSettings,
-        type PromptTemplate,
     } from "./settings";
     import {
         appendBlockToDoc,
@@ -151,9 +149,6 @@
     let searchDebounceTimer: any;
     let composer: HTMLTextAreaElement;
     let searchInput: HTMLInputElement;
-
-    // Template picker state
-    let templatePickerOpen = false;
 
     // Write-back state
     let writeBackBusy = false;
@@ -870,33 +865,8 @@
         }
     }
 
-    // ===== Prompt templates =====
-
-    function toggleTemplatePicker() {
-        templatePickerOpen = !templatePickerOpen;
-    }
-
-    function closeTemplatePicker() {
-        templatePickerOpen = false;
-    }
-
-    function resolveTemplate(tpl: string, vars: Record<string, string>): string {
-        return tpl.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? "");
-    }
-
-    function applyTemplate(tpl: PromptTemplate) {
-        const selText = getSelectedTextContext()?.markdown ?? "";
-        const resolved = resolveTemplate(tpl.content, {
-            currentDocTitle: activeDocTitle,
-            selectedText: selText,
-            activeDocId: activeDocId,
-        });
-        input = resolved;
-        templatePickerOpen = false;
-        tick().then(() => composer?.focus());
-    }
-
     // ===== Drag-drop context =====
+
 
     const BLOCK_ID_RE = /\b(\d{14}-[a-z0-9]{7})\b/;
 
@@ -1305,7 +1275,7 @@
     }
 </script>
 
-<div class="cn-shell" class:cn-shell-tab={isTabPanel} on:click={() => { if (templatePickerOpen) closeTemplatePicker(); }}>
+<div class="cn-shell" class:cn-shell-tab={isTabPanel}>
     <div class="cn-header">
         <div class="cn-brand">
             <div class="cn-mark">
@@ -1618,15 +1588,6 @@
                         <line x1="8" y1="12" x2="16" y2="12"></line>
                     </svg>
                 </button>
-                <button class="cn-icon-btn b3-tooltips b3-tooltips__nw" class:active={templatePickerOpen} aria-label="Prompt 模板" on:click={toggleTemplatePicker}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <line x1="10" y1="9" x2="8" y2="9"></line>
-                    </svg>
-                </button>
             </div>
         </div>
 
@@ -1637,42 +1598,6 @@
             on:dragleave={(e) => onInputCardDragLeave(e)}
             on:drop={onInputCardDrop}
         >
-            {#if templatePickerOpen}
-                <div class="cn-template-picker-overlay" on:click|stopPropagation>
-                    <div class="cn-search-header">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon search-icon" style="color:var(--cn-muted);width:15px;height:15px;flex-shrink:0;">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                        </svg>
-                        <span style="flex:1;font-size:12px;color:var(--cn-muted);font-weight:600;">Prompt 模板</span>
-                        <button class="cn-search-close b3-tooltips b3-tooltips__n" aria-label="关闭" on:click={closeTemplatePicker}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
-                    </div>
-                    <div class="cn-search-results">
-                        {#if !(localSettings.promptTemplates?.length)}
-                            {#each DEFAULT_PROMPT_TEMPLATES as tpl (tpl.id)}
-                                <button class="cn-search-item" on:click={() => applyTemplate(tpl)}>
-                                    <div class="cn-search-item-info">
-                                        <div class="cn-search-item-title">{tpl.title}</div>
-                                        <div class="cn-search-item-path">{tpl.content.slice(0, 60)}{tpl.content.length > 60 ? "..." : ""}</div>
-                                    </div>
-                                </button>
-                            {/each}
-                        {:else}
-                            {#each (localSettings.promptTemplates) as tpl (tpl.id)}
-                                <button class="cn-search-item" on:click={() => applyTemplate(tpl)}>
-                                    <div class="cn-search-item-info">
-                                        <div class="cn-search-item-title">{tpl.title}</div>
-                                        <div class="cn-search-item-path">{tpl.content.slice(0, 60)}{tpl.content.length > 60 ? "..." : ""}</div>
-                                    </div>
-                                </button>
-                            {/each}
-                        {/if}
-                    </div>
-                </div>
-            {/if}
             {#if searchOpen}
                 <div class="cn-search-overlay">
                     <div class="cn-search-header">
