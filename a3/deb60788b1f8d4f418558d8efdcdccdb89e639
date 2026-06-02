@@ -1,0 +1,46 @@
+src/func/claude-note/siyuan-api.ts
+  s_8fc7cf64677576::t_1e42c2df9eb511 205-222
+src/func/claude-note/ClaudeNoteSettings.svelte
+  s_8fc7cf64677576::t_d8f18f0aa6cf52 8,10,19,22-25,43-94,101,120,128-193,200-349
+src/func/claude-note/settings.ts
+  s_8fc7cf64677576::t_94e4290e60a610 3-26
+  s_8fc7cf64677576::t_1e2e3ee574e38f 60
+  s_8fc7cf64677576::t_55e7c4b9395f68 276
+  s_8fc7cf64677576::t_268c1d6b13b4a2 393-395
+src/func/claude-note/ClaudeNotePanel.svelte
+  s_8fc7cf64677576::t_49d63b5e4b111d 156-164
+  s_8fc7cf64677576::t_7eea54abb6f6ae 1429-1445,1447-1449
+  s_8fc7cf64677576::t_ada4e1260bf1d7 1605-1613
+  s_8fc7cf64677576::t_2586d7d2663612 1617-1653
+  s_8fc7cf64677576::t_38d2891f8500be 1506-1539
+  s_8fc7cf64677576::t_12b64d8619152f 26,29,36,39
+  s_8fc7cf64677576::t_901e626bf3324b 831-948
+src/func/claude-note/index.scss
+  s_8fc7cf64677576::t_211cfb3205a3e8 2326,2328-2332,2335-2337,2340-2345,2348
+  h_cf037dcb817b82 2269-2325,2327,2333-2334,2338-2339,2346-2347,2349-2451
+src/func/claude-note/asset/siyuan-cli.py
+  s_8fc7cf64677576::t_543122a2033dae 16-21,37-50,52-57,59-64,165-170,181-186,274-285
+src/func/claude-note/MarkdownBlock.svelte
+  s_8fc7cf64677576::t_4bb79c76afa0ab 31-59,67,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "a3deb60788b1f8d4f418558d8efdcdccdb89e639",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_8fc7cf64677576": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5a47404fa809431892508e52dee3236f",
+        "model": "claude-sonnet-4.6-1m"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
