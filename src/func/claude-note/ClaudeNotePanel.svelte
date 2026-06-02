@@ -892,21 +892,65 @@
     // siyuan:// 协议链接里的块 ID
     const BLOCK_ID_IN_URL_RE = /siyuan:\/\/blocks\/(\d{14}-[a-z0-9]{7})/;
 
+    /**
+     * 从思源拖拽的 HTML 中提取真正被用户选中拖动的块 ID。
+     *
+     * 思源在拖动一个选中块时，dataTransfer 的 text/html 里会附带相邻的
+     * 多个块的 HTML（甚至整个文档片段），但**只有用户实际选中的那个块**
+     * 的根 div 上带有 `protyle-wysiwyg--select` class。
+     *
+     * 解析顺序：
+     * 1. 找带 `protyle-wysiwyg--select` 的元素 → 它的 data-node-id
+     * 2. 找带 `protyle-wysiwyg--hl` 的元素 → 它的 data-node-id
+     * 3. 找第一个有 data-node-id 的元素（最后兜底）
+     */
+    function extractBlockIdFromHtml(html: string): string {
+        if (!html) return "";
+        try {
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            const candidates = [
+                ".protyle-wysiwyg--select[data-node-id]",
+                "[data-node-id].protyle-wysiwyg--select",
+                ".protyle-wysiwyg--hl[data-node-id]",
+                "[data-node-id].protyle-wysiwyg--hl",
+            ];
+            for (const sel of candidates) {
+                const el = doc.querySelector(sel);
+                const id = el?.getAttribute("data-node-id") || "";
+                if (BLOCK_ID_EXACT_RE.test(id)) return id;
+            }
+            // 兜底：取第一个有 data-node-id 的（注意：可能不是用户的真实意图）
+            const fallback = doc.querySelector("[data-node-id]");
+            const id = fallback?.getAttribute("data-node-id") || "";
+            if (BLOCK_ID_EXACT_RE.test(id)) return id;
+        } catch (err) {
+            console.warn("[ClaudeNote] parse drag html failed:", err);
+        }
+        return "";
+    }
+
     function extractDragBlockId(e: DragEvent): string {
         const dt = e.dataTransfer;
         if (!dt) return "";
 
-        // 优先：text/plain 里的值恰好就是一个裸块 ID（思源拖拽块时的标准格式）
+        // 优先 1：解析 text/html 中带 protyle-wysiwyg--select 的块
+        try {
+            const html = dt.getData("text/html") || "";
+            const idFromHtml = extractBlockIdFromHtml(html);
+            if (idFromHtml) return idFromHtml;
+        } catch { /* ignore */ }
+
+        // 优先 2：text/plain 的值恰好是一个裸块 ID
         try {
             const plain = (dt.getData("text/plain") || "").trim();
             if (BLOCK_ID_EXACT_RE.test(plain)) return plain;
 
-            // 也匹配 siyuan://blocks/<id> 协议链接
+            // 匹配 siyuan://blocks/<id> 协议链接（用户拖动一个块引用时）
             const urlMatch = plain.match(BLOCK_ID_IN_URL_RE);
             if (urlMatch) return urlMatch[1];
         } catch { /* ignore */ }
 
-        // 其次：遍历未知 MIME 类型，只在值本身是裸块 ID 时命中
+        // 优先 3：遍历未知 MIME，只在值本身是裸块 ID 时命中
         for (const type of Array.from(dt.types || [])) {
             if (type === "text/plain" || type === "text/html") continue;
             try {
