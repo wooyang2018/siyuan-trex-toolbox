@@ -18,9 +18,11 @@
     } from "./claude-runner";
     import {
         buildClaudeModelOptions,
+        DEFAULT_PROMPT_TEMPLATES,
         defaultSettings,
         mergeSettings,
         type ClaudeNoteSettings,
+        type PromptTemplate,
     } from "./settings";
     import {
         appendBlockToDoc,
@@ -34,7 +36,6 @@
         summarizeBlockMarkdown,
         type ContextItem,
     } from "./siyuan-api";
-    import { type PromptTemplate } from "./settings";
 
     export let settings: ClaudeNoteSettings = defaultSettings;
     export let saveSettings: (settings: ClaudeNoteSettings) => Promise<void>;
@@ -1650,10 +1651,17 @@
                         </button>
                     </div>
                     <div class="cn-search-results">
-                        {#if (localSettings.promptTemplates || []).length === 0}
-                            <div class="cn-search-status">暂无模板，请在设置中添加</div>
+                        {#if !(localSettings.promptTemplates?.length)}
+                            {#each DEFAULT_PROMPT_TEMPLATES as tpl (tpl.id)}
+                                <button class="cn-search-item" on:click={() => applyTemplate(tpl)}>
+                                    <div class="cn-search-item-info">
+                                        <div class="cn-search-item-title">{tpl.title}</div>
+                                        <div class="cn-search-item-path">{tpl.content.slice(0, 60)}{tpl.content.length > 60 ? "..." : ""}</div>
+                                    </div>
+                                </button>
+                            {/each}
                         {:else}
-                            {#each (localSettings.promptTemplates || []) as tpl (tpl.id)}
+                            {#each (localSettings.promptTemplates) as tpl (tpl.id)}
                                 <button class="cn-search-item" on:click={() => applyTemplate(tpl)}>
                                     <div class="cn-search-item-info">
                                         <div class="cn-search-item-title">{tpl.title}</div>

@@ -390,7 +390,9 @@ export function mergeSettings(input: Partial<ClaudeNoteSettings> | null | undefi
     if (!["safe", "default", "yolo"].includes(merged.safeMode)) {
         merged.safeMode = defaultSettings.safeMode;
     }
-    if (!Array.isArray(merged.promptTemplates)) {
+    // 如果 input 里完全没有 promptTemplates 字段（旧版 settings.json 升级场景），才注入默认值
+    const inputHasTemplates = input != null && Object.prototype.hasOwnProperty.call(input, "promptTemplates");
+    if (!Array.isArray(merged.promptTemplates) || (!inputHasTemplates && merged.promptTemplates.length === 0)) {
         merged.promptTemplates = DEFAULT_PROMPT_TEMPLATES;
     }
     return merged;
