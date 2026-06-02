@@ -940,16 +940,13 @@
         input = "";
         const startKey = currentTabKey;
         const runSettings = mergeSettings(localSettings);
-        addMessage("user", text);
-        saveActiveState();
 
         try {
             const items = await collectContext();
             const contextText = formatContext(items, localSettings.maxContextChars);
-            if (items.length > 0) {
-                addMessage("event", (i18n.contextAttachedCount || "已附加 {count} 条思源上下文").replace("{count}", items.length.toString()), items.map((item) => item.title || item.id || item.kind).join(" / "));
-            }
             const prompt = buildPrompt(text, contextText);
+            // 把完整 prompt（含上下文）存入 user message，parseUserMessage 可解析展开
+            addMessage("user", prompt);
 
             // Reset context attachments to prevent token accumulation
             pendingRefs = [];
