@@ -2449,3 +2449,95 @@ html[data-theme-mode="dark"] .cn-template-picker-overlay {
     color: var(--cn-accent);
     opacity: 1;
 }
+
+/* ==========================================================================
+   Context expand details (attached SiYuan context preview)
+   ========================================================================== */
+
+.cn-context-details {
+    display: inline-block;
+    margin-top: 8px;
+    max-width: 100%;
+}
+
+.cn-context-details summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.cn-context-details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Reuse existing badge style, just add arrow */
+.cn-context-details > summary.cn-context-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cn-ctx-expand-arrow {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    margin-left: 2px;
+    transition: transform 0.14s ease;
+    opacity: 0.7;
+}
+
+.cn-context-details[open] .cn-ctx-expand-arrow {
+    transform: rotate(45deg);
+}
+
+.cn-context-expand {
+    margin-top: 6px;
+    border: 1px solid var(--cn-border);
+    border-radius: 7px;
+    background: var(--cn-panel);
+    overflow: hidden;
+    max-width: 380px;
+    width: max-content;
+}
+
+.cn-ctx-item {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cn-ctx-item-source {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cn-accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cn-ctx-divider {
+    height: 1px;
+    background: var(--cn-border);
+    margin: 0 10px;
+}
+
+.cn-ctx-item-preview {
+    font-size: 11px;
+    color: var(--cn-muted);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 80px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+}

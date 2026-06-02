@@ -371,6 +371,27 @@
         }
     }
 
+    interface ParsedContext {
+        source: string;
+        preview: string;
+    }
+
+    function parseContextItems(contextText: string): ParsedContext[] {
+        const result: ParsedContext[] = [];
+        const re = /<siyuan-context[^>]*source="([^"]*)"[^>]*>([\s\S]*?)<\/siyuan-context>/g;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(contextText)) !== null) {
+            const rawSource = m[1].replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+            // source 格式: "kind | id | hpath/title"，取最后一段作为显示名
+            const parts = rawSource.split(" | ");
+            const displaySource = parts[parts.length - 1] || rawSource;
+            const bodyText = m[2].trim();
+            const preview = bodyText.length > 120 ? bodyText.slice(0, 120) + "…" : bodyText;
+            result.push({ source: displaySource, preview });
+        }
+        return result;
+    }
+
     function parseUserMessage(content: string) {
         const separator = "\n---\n用户问题：\n";
         const idx = content.indexOf(separator);
@@ -1421,12 +1442,33 @@
                         <article class="cn-message cn-user">
                             <MarkdownBlock content={parsed.question} />
                             {#if parsed.hasContext}
-                                <div class="cn-context-badge" title={parsed.contextText}>
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini inline">
-                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-                                    </svg>
-                                    {i18n.siyuanCtxAttached || "已附加思源上下文"}
-                                </div>
+                                {@const ctxItems = parseContextItems(parsed.contextText)}
+                                <details class="cn-context-details">
+                                    <summary class="cn-context-badge">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini inline">
+                                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                        </svg>
+                                        已附加 {ctxItems.length} 条思源上下文
+                                        <span class="cn-ctx-expand-arrow"></span>
+                                    </summary>
+                                    <div class="cn-context-expand">
+                                        {#each ctxItems as item, i}
+                                            <div class="cn-ctx-item">
+                                                <div class="cn-ctx-item-source">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;flex-shrink:0;opacity:0.6;">
+                                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                                    </svg>
+                                                    {item.source}
+                                                </div>
+                                                <div class="cn-ctx-item-preview">{item.preview}</div>
+                                            </div>
+                                            {#if i < ctxItems.length - 1}
+                                                <div class="cn-ctx-divider"></div>
+                                            {/if}
+                                        {/each}
+                                    </div>
+                                </details>
                             {/if}
                         </article>
 
