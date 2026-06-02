@@ -143,8 +143,9 @@
                         {#if editingTemplateId === tpl.id}
                             <div class="cn-template-edit-card">
                                 <div class="cn-template-edit-row">
-                                    <label class="cn-template-edit-label">名称</label>
+                                    <label class="cn-template-edit-label" for="cn-tpl-title">名称</label>
                                     <input
+                                        id="cn-tpl-title"
                                         class="b3-text-field cn-template-title-input"
                                         type="text"
                                         bind:value={editingTemplate.title}
@@ -152,8 +153,9 @@
                                     />
                                 </div>
                                 <div class="cn-template-edit-row cn-template-edit-content-row">
-                                    <label class="cn-template-edit-label">内容</label>
+                                    <label class="cn-template-edit-label" for="cn-tpl-content">内容</label>
                                     <textarea
+                                        id="cn-tpl-content"
                                         class="b3-text-field cn-template-content-textarea"
                                         rows="5"
                                         bind:value={editingTemplate.content}

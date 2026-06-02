@@ -1513,7 +1513,7 @@
                                     class="cn-writeback-btn b3-tooltips b3-tooltips__n"
                                     aria-label={activeDocId ? `追加到「${activeDocTitle || activeDocId}」` : "追加到当前文档（无活动文档）"}
                                     disabled={writeBackBusy || !activeDocId}
-                                    on:click={() => writeBackAppend(turn.assistantMessage!.content)}
+                                    on:click={() => writeBackAppend(turn.assistantMessage?.content ?? "")}
                                 >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini">
                                         <path d="M12 5v14"></path>
@@ -1526,7 +1526,7 @@
                                     class="cn-writeback-btn b3-tooltips b3-tooltips__n"
                                     aria-label="用此回复替换选中块"
                                     disabled={writeBackBusy}
-                                    on:click={() => writeBackReplace(turn.assistantMessage!.content)}
+                                    on:click={() => writeBackReplace(turn.assistantMessage?.content ?? "")}
                                 >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini">
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
