@@ -13,6 +13,12 @@ API_URL = os.getenv("SIYUAN_API_URL") or f"http://127.0.0.1:{os.getenv('SIYUAN_A
 API_TOKEN = os.getenv("SIYUAN_API_TOKEN", "")
 
 
+def exit_error(code, message, hint="", exit_code=1):
+    """Output a structured JSON error to stdout and exit with exit_code."""
+    print(json.dumps({"error": True, "code": code, "message": message, "hint": hint}, ensure_ascii=False))
+    sys.exit(exit_code)
+
+
 def request(endpoint, data=None):
     body = json.dumps(data or {}, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
@@ -28,14 +34,34 @@ def request(endpoint, data=None):
         with urllib.request.urlopen(req, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        print(f"HTTP {exc.code}: {exc.read().decode('utf-8', errors='replace')}", file=sys.stderr)
-        sys.exit(1)
+        body_text = exc.read().decode("utf-8", errors="replace")
+        exit_error(
+            "HTTP_ERROR",
+            f"HTTP {exc.code}: {body_text}",
+            hint=f"Check SiYuan API endpoint: {API_URL}{endpoint}",
+            exit_code=2,
+        )
+    except (ConnectionRefusedError, OSError) as exc:
+        exit_error(
+            "CONNECTION_FAILED",
+            str(exc),
+            hint=f"Make sure SiYuan is running and accessible at {API_URL}",
+            exit_code=2,
+        )
     except Exception as exc:
-        print(f"Request failed: {exc}", file=sys.stderr)
-        sys.exit(1)
+        exit_error(
+            "UNKNOWN_ERROR",
+            str(exc),
+            hint="Unexpected error during HTTP request",
+            exit_code=1,
+        )
     if isinstance(result, dict) and result.get("code", 0) != 0:
-        print(f"SiYuan API error {result.get('code')}: {result.get('msg', '')}", file=sys.stderr)
-        sys.exit(1)
+        exit_error(
+            "API_ERROR",
+            f"SiYuan API error {result.get('code')}: {result.get('msg', '')}",
+            hint="Check if the block/document ID is valid, or if you have permission",
+            exit_code=3,
+        )
     return result.get("data") if isinstance(result, dict) else result
 
 
@@ -136,8 +162,12 @@ def cmd_insert_block(args):
     elif args.parent_id:
         payload["parentID"] = args.parent_id
     else:
-        print("insert-block requires --next-id, --previous-id, or --parent-id", file=sys.stderr)
-        sys.exit(2)
+        exit_error(
+            "ARG_ERROR",
+            "insert-block requires --next-id, --previous-id, or --parent-id",
+            hint="Provide at least one positional anchor for the new block",
+            exit_code=4,
+        )
     print_json(request("/api/block/insertBlock", payload))
 
 
@@ -148,8 +178,12 @@ def cmd_move_block(args):
     if args.parent_id:
         payload["parentID"] = args.parent_id
     if len(payload) == 1:
-        print("move-block requires --previous-id or --parent-id", file=sys.stderr)
-        sys.exit(2)
+        exit_error(
+            "ARG_ERROR",
+            "move-block requires --previous-id or --parent-id",
+            hint="Provide at least one target anchor for moving the block",
+            exit_code=4,
+        )
     print_json(request("/api/block/moveBlock", payload))
 
 
@@ -237,8 +271,18 @@ def main():
     p.add_argument("--previous-id")
     p.set_defaults(func=cmd_move_block)
 
-    args = parser.parse_args()
-    args.func(args)
+    try:
+        args = parser.parse_args()
+        args.func(args)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        exit_error(
+            "UNKNOWN_ERROR",
+            str(exc),
+            hint="Unhandled exception in command handler",
+            exit_code=1,
+        )
 
 
 if __name__ == "__main__":

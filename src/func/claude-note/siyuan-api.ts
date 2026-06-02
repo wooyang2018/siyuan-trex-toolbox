@@ -202,6 +202,24 @@ export async function buildBlockContext(id: string, kind: "block" | "doc" = "blo
     };
 }
 
+export async function appendBlockToDoc(parentId: string, markdown: string): Promise<boolean> {
+    const data = await request<any>("/api/block/appendBlock", {
+        parentID: parentId,
+        dataType: "markdown",
+        data: markdown,
+    });
+    return data !== null;
+}
+
+export async function updateBlock(id: string, markdown: string): Promise<boolean> {
+    const data = await request<any>("/api/block/updateBlock", {
+        id,
+        dataType: "markdown",
+        data: markdown,
+    });
+    return data !== null;
+}
+
 function escapeAttribute(value: string): string {
     return value
         .replace(/&/g, "&amp;")

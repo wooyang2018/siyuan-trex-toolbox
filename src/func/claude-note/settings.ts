@@ -1,5 +1,29 @@
 export type PermissionMode = "auto" | "bypassPermissions" | "plan";
 
+export interface PromptTemplate {
+    id: string;
+    title: string;
+    content: string;
+}
+
+export const DEFAULT_PROMPT_TEMPLATES: PromptTemplate[] = [
+    {
+        id: "summarize",
+        title: "总结文档",
+        content: "请帮我总结以下文档的核心内容，以要点形式输出：\n\n文档标题：{{currentDocTitle}}",
+    },
+    {
+        id: "translate",
+        title: "翻译为中文",
+        content: "请将以下内容翻译为简体中文，保持原文格式：\n\n{{selectedText}}",
+    },
+    {
+        id: "explain",
+        title: "解释概念",
+        content: "请解释以下内容，用通俗易懂的语言说明其含义和应用场景：\n\n{{selectedText}}",
+    },
+];
+
 export interface ClaudeNoteSettings {
     chatPlacement: "dock" | "tab";
     cliPath: string;
@@ -33,6 +57,7 @@ export interface ClaudeNoteSettings {
     enableBangBash: boolean;
     siyuanApiToken: string;
     siyuanApiPort: string;
+    promptTemplates: PromptTemplate[];
 }
 
 export const SETTINGS_FILE = "settings.json";
@@ -248,6 +273,7 @@ export const defaultSettings: ClaudeNoteSettings = {
     appendSystemPrompt: "",
     siyuanApiToken: "",
     siyuanApiPort: "6806",
+    promptTemplates: DEFAULT_PROMPT_TEMPLATES,
 };
 
 export function getNodeRequire(): ((id: string) => any) | null {
@@ -363,6 +389,9 @@ export function mergeSettings(input: Partial<ClaudeNoteSettings> | null | undefi
     }
     if (!["safe", "default", "yolo"].includes(merged.safeMode)) {
         merged.safeMode = defaultSettings.safeMode;
+    }
+    if (!Array.isArray(merged.promptTemplates)) {
+        merged.promptTemplates = DEFAULT_PROMPT_TEMPLATES;
     }
     return merged;
 }

@@ -28,6 +28,35 @@
         return `<p>${html}</p>`;
     }
 
+    function injectCopyButtons() {
+        if (!element) return;
+        // Remove previously injected buttons to avoid duplicates on re-render
+        element.querySelectorAll(".cn-copy-btn").forEach(btn => btn.remove());
+        element.querySelectorAll("pre").forEach(pre => {
+            const codeEl = pre.querySelector("code");
+            if (!codeEl) return;
+            const btn = document.createElement("button");
+            btn.className = "cn-copy-btn";
+            btn.textContent = "复制";
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const text = codeEl.innerText ?? codeEl.textContent ?? "";
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = "已复制";
+                    btn.classList.add("cn-copied");
+                    setTimeout(() => {
+                        btn.textContent = "复制";
+                        btn.classList.remove("cn-copied");
+                    }, 1500);
+                }).catch(() => {
+                    btn.textContent = "复制失败";
+                    setTimeout(() => { btn.textContent = "复制"; }, 1500);
+                });
+            });
+            pre.appendChild(btn);
+        });
+    }
+
     function renderNow() {
         if (!element || content === lastContent) return;
         lastContent = content;
@@ -35,12 +64,14 @@
             const lute = (window as any).Lute?.New?.();
             if (lute?.Md2HTML) {
                 element.innerHTML = lute.Md2HTML(content);
+                injectCopyButtons();
                 return;
             }
         } catch (error) {
             console.warn("Claude Note markdown render failed", error);
         }
         element.innerHTML = fallbackMarkdown(content);
+        injectCopyButtons();
     }
 
     function scheduleRender() {

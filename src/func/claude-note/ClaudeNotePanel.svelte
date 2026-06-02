@@ -23,16 +23,20 @@
         type ClaudeNoteSettings,
     } from "./settings";
     import {
+        appendBlockToDoc,
         buildBlockContext,
         findCurrentDocumentId,
+        findSelectedBlockId,
         formatContext,
         getBlockKramdown,
         getDocTitle,
         getSelectedTextContext,
         searchDocuments,
         summarizeBlockMarkdown,
+        updateBlock,
         type ContextItem,
     } from "./siyuan-api";
+    import { type PromptTemplate } from "./settings";
 
     export let settings: ClaudeNoteSettings = defaultSettings;
     export let saveSettings: (settings: ClaudeNoteSettings) => Promise<void>;
@@ -148,6 +152,15 @@
     let searchDebounceTimer: any;
     let composer: HTMLTextAreaElement;
     let searchInput: HTMLInputElement;
+
+    // Template picker state
+    let templatePickerOpen = false;
+
+    // Write-back state
+    let writeBackBusy = false;
+
+    // Drag-drop state
+    let dropActive = false;
 
     // Inline session editing and deletion state
     let editingSessionId = "";
@@ -815,6 +828,124 @@
         return targetKey;
     }
 
+    // ===== Write-back to SiYuan =====
+
+    async function writeBackAppend(content: string) {
+        if (!activeDocId) {
+            showMessage("请先打开一篇文档再写入");
+            return;
+        }
+        writeBackBusy = true;
+        try {
+            const ok = await appendBlockToDoc(activeDocId, content);
+            if (ok) {
+                showMessage(`已追加到「${activeDocTitle || activeDocId}」`);
+            } else {
+                showMessage("写入失败，请检查思源连接");
+            }
+        } catch (e) {
+            showMessage("写入出错：" + (e as Error).message);
+        } finally {
+            writeBackBusy = false;
+        }
+    }
+
+    async function writeBackReplace(content: string) {
+        // Find target block: prefer last block in pendingRefs, fallback to cursor block
+        const blockRef = [...pendingRefs].reverse().find(r => r.kind === "block");
+        const targetId = blockRef?.id || findSelectedBlockId();
+        if (!targetId) {
+            showMessage("未找到目标块，请先选中一个思源块");
+            return;
+        }
+        if (!confirm(`确认用 Claude 回复替换该块的内容？此操作不可撤销。`)) return;
+        writeBackBusy = true;
+        try {
+            const ok = await updateBlock(targetId, content);
+            if (ok) {
+                showMessage("块已更新");
+            } else {
+                showMessage("更新失败，请检查块 ID 和思源连接");
+            }
+        } catch (e) {
+            showMessage("更新出错：" + (e as Error).message);
+        } finally {
+            writeBackBusy = false;
+        }
+    }
+
+    // ===== Prompt templates =====
+
+    function toggleTemplatePicker() {
+        templatePickerOpen = !templatePickerOpen;
+    }
+
+    function closeTemplatePicker() {
+        templatePickerOpen = false;
+    }
+
+    function resolveTemplate(tpl: string, vars: Record<string, string>): string {
+        return tpl.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? "");
+    }
+
+    function applyTemplate(tpl: PromptTemplate) {
+        const selText = getSelectedTextContext()?.markdown ?? "";
+        const resolved = resolveTemplate(tpl.content, {
+            currentDocTitle: activeDocTitle,
+            selectedText: selText,
+            activeDocId: activeDocId,
+        });
+        input = resolved;
+        templatePickerOpen = false;
+        tick().then(() => composer?.focus());
+    }
+
+    // ===== Re-edit user message =====
+
+    function reEditMessage(turn: typeof turns[number]) {
+        if (!turn.userMessage) return;
+        const parsed = parseUserMessage(turn.userMessage.content);
+        input = parsed.question;
+        // Truncate messages up to (but not including) this turn
+        const turnMsgId = turn.userMessage.id;
+        const idx = messages.findIndex(m => m.id === turnMsgId);
+        if (idx >= 0) {
+            messages = messages.slice(0, idx);
+        }
+        saveActiveState();
+        tick().then(() => composer?.focus());
+    }
+
+    // ===== Drag-drop context =====
+
+    function extractDragBlockId(e: DragEvent): string {
+        const text = (e.dataTransfer?.getData("text/plain") ?? "").trim();
+        if (/^\d{14}-[a-z0-9]{7}$/.test(text)) return text;
+        // Handle siyuan:// protocol links
+        const match = text.match(/siyuan:\/\/blocks\/(\d{14}-[a-z0-9]{7})/);
+        if (match) return match[1];
+        return "";
+    }
+
+    function onInputCardDragOver(e: DragEvent) {
+        e.preventDefault();
+        dropActive = true;
+    }
+
+    function onInputCardDragLeave() {
+        dropActive = false;
+    }
+
+    function onInputCardDrop(e: DragEvent) {
+        e.preventDefault();
+        dropActive = false;
+        const blockId = extractDragBlockId(e);
+        if (blockId) {
+            addPendingContext({ kind: "block", id: blockId });
+            showMessage("已将块加入上下文");
+        }
+    }
+
     async function send() {
         const text = input.trim();
         if (!text || running) return;
@@ -1295,17 +1426,27 @@
             {#each turns as turn, idx (turn.id || idx)}
                 {#if turn.userMessage}
                     {@const parsed = parseUserMessage(turn.userMessage.content)}
-                    <article class="cn-message cn-user">
-                        <MarkdownBlock content={parsed.question} />
-                        {#if parsed.hasContext}
-                            <div class="cn-context-badge" title={parsed.contextText}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini inline">
-                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    <div class="cn-turn-user-group">
+                        <article class="cn-message cn-user">
+                            <MarkdownBlock content={parsed.question} />
+                            {#if parsed.hasContext}
+                                <div class="cn-context-badge" title={parsed.contextText}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini inline">
+                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                    </svg>
+                                    {i18n.siyuanCtxAttached || "已附加思源上下文"}
+                                </div>
+                            {/if}
+                        </article>
+                        <div class="cn-user-actions">
+                            <button class="cn-msg-action-btn b3-tooltips b3-tooltips__n" aria-label="重新编辑此消息" on:click={() => reEditMessage(turn)} disabled={running}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
                                 </svg>
-                                {i18n.siyuanCtxAttached || "已附加思源上下文"}
-                            </div>
-                        {/if}
-                    </article>
+                            </button>
+                        </div>
+                    </div>
                 {/if}
 
                 {@const isLatestTurn = idx === turns.length - 1}
@@ -1362,9 +1503,40 @@
                 {/each}
 
                 {#if turn.assistantMessage}
-                    <article class="cn-message cn-assistant select-text">
-                        <MarkdownBlock content={turn.assistantMessage.content} />
-                    </article>
+                    <div class="cn-assistant-wrap">
+                        <article class="cn-message cn-assistant select-text">
+                            <MarkdownBlock content={turn.assistantMessage.content} />
+                        </article>
+                        {#if !running}
+                            <div class="cn-writeback-bar">
+                                <button
+                                    class="cn-writeback-btn b3-tooltips b3-tooltips__n"
+                                    aria-label={activeDocId ? `追加到「${activeDocTitle || activeDocId}」` : "追加到当前文档（无活动文档）"}
+                                    disabled={writeBackBusy || !activeDocId}
+                                    on:click={() => writeBackAppend(turn.assistantMessage!.content)}
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini">
+                                        <path d="M12 5v14"></path>
+                                        <path d="M5 12l7 7 7-7"></path>
+                                        <path d="M3 20h18"></path>
+                                    </svg>
+                                    <span>追加到文档</span>
+                                </button>
+                                <button
+                                    class="cn-writeback-btn b3-tooltips b3-tooltips__n"
+                                    aria-label="用此回复替换选中块"
+                                    disabled={writeBackBusy}
+                                    on:click={() => writeBackReplace(turn.assistantMessage!.content)}
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon mini">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
+                                    </svg>
+                                    <span>替换块</span>
+                                </button>
+                            </div>
+                        {/if}
+                    </div>
                 {/if}
 
                 {#if turn.errorMessage}
@@ -1430,10 +1602,55 @@
                         <line x1="8" y1="12" x2="16" y2="12"></line>
                     </svg>
                 </button>
+                <button class="cn-icon-btn b3-tooltips b3-tooltips__nw" class:active={templatePickerOpen} aria-label="Prompt 模板" on:click={toggleTemplatePicker}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <line x1="10" y1="9" x2="8" y2="9"></line>
+                    </svg>
+                </button>
             </div>
         </div>
 
-        <div class="cn-input-card">
+        <div
+            class="cn-input-card"
+            class:cn-drop-active={dropActive}
+            on:dragover={onInputCardDragOver}
+            on:dragleave={onInputCardDragLeave}
+            on:drop={onInputCardDrop}
+        >
+            {#if templatePickerOpen}
+                <div class="cn-popover-backdrop" on:click={closeTemplatePicker}></div>
+                <div class="cn-template-picker-overlay">
+                    <div class="cn-search-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cn-svg-icon search-icon" style="color:var(--cn-muted);width:15px;height:15px;flex-shrink:0;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                        </svg>
+                        <span style="flex:1;font-size:12px;color:var(--cn-muted);font-weight:600;">Prompt 模板</span>
+                        <button class="cn-search-close b3-tooltips b3-tooltips__n" aria-label="关闭" on:click={closeTemplatePicker}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div class="cn-search-results">
+                        {#if (localSettings.promptTemplates || []).length === 0}
+                            <div class="cn-search-status">暂无模板，请在设置中添加</div>
+                        {:else}
+                            {#each (localSettings.promptTemplates || []) as tpl (tpl.id)}
+                                <button class="cn-search-item" on:click={() => applyTemplate(tpl)}>
+                                    <div class="cn-search-item-info">
+                                        <div class="cn-search-item-title">{tpl.title}</div>
+                                        <div class="cn-search-item-path">{tpl.content.slice(0, 60)}{tpl.content.length > 60 ? "..." : ""}</div>
+                                    </div>
+                                </button>
+                            {/each}
+                        {/if}
+                    </div>
+                </div>
+            {/if}
             {#if searchOpen}
                 <div class="cn-search-overlay">
                     <div class="cn-search-header">
