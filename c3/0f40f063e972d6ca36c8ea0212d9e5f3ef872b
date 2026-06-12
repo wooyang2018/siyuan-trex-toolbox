@@ -1,0 +1,14 @@
+siyuan/JS/管理Symbol图标.js
+  h_cf037dcb817b82 45-68,72-82,86-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "c30f40f063e972d6ca36c8ea0212d9e5f3ef872b",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
