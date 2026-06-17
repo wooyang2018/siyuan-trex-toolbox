@@ -42,6 +42,57 @@ const replacements2 = [
                 <symbol id="iconSfsrSearchReplace" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
                     <path d="M33 41C27.5203 44.0026 23 44 17 42C10.9236 39.9745 7 33 7 28C7 25.2562 11.1135 23.6282 12.5286 23.1494C12.8074 23.055 13 22.7966 13 22.5023V15C13 13.067 14.567 11.5 16.5 11.5C18.433 11.5 20 13.067 20 15V12.5C20 10.567 21.567 9 23.5 9C25.433 9 27 10.567 27 12.5V15C27 13.067 28.567 11.5 30.5 11.5C32.433 11.5 34 13.067 34 15V7.49999C34 5.567 35.567 4 37.5 4C39.433 4 41 5.567 41 7.49999V28.2319C41 30.7041 40.4077 33.1603 38.962 35.1657C37.4919 37.2049 35.3574 39.7083 33 41Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                 </symbol>`
+    },
+    {
+        oldId: "#iconWeread",
+        newSymbol: `
+                <symbol id="iconWeread" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                    <!-- 外框 -->
+                    <rect
+                        x="72"
+                        y="72"
+                        width="880"
+                        height="880"
+                        rx="180"
+                        ry="180"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="80"
+                        stroke-linejoin="round"/>
+
+                    <!-- 书本 -->
+                    <path
+                        d="
+                            M120 760
+                            H430
+                            C475 760 502 790 512 845
+                            C522 790 549 760 594 760
+                            H904
+                        "
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="80"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"/>
+
+                    <!-- 聊天气泡 -->
+                    <path
+                        d="
+                            M620 420
+                            A125 125 0 1 1 820 520
+                            L760 580
+                            L770 510
+                        "
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="80"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"/>
+
+                    <!-- 两个点 -->
+                    <circle cx="690" cy="420" r="24" fill="currentColor"/>
+                    <circle cx="760" cy="420" r="24" fill="currentColor"/>
+                </symbol>`
     }
 ];
 
