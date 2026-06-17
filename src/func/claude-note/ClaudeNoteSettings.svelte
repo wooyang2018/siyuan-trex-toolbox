@@ -47,7 +47,7 @@
             <label class="cn-switch"><input type="checkbox" bind:checked={localSettings.autoAttachCurrentDoc} /><span>{i18n.autoAttachDoc || "默认附加当前打开文档"}</span></label>
             <label class="cn-switch"><input type="checkbox" bind:checked={localSettings.requireModEnterToSend} /><span>{i18n.requireModEnter || "必须使用 ⌘/Ctrl+Enter 发送"}</span></label>
             <label class="cn-switch"><input type="checkbox" bind:checked={localSettings.enableAutoScroll} /><span>{i18n.autoScroll || "流式输出时自动滚动到底部"}</span></label>
-            <label class="cn-switch"><input type="checkbox" bind:checked={localSettings.showThinking} /><span>{i18n.showThinking || "显示思考过程"}</span><small class="cn-setting-hint">仅当所选模型实际输出 thinking 内容块时生效（部分代理后端如 deepseek 不会输出）</small></label>
+            <label class="cn-switch"><input type="checkbox" bind:checked={localSettings.showThinking} /><span>{i18n.showThinking || "显示思考过程"}</span><small class="cn-setting-hint">仅当所选模型实际输出 thinking 内容块时生效</small></label>
             <label class="cn-switch"><input type="checkbox" bind:checked={localSettings.showToolCalls} /><span>{i18n.showToolCalls || "显示工具调用"}</span></label>
             <div class="cn-two-col">
                 <label><span>{i18n.historyLimit || "历史会话显示条数"}</span><input class="b3-text-field fn__block" type="number" min="1" max="200" bind:value={localSettings.historyLimit} /></label>
