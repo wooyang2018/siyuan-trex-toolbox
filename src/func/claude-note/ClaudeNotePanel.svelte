@@ -342,34 +342,31 @@
 
     function deleteSession(session: ClaudeSessionSummary, event: Event) {
         event.stopPropagation();
-        const confirmMsg = (i18n.confirmDeleteSession || "确定要删除会话 \"{title}\" 吗？（对应的底层文件将被物理移除）").replace("{title}", session.title);
-        if (confirm(confirmMsg)) {
-            const success = deleteClaudeSession(session.path);
-            if (success) {
-                showMessage(i18n.sessionDeleted || "会话已删除");
-                sessions = sessions.filter(s => s.id !== session.id);
-                activeSessionIds = activeSessionIds.filter(id => id !== session.id);
-                if (activeSessionIds.length === 0) {
-                    const draftId = createDraftSessionId();
-                    activeDraftSessionId = draftId;
-                    activeSessionIds = [draftId];
-                }
-                if (activeSessionId === session.id) {
-                    const firstTab = activeSessionIds[0];
-                    if (isDraftSessionId(firstTab)) {
-                        selectSessionTab(firstTab);
+        const success = deleteClaudeSession(session.path);
+        if (success) {
+            showMessage(i18n.sessionDeleted || "会话已删除");
+            sessions = sessions.filter(s => s.id !== session.id);
+            activeSessionIds = activeSessionIds.filter(id => id !== session.id);
+            if (activeSessionIds.length === 0) {
+                const draftId = createDraftSessionId();
+                activeDraftSessionId = draftId;
+                activeSessionIds = [draftId];
+            }
+            if (activeSessionId === session.id) {
+                const firstTab = activeSessionIds[0];
+                if (isDraftSessionId(firstTab)) {
+                    selectSessionTab(firstTab);
+                } else {
+                    const nextSession = sessions.find(s => s.id === firstTab);
+                    if (nextSession) {
+                        loadSession(nextSession);
                     } else {
-                        const nextSession = sessions.find(s => s.id === firstTab);
-                        if (nextSession) {
-                            loadSession(nextSession);
-                        } else {
-                            newSession();
-                        }
+                        newSession();
                     }
                 }
-            } else {
-                showMessage(i18n.sessionDeleteFailed || "删除会话失败");
             }
+        } else {
+            showMessage(i18n.sessionDeleteFailed || "删除会话失败");
         }
     }
 
