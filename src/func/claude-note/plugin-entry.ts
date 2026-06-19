@@ -300,7 +300,6 @@ function mountPanel(target: HTMLElement, isTab = false): PanelApp {
             i18n: plugin.i18n,
             settings: state.settings,
             isTabPanel: isTab,
-            saveSettings: createSaveSettings(),
             openSetting: () => openClaudeNoteSettings(plugin),
             clearPluginPendingContexts: () => {
                 state.pendingRefs = [];

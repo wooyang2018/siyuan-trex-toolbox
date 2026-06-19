@@ -25,6 +25,7 @@ export type ClaudeStreamEvent = {
     raw?: unknown;
     sessionId?: string;
     error?: string;
+    model?: string;
 };
 
 function formatClaudeSystemEvent(raw: any): string {
@@ -419,6 +420,11 @@ export function loadClaudeSessionMessages(sessionPath: string): Array<{ role: st
             if (entry.type === "assistant" && entry.message?.usage) {
                 out.push({ role: "usage", content: JSON.stringify(entry.message.usage) });
             }
+        } else if (entry.type === "result") {
+            const dur = entry.duration_ms ?? entry.durationMs;
+            if (dur) {
+                out.push({ role: "duration", content: String(dur) });
+            }
         }
     }
     return out;
@@ -494,7 +500,7 @@ export function normalizeClaudeEvent(raw: any): ClaudeStreamEvent[] {
     } else if (raw.type === "assistant") {
         pushTextFromContent(raw.message?.content, emit);
         if (raw.message?.usage) {
-            emit({ type: "usage", raw: raw.message.usage });
+            emit({ type: "usage", raw: raw.message.usage, model: raw.message?.model });
         }
     } else if (raw.type === "user") {
         // Claude Code echoes tool_result blocks as user messages. Rendering those
@@ -509,7 +515,15 @@ export function normalizeClaudeEvent(raw: any): ClaudeStreamEvent[] {
             emit({ type: "result", text: raw.result || "", sessionId: raw.session_id, raw });
         }
         if (raw.usage || raw.modelUsage || raw.model_usage) {
-            emit({ type: "usage", raw });
+            // Extract model name from modelUsage keys (e.g. {"claude-sonnet-4-20250514": {...}})
+            const modelUsage = raw.modelUsage || raw.model_usage;
+            const modelKeys = modelUsage && typeof modelUsage === "object" ? Object.keys(modelUsage) : [];
+            emit({ type: "usage", raw, model: modelKeys[modelKeys.length - 1] });
+        }
+        // Extract duration from result event (field may be duration_ms or durationMs)
+        const dur = raw.duration_ms ?? raw.durationMs;
+        if (dur) {
+            emit({ type: "duration", text: String(dur), raw });
         }
     } else if (raw.type === "error") {
         emit({ type: "error", error: raw.error?.message || raw.message || JSON.stringify(raw), raw });

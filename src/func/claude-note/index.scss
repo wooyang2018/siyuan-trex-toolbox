@@ -1219,6 +1219,32 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
     background: var(--cn-panel-soft);
 }
 
+.cn-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default !important;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    height: 24px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 4px;
+    color: var(--cn-muted);
+    background: transparent;
+    font-family: var(--cn-font-mono);
+    font-size: 11px;
+    box-sizing: border-box;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+}
+
+.cn-model-pill-readonly {
+    color: var(--cn-accent, #d96f4b);
+}
+
 .cn-toolbar-btn:hover {
     color: var(--cn-text);
     background: var(--cn-panel-soft);
@@ -1227,7 +1253,8 @@ html[data-theme-mode="dark"] .cn-settings-dialog {
 .cn-model-pill,
 .cn-effort-pill,
 .cn-mode-pill,
-.cn-ctx-pill {
+.cn-ctx-pill,
+.cn-status-pill {
     color: #d96f4b;
     font-weight: 500;
 }
@@ -1827,8 +1854,9 @@ html[data-theme-mode="dark"] .cn-search-overlay {
         font-family: var(--cn-font-ui) !important;
         width: max-content !important;
         max-width: min(220px, calc(100vw - 32px)) !important;
-        white-space: normal !important;
+        white-space: pre-line !important;
         overflow-wrap: break-word !important;
+
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45) !important;
         border: 1px solid var(--cn-border, #333330) !important;
         transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.15s !important;

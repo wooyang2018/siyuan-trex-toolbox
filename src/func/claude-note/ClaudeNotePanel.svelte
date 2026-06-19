@@ -17,7 +17,6 @@
         type ClaudeStreamEvent,
     } from "./claude-runner";
     import {
-        buildClaudeModelOptions,
         defaultSettings,
         mergeSettings,
         type ClaudeNoteSettings,
@@ -36,7 +35,6 @@
     } from "./siyuan-api";
 
     export let settings: ClaudeNoteSettings = defaultSettings;
-    export let saveSettings: (settings: ClaudeNoteSettings) => Promise<void>;
     export let openSetting: (() => void) | undefined = undefined;
     export let clearPluginPendingContexts: (() => void) | undefined = undefined;
     export let isTabPanel = false;
@@ -127,6 +125,7 @@
     let historyOpen = false;
     let streamedCtxUsed = 0;
     let streamedCtxLimit = 200000;
+    let detectedModel = "";
 
     // Collapsed/expanded state for individual thinking/tool entries.
     let expandedItems = new Set<string>();
@@ -473,7 +472,6 @@
         }
     }
 
-    $: modelOptions = buildClaudeModelOptions(localSettings);
     $: currentTabKey = activeSessionId || activeDraftSessionId;
     $: running = Boolean(activeRuns[currentTabKey]);
     $: currentSessionTitle = activeSessionId
@@ -508,6 +506,7 @@
     $: ctxUsed = streamedCtxUsed || latestCtxUsed;
     $: ctxLimit = streamedCtxLimit || 200000;
     $: ctxPercent = ctxLimit > 0 ? Math.min(99, Math.round((ctxUsed / ctxLimit) * 100)) : 0;
+    $: latestTurnDuration = turns.length > 0 ? turns[turns.length - 1].durationMs : undefined;
 
     // --- Svelte Reactive Turn Grouping Logic ---
     let turns: Turn[] = [];
@@ -580,6 +579,17 @@
         if (ms === undefined) return "";
         if (ms < 1000) return `${ms}ms`;
         return `${(ms / 1000).toFixed(1)}s`;
+    }
+
+    function shortModelName(model: string): string {
+        if (!model) return "";
+        // claude-sonnet-4-20250514 → sonnet-4
+        // claude-opus-4-20250514 → opus-4
+        // claude-haiku-3-5-20241022 → haiku-3.5
+        const m = model.match(/claude-(sonnet|opus|haiku)[-_]?(\d+(?:[.-]\d+)*)/i);
+        if (m) return `${m[1]}-${m[2].replace(/-/g, '.')}`;
+        // fallback: strip "claude-" prefix and date suffix
+        return model.replace(/^claude-/i, "").replace(/-\d{8,}$/, "");
     }
 
     function getToolLabel(meta: string | undefined): string {
@@ -914,6 +924,7 @@
         } else if (event.type === "duration") {
             addMessageFor(targetKey, "duration", event.text || "");
         } else if (event.type === "usage") {
+            if (event.model) detectedModel = event.model;
             updateContextUsageFor(targetKey, event.raw);
             addMessageFor(targetKey, "usage", JSON.stringify(event.raw || {}));
         }
@@ -1132,25 +1143,9 @@
         activeSessionIds = [...activeSessionIds, draftId];
     }
 
-    async function updateSettings(patch: Partial<ClaudeNoteSettings>) {
-        localSettings = mergeSettings({ ...localSettings, ...patch });
-        saveActiveState();
-        await saveSettings(localSettings);
-    }
 
-    function onModelChange(event: Event) {
-        const model = (event.currentTarget as HTMLSelectElement).value;
-        updateSettings({ model });
-    }
 
-    function onEffortChange(event: Event) {
-        updateSettings({ effort: (event.currentTarget as HTMLSelectElement).value as ClaudeNoteSettings["effort"] });
-    }
 
-    function onPermissionModeChange(event: Event) {
-        const permissionMode = (event.currentTarget as HTMLSelectElement).value as ClaudeNoteSettings["permissionMode"];
-        updateSettings({ permissionMode, safeMode: permissionMode === "bypassPermissions" ? "yolo" : "default" });
-    }
 
     async function attachCurrentNote() {
         if (!activeDocId) {
@@ -1841,41 +1836,27 @@
             <textarea bind:this={composer} bind:value={input} on:keydown={onKeydown} placeholder={i18n.composerPlaceholder || "把问题交给 Claude Note..."}></textarea>
             <div class="cn-input-toolbar">
                 <div class="cn-toolbar-left">
-                    <div class="cn-toolbar-item cn-model-item">
-                        <span class="cn-toolbar-label">{i18n.model || "模型"}</span>
-                        <select class="cn-toolbar-select cn-model-pill" aria-label="Select Claude Model" bind:value={localSettings.model} on:change={onModelChange}>
-                            {#each modelOptions as model}
-                                <option value={model.value}>{model.label}</option>
-                            {/each}
-                        </select>
-                    </div>
-
                     <div class="cn-toolbar-item">
-                        <span class="cn-toolbar-label">{i18n.thinking || "思考"}</span>
-                        <select class="cn-toolbar-select cn-effort-pill" aria-label="Set Thinking Effort" bind:value={localSettings.effort} on:change={onEffortChange}>
-                            <option value="low">low</option>
-                            <option value="medium">medium</option>
-                            <option value="high">high</option>
-                            <option value="xhigh">xhigh</option>
-                            <option value="max">max</option>
-                        </select>
+                        <span class="cn-toolbar-label">轮次</span>
+                        <div class="cn-toolbar-select cn-status-pill">{turns.length}</div>
                     </div>
-
+                    {#if detectedModel}
                     <div class="cn-toolbar-item">
-                        <span class="cn-toolbar-label">{i18n.mode || "模式"}</span>
-                        <select class="cn-toolbar-select cn-mode-pill" aria-label="Set Permission Mode" bind:value={localSettings.permissionMode} on:change={onPermissionModeChange}>
-                            <option value="auto">auto</option>
-                            <option value="plan">plan</option>
-                            <option value="bypassPermissions">YOLO</option>
-                        </select>
+                        <span class="cn-toolbar-label">模型</span>
+                        <div class="cn-toolbar-select cn-status-pill cn-model-pill-readonly">{shortModelName(detectedModel)}</div>
                     </div>
-
+                    {/if}
+                    <div class="cn-toolbar-item">
+                        <span class="cn-toolbar-label">耗时</span>
+                        <div class="cn-toolbar-select cn-status-pill">{latestTurnDuration ? formatDuration(latestTurnDuration) : '-'}</div>
+                    </div>
                     <div class="cn-toolbar-item">
                         <span class="cn-toolbar-label">{i18n.context || "上下文"}</span>
                         <div class="cn-toolbar-select cn-ctx-pill b3-tooltips b3-tooltips__n" aria-label={`Input: ${totalUsage.input.toLocaleString()} tokens\nCache: ${(totalUsage.cacheRead + totalUsage.cacheCreation).toLocaleString()} tokens\nOutput: ${totalUsage.output.toLocaleString()} tokens\nWindow: ${ctxLimit.toLocaleString()} tokens`}>
                             {ctxPercent}%
                         </div>
                     </div>
+
                 </div>
                 {#if running}
                     <button class="cn-send-btn cn-stop-btn b3-tooltips b3-tooltips__n" aria-label={i18n.stop || "停止生成"} on:click={stop}>{i18n.stop || "停止"}</button>
