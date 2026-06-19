@@ -30,7 +30,7 @@ export async function generateIndex(
         for (const doc of docs.files) {
             let data = "";
             const id = doc.id;
-            let name = doc.name.slice(0, -3); // 去掉 .sy 后缀
+            let name = doc.name; // API 返回的 name 已不含 .sy 后缀，无需截断
             const icon = doc.icon;
             const subFileCount = doc.subFileCount;
             const path = doc.path;

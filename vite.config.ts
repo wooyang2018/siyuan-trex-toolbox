@@ -13,7 +13,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 const env = process.env;
 const isSrcmap = env.VITE_SOURCEMAP === 'inline';
 const isDev = env.NODE_ENV === 'development';
-const minify = env.NO_MINIFY ? false : true;
+const minify = !env.NO_MINIFY;
 
 const outputDir = isDev ? "dev" : "dist";
 
@@ -86,8 +86,8 @@ export default defineConfig({
 
     build: {
         outDir: outputDir,
-        emptyOutDir: false,
-        minify: minify ?? true,
+        emptyOutDir: true,
+        minify: minify,
         sourcemap: isSrcmap ? 'inline' : false,
 
         lib: {

@@ -23,8 +23,6 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "allowJs": true,
-        "checkJs": true,
         "types": [
             "node",
             "vite/client",
@@ -46,7 +44,6 @@
         "src/**/*.ts",
         "src/**/*.d.ts",
         "src/**/*.tsx",
-        "src/**/*.vue",
         "src/**/*.svelte"
     ],
     "references": [
