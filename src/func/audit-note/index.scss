@@ -1,0 +1,124 @@
+/* ==========================================================================
+   Audit Note 模块样式
+   ========================================================================== */
+
+.audit-note-dock {
+    height: 100%;
+}
+
+.an-shell {
+    --an-bg: #f9f8f6;
+    --an-panel: #ffffff;
+    --an-panel-soft: #f1f0ec;
+    --an-border: #e6e5e0;
+    --an-text: #191919;
+    --an-muted: #7d7a70;
+    --an-accent: #3573F0;
+    --an-font-mono: var(--b3-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    color: var(--an-text);
+    background: var(--an-bg);
+    font-family: var(--b3-font-family, inherit);
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    color-scheme: light;
+}
+
+html[data-theme-mode="dark"] .an-shell {
+    --an-bg: #141413;
+    --an-panel: #1f1f1e;
+    --an-panel-soft: #2d2d2a;
+    --an-border: #333330;
+    --an-text: #eceae4;
+    --an-muted: #9c9990;
+    --an-accent: #4C8BF5;
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme-mode="light"]) .an-shell {
+        --an-bg: #141413;
+        --an-panel: #1f1f1e;
+        --an-panel-soft: #2d2d2a;
+        --an-border: #333330;
+        --an-text: #eceae4;
+        --an-muted: #9c9990;
+        --an-accent: #4C8BF5;
+        color-scheme: dark;
+    }
+}
+
+/* Resolve dialog styling */
+.an-resolve-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    color: var(--an-text);
+    font-size: 13px;
+}
+
+.an-resolve-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--an-muted);
+}
+
+.an-resolve-textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px 10px;
+    border: 1px solid var(--an-border);
+    border-radius: 6px;
+    background: var(--an-panel);
+    color: var(--an-text);
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.an-resolve-textarea:focus {
+    border-color: var(--an-accent);
+}
+
+.an-resolve-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.an-resolve-cancel {
+    padding: 5px 14px;
+    border: 1px solid var(--an-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--an-muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.an-resolve-cancel:hover {
+    color: var(--an-text);
+    background: var(--an-panel-soft);
+}
+
+.an-resolve-submit {
+    padding: 5px 14px;
+    border: 0;
+    border-radius: 6px;
+    background: #34B369;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.an-resolve-submit:hover {
+    opacity: 0.9;
+}
