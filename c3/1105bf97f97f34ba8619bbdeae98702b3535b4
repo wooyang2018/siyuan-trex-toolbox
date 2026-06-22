@@ -1,0 +1,50 @@
+src/func/audit-note/siyuan-audit-api.ts
+  h_cf037dcb817b82 1-290
+src/func/audit-note/lib/id.ts
+  s_90e86ef16a28f8::t_b10b826cdf1357 1-40
+package.json
+  s_90e86ef16a28f8::t_ee9e67aaf197b2 45-46
+src/func/audit-note/lib/anchor.ts
+  h_cf037dcb817b82 1-142
+src/func/audit-note/icon.ts
+  s_90e86ef16a28f8::t_f3d6f872f2bf97 1-9
+src/func/audit-note/lib/serialize.ts
+  s_90e86ef16a28f8::t_e6bc8e60df0bcc 1-56
+src/func/audit-note/plugin-entry.ts
+  h_cf037dcb817b82 1-504
+src/func/audit-note/module.ts
+  h_cf037dcb817b82 1-56
+src/func/audit-note/lib/schema.ts
+  s_90e86ef16a28f8::t_441b05d66f5597 1-45
+src/func/audit-note/lib/index.ts
+  s_90e86ef16a28f8::t_508cf7cac65c06 1-4
+src/func/audit-note/index.scss
+  h_cf037dcb817b82 1-124
+src/func/audit-note/FeedbackDialog.svelte
+  h_cf037dcb817b82 1-254
+src/func/index.ts
+  s_90e86ef16a28f8::t_939eb5eec96589 23,26
+src/func/audit-note/AuditNotePanel.svelte
+  h_cf037dcb817b82 1-298
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "c31105bf97f97f34ba8619bbdeae98702b3535b4",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_90e86ef16a28f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc62d9eea3e5438cbbcd6b68dbb300e2",
+        "model": "glm-5.1-ioa"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
