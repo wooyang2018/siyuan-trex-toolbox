@@ -1,0 +1,31 @@
+src/func/audit-note/index.scss
+  s_90e86ef16a28f8::t_b12455f8cc0a3b 125-215
+src/func/claude-note/plugin-entry.ts
+  s_90e86ef16a28f8::t_e9563ae7b2eb7f 212
+src/func/audit-note/plugin-entry.ts
+  s_90e86ef16a28f8::t_ba90b92ed62a5b 120-190
+  s_90e86ef16a28f8::t_33dc82cb3c6d49 331
+  s_90e86ef16a28f8::t_37f6d3d5c7a922 486
+  s_90e86ef16a28f8::t_ff2293dd3e063b 23
+src/func/audit-note/siyuan-audit-api.ts
+  s_90e86ef16a28f8::t_83af66524daf3a 90-99
+src/func/audit-note/AuditNotePanel.svelte
+  s_90e86ef16a28f8::t_75fa6f5acf33d0 6
+  s_90e86ef16a28f8::t_a046195cb5099e 48-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.6",
+  "base_commit_sha": "c838437e5f48cac544f7221cf93e74ca24697439",
+  "prompts": {},
+  "sessions": {
+    "s_90e86ef16a28f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc62d9eea3e5438cbbcd6b68dbb300e2",
+        "model": "glm-5.1-ioa"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
