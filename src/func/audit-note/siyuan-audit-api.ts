@@ -68,13 +68,10 @@ async function updateBlock(id: string, markdown: string): Promise<void> {
 export interface AuditNoteConfig {
   /** 存放 audit 文档的笔记本 ID */
   notebookId: string;
-  /** 默认作者名 */
-  author: string;
 }
 
 const DEFAULT_CONFIG: AuditNoteConfig = {
   notebookId: "",
-  author: "trex-toolbox",
 };
 
 let config = { ...DEFAULT_CONFIG };
@@ -88,6 +85,17 @@ export function getAuditConfig(): AuditNoteConfig {
 }
 
 // ─── 公共接口 ──────────────────────────────────────────────
+
+/**
+ * 列出所有已打开的笔记本
+ */
+export async function listNotebooks(): Promise<{ id: string; name: string }[]> {
+  const data = await request<{ notebooks: { id: string; name: string; closed: boolean }[] }>(
+    "/api/notebook/lsNotebooks",
+    {},
+  );
+  return (data?.notebooks ?? []).filter(nb => !nb.closed).map(nb => ({ id: nb.id, name: nb.name }));
+}
 
 /**
  * 列出审计条目
@@ -138,7 +146,6 @@ export async function createAudit(params: {
   selEnd: number;
   comment: string;
   severity: Severity;
-  author?: string;
 }): Promise<{ id: string; entry: AuditEntry }> {
   const notebookId = config.notebookId;
   if (!notebookId) throw new Error("AuditNote: notebookId not configured");
@@ -162,7 +169,6 @@ export async function createAudit(params: {
     anchor_text: anchor.anchor_text,
     anchor_after: anchor.anchor_after,
     severity,
-    author: (params.author && params.author.trim()) || config.author,
     source: "trex-toolbox",
     created: new Date().toISOString(),
     status: "open",
@@ -267,7 +273,6 @@ async function writeAuditAttrs(docId: string, entry: AuditEntry): Promise<void> 
     "custom-anchor-text": entry.anchor_text,
     "custom-anchor-after": entry.anchor_after,
     "custom-severity": entry.severity,
-    "custom-author": entry.author,
     "custom-source": entry.source,
     "custom-created": entry.created,
     "custom-status": entry.status,

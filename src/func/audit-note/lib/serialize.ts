@@ -32,7 +32,6 @@ export function fromAttrsAndBody(attrs: Record<string, string>, body: string): A
     anchor_text: attrs["custom-anchor-text"] ?? "",
     anchor_after: attrs["custom-anchor-after"] ?? "",
     severity: attrs["custom-severity"] ?? "info",
-    author: attrs["custom-author"] ?? "",
     source: attrs["custom-source"] ?? "trex-toolbox",
     created: attrs["custom-created"] ?? new Date().toISOString(),
     status: attrs["custom-status"] ?? "open",

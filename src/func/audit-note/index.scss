@@ -122,3 +122,94 @@ html[data-theme-mode="dark"] .an-shell {
 .an-resolve-submit:hover {
     opacity: 0.9;
 }
+
+/* Settings dialog styling */
+.an-settings-dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    color: var(--an-text, #191919);
+    font-size: 13px;
+}
+
+.an-settings-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--an-muted, #7d7a70);
+}
+
+.an-settings-select-wrap {
+    position: relative;
+}
+
+.an-settings-select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--an-border, #e6e5e0);
+    border-radius: 6px;
+    background: var(--an-panel, #ffffff);
+    color: var(--an-text, #191919);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.an-settings-select:focus {
+    border-color: var(--an-accent, #3573F0);
+}
+
+.an-settings-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.an-settings-hint {
+    font-size: 11px;
+    color: var(--an-muted, #7d7a70);
+    line-height: 1.4;
+}
+
+.an-settings-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.an-settings-cancel {
+    padding: 5px 14px;
+    border: 1px solid var(--an-border, #e6e5e0);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--an-muted, #7d7a70);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.an-settings-cancel:hover {
+    color: var(--an-text, #191919);
+    background: var(--an-panel-soft, #f1f0ec);
+}
+
+.an-settings-save {
+    padding: 5px 14px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--an-accent, #3573F0);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.an-settings-save:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.an-settings-save:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

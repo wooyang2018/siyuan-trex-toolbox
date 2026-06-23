@@ -20,6 +20,7 @@ import {
   getDocHPath,
   setAuditConfig,
   getAuditConfig,
+  listNotebooks,
 } from "./siyuan-audit-api";
 import type { AuditEntry, Severity } from "./lib/index";
 import { AUDIT_NOTE_SVG_SYMBOL, ICON_ID } from "./icon";
@@ -32,12 +33,10 @@ const SETTINGS_FILE = "audit-note-settings.json";
 
 interface AuditNoteSettings {
   notebookId: string;
-  author: string;
 }
 
 const defaultSettings: AuditNoteSettings = {
   notebookId: "",
-  author: "trex-toolbox",
 };
 
 interface ModuleState {
@@ -108,7 +107,6 @@ async function loadSettings(plugin: FMiscPlugin): Promise<AuditNoteSettings> {
 function applySettings() {
   setAuditConfig({
     notebookId: state.settings.notebookId,
-    author: state.settings.author,
   });
 }
 
@@ -116,6 +114,78 @@ async function saveSettings(plugin: FMiscPlugin, next: AuditNoteSettings): Promi
   state.settings = next;
   applySettings();
   await plugin.saveData(SETTINGS_FILE, next);
+}
+
+// =============================================================================
+// 设置对话框
+// =============================================================================
+
+async function openSettingsDialog(): Promise<void> {
+  const plugin = state.plugin;
+  if (!plugin) return;
+
+  const dialog = new Dialog({
+    title: "Audit Note 设置",
+    content: `<div id="AuditNoteSettings" style="height: 100%;"></div>`,
+    width: "420px",
+    destroyCallback: () => {},
+  });
+
+  const container = dialog.element.querySelector("#AuditNoteSettings") as HTMLElement;
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="an-settings-dialog">
+      <div class="an-settings-label">审计笔记本</div>
+      <div class="an-settings-select-wrap">
+        <select class="an-settings-select" disabled>
+          <option value="">加载中...</option>
+        </select>
+      </div>
+      <div class="an-settings-hint">选择用于存放审计标注文档的笔记本</div>
+      <div class="an-settings-actions">
+        <button class="an-settings-cancel">取消</button>
+        <button class="an-settings-save" disabled>保存</button>
+      </div>
+    </div>
+  `;
+
+  const selectEl = container.querySelector(".an-settings-select") as HTMLSelectElement;
+  const saveBtn = container.querySelector(".an-settings-save") as HTMLButtonElement;
+  const cancelBtn = container.querySelector(".an-settings-cancel") as HTMLButtonElement;
+
+  // Load notebooks
+  try {
+    const notebooks = await listNotebooks();
+    selectEl.innerHTML = "";
+    if (notebooks.length === 0) {
+      selectEl.innerHTML = `<option value="">无可用的笔记本</option>`;
+    } else {
+      const currentId = state.settings.notebookId;
+      for (const nb of notebooks) {
+        const opt = document.createElement("option");
+        opt.value = nb.id;
+        opt.textContent = nb.name;
+        if (nb.id === currentId) opt.selected = true;
+        selectEl.appendChild(opt);
+      }
+      saveBtn.disabled = false;
+    }
+    selectEl.disabled = false;
+  } catch (err) {
+    console.error("[AuditNote] listNotebooks failed", err);
+    selectEl.innerHTML = `<option value="">加载笔记本失败</option>`;
+  }
+
+  cancelBtn.onclick = () => dialog.destroy();
+  saveBtn.onclick = async () => {
+    const notebookId = selectEl.value;
+    if (!notebookId) return;
+    dialog.destroy();
+    await saveSettings(plugin, { notebookId });
+    showMessage("设置已保存");
+    refreshAllPanels();
+  };
 }
 
 // =============================================================================
@@ -258,7 +328,7 @@ function openFeedbackForDoc(docId: string) {
   // Check configuration
   const cfg = getAuditConfig();
   if (!cfg.notebookId) {
-    showMessage("请先在设置中配置 Audit Notebook ID");
+    openSettingsDialog();
     return;
   }
 
@@ -413,6 +483,7 @@ function mountPanel(target: HTMLElement): PanelApp {
       entries: [],
       loading: true,
       onResolve: handleResolveAudit,
+      onOpenSettings: openSettingsDialog,
     },
   });
 

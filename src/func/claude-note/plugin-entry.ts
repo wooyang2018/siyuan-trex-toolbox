@@ -198,7 +198,7 @@ function addMenuItem(menu: any, label: string, callback: () => void) {
 
 function onClickBlockIcon(eventOrDetail: any) {
     const detail = getDetail(eventOrDetail);
-    addMenuItem(detail.menu, "发送给 Claude Note", () => {
+    addMenuItem(detail.menu, "Send Claude Note", () => {
         const blocks = Array.from((detail.blockElements || []) as HTMLElement[]);
         const ids = blocks
             .map((block) => extractBlockIdFromElement(block))
@@ -209,7 +209,7 @@ function onClickBlockIcon(eventOrDetail: any) {
 
 function onOpenMenuContent(eventOrDetail: any) {
     const detail = getDetail(eventOrDetail);
-    addMenuItem(detail.menu, "发送给 Claude Note", () => {
+    addMenuItem(detail.menu, "Send Claude Note", () => {
         const id =
             extractBlockIdFromElement(detail.element) ||
             extractBlockIdFromElement(detail.protyle?.element) ||

@@ -33,7 +33,6 @@ export const AuditEntrySchema = z.object({
   anchor_text: AnchorSchema.shape.anchor_text,
   anchor_after: AnchorSchema.shape.anchor_after,
   severity: Severity,
-  author: z.string().min(1),
   source: AuditSource,
   created: z.string(),
   status: AuditStatus,

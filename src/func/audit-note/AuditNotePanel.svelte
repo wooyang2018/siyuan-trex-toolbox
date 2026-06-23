@@ -3,6 +3,7 @@
 
   export let entries: AuditEntry[] = [];
   export let onResolve: (entry: AuditEntry) => void;
+  export let onOpenSettings: () => void;
   export let loading = false;
 
   $: openEntries = entries.filter(e => e.status === "open");
@@ -44,7 +45,15 @@
       </svg>
       <span class="an-title">Audit Note</span>
     </div>
-    <span class="an-count">{openEntries.length} open</span>
+    <div class="an-header-right">
+      <span class="an-count">{openEntries.length} open</span>
+      <button class="an-settings-btn" on:click={onOpenSettings} title="设置">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <!-- Loading -->
@@ -73,7 +82,6 @@
               <span class="an-severity-badge" style="color: {severityConfig[entry.severity].color}; background: {severityConfig[entry.severity].bg}">
                 {severityConfig[entry.severity].label}
               </span>
-              <span class="an-card-author">{entry.author}</span>
               <span class="an-card-time">{formatTime(entry.created)}</span>
             </div>
             <div class="an-card-comment">{extractComment(entry.body)}</div>
@@ -137,6 +145,32 @@
     border-radius: 10px;
     background: var(--an-panel-soft);
     border: 1px solid var(--an-border);
+  }
+
+  .an-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .an-settings-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--an-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--an-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .an-settings-btn:hover {
+    color: var(--an-text);
+    border-color: var(--an-accent);
+    background: var(--an-panel-soft);
   }
 
   .an-loading {
@@ -237,12 +271,6 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-  }
-
-  .an-card-author {
-    font-size: 11px;
-    color: var(--an-text);
-    font-weight: 500;
   }
 
   .an-card-time {
