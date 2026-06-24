@@ -23,6 +23,7 @@ import {
   listNotebooks,
 } from "./siyuan-audit-api";
 import type { AuditEntry, Severity } from "./lib/index";
+import { stripKramdownIAL, findSelectionOffsets } from "./lib/index";
 import { AUDIT_NOTE_SVG_SYMBOL, ICON_ID } from "./icon";
 
 const DOCK_TYPE = "-audit-note-dock";
@@ -293,9 +294,11 @@ function onClickBlockIcon(eventOrDetail: any) {
   const detail = getDetail(eventOrDetail);
   addMenuItem(detail.menu, "添加标注", () => {
     const blocks = Array.from((detail.blockElements || []) as HTMLElement[]);
-    const id = extractBlockIdFromElement(blocks[0]);
+    const blockEl = blocks[0];
+    const id = extractBlockIdFromElement(blockEl);
     if (id) {
-      openFeedbackForDoc(id);
+      const blockText = blockEl ? extractBlockText(blockEl) : "";
+      openFeedbackForDoc(id, blockText);
     }
   });
 }
@@ -321,7 +324,7 @@ function onOpenMenuContent(eventOrDetail: any) {
 // 反馈对话框
 // =============================================================================
 
-function openFeedbackForDoc(docId: string) {
+function openFeedbackForDoc(docId: string, fallbackBlockText: string = "") {
   const plugin = state.plugin;
   if (!plugin) return;
 
@@ -332,13 +335,18 @@ function openFeedbackForDoc(docId: string) {
     return;
   }
 
-  // Get selected text from current selection
+  // Get selected text from current selection; fall back to whole block text
   const selection = window.getSelection();
-  const selectedText = selection?.toString().trim() || "";
+  let selectedText = selection?.toString().trim() || "";
+  let isWholeBlock = false;
+  if (!selectedText && fallbackBlockText) {
+    selectedText = fallbackBlockText;
+    isWholeBlock = true;
+  }
 
   let feedbackPanel: InstanceType<typeof FeedbackDialog> | undefined;
   const dialog = new Dialog({
-    title: "新建标注",
+    title: "",
     content: `<div id="AuditNoteFeedback" style="height: 100%;"></div>`,
     width: "480px",
     destroyCallback: () => {
@@ -350,6 +358,7 @@ function openFeedbackForDoc(docId: string) {
     target: dialog.element.querySelector("#AuditNoteFeedback") as HTMLElement,
     props: {
       selectedText,
+      isWholeBlock,
       onCancel: () => dialog.destroy(),
       onSubmit: async (data: { severity: Severity; comment: string }) => {
         dialog.destroy();
@@ -376,11 +385,18 @@ async function handleCreateAudit(
     }
 
     // Compute character offsets from selected text
-    const { selStart, selEnd } = findSelectionOffsets(markdown, selectedText);
+    let { selStart, selEnd } = findSelectionOffsets(markdown, selectedText);
+    // 无有效选区（未选中文本或在 markdown 中找不到匹配）时，锚定整个块内容
+    let rawMarkdown = markdown;
+    if (selStart >= selEnd) {
+      rawMarkdown = stripKramdownIAL(markdown);
+      selStart = 0;
+      selEnd = rawMarkdown.length;
+    }
 
     await createAudit({
       targetDocId: docId,
-      rawMarkdown: markdown,
+      rawMarkdown,
       selStart,
       selEnd,
       comment: data.comment,
@@ -394,28 +410,6 @@ async function handleCreateAudit(
     console.error("[AuditNote] create audit failed", err);
     showMessage(`创建标注失败: ${err}`);
   }
-}
-
-/**
- * Find the character offsets of selectedText in markdown.
- * Falls back to [0, 0] if not found.
- */
-function findSelectionOffsets(markdown: string, selectedText: string): { selStart: number; selEnd: number } {
-  if (!selectedText) return { selStart: 0, selEnd: 0 };
-  const idx = markdown.indexOf(selectedText);
-  if (idx >= 0) {
-    return { selStart: idx, selEnd: idx + selectedText.length };
-  }
-  // Try finding a substring match
-  const lines = selectedText.split("\n").filter(l => l.trim());
-  if (lines.length > 0) {
-    const firstLine = lines[0]!.trim();
-    const idx2 = markdown.indexOf(firstLine);
-    if (idx2 >= 0) {
-      return { selStart: idx2, selEnd: idx2 + firstLine.length };
-    }
-  }
-  return { selStart: 0, selEnd: 0 };
 }
 
 // =============================================================================
@@ -484,6 +478,7 @@ function mountPanel(target: HTMLElement): PanelApp {
       loading: true,
       onResolve: handleResolveAudit,
       onOpenSettings: openSettingsDialog,
+      onRefresh: refreshAllPanels,
     },
   });
 
@@ -523,6 +518,19 @@ function extractBlockIdFromElement(element: Element | null | undefined): string 
   if (!(target instanceof HTMLElement)) return "";
   const id = target.getAttribute("data-node-id") || target.dataset.nodeId || "";
   return /^\d{14}-[a-z0-9]{7}$/.test(id) ? id : "";
+}
+
+/**
+ * Extract the visible text content of a block element, stripping SiYuan's
+ * internal attribute elements (IAL, contenteditable=false wrappers, etc.).
+ * Used as the fallback anchor text when no selection is made.
+ */
+function extractBlockText(el: HTMLElement): string {
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone
+    .querySelectorAll('.protyle-attr, [contenteditable="false"]')
+    .forEach(node => node.remove());
+  return (clone.textContent || "").trim();
 }
 
 function findCurrentDocumentId(): string {

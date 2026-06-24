@@ -2,11 +2,13 @@
    Audit Note 模块样式
    ========================================================================== */
 
-.audit-note-dock {
-    height: 100%;
-}
-
-.an-shell {
+/* === CSS 变量定义 ===
+   应用到所有 audit-note 相关容器（Dock 面板 + 三个 Dialog）。
+   原先定义在 .an-shell 上，但该类从未被任何组件使用，导致变量全部失效。 */
+.audit-note-dock,
+#AuditNoteFeedback,
+#AuditNoteSettings,
+#AuditNoteResolve {
     --an-bg: #f9f8f6;
     --an-panel: #ffffff;
     --an-panel-soft: #f1f0ec;
@@ -15,31 +17,18 @@
     --an-muted: #7d7a70;
     --an-accent: #3573F0;
     --an-font-mono: var(--b3-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
     color: var(--an-text);
-    background: var(--an-bg);
     font-family: var(--b3-font-family, inherit);
     user-select: text !important;
     -webkit-user-select: text !important;
     color-scheme: light;
 }
 
-html[data-theme-mode="dark"] .an-shell {
-    --an-bg: #141413;
-    --an-panel: #1f1f1e;
-    --an-panel-soft: #2d2d2a;
-    --an-border: #333330;
-    --an-text: #eceae4;
-    --an-muted: #9c9990;
-    --an-accent: #4C8BF5;
-    color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-    html:not([data-theme-mode="light"]) .an-shell {
+html[data-theme-mode="dark"] {
+    .audit-note-dock,
+    #AuditNoteFeedback,
+    #AuditNoteSettings,
+    #AuditNoteResolve {
         --an-bg: #141413;
         --an-panel: #1f1f1e;
         --an-panel-soft: #2d2d2a;
@@ -51,7 +40,34 @@ html[data-theme-mode="dark"] .an-shell {
     }
 }
 
-/* Resolve dialog styling */
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme-mode="light"]) {
+        .audit-note-dock,
+        #AuditNoteFeedback,
+        #AuditNoteSettings,
+        #AuditNoteResolve {
+            --an-bg: #141413;
+            --an-panel: #1f1f1e;
+            --an-panel-soft: #2d2d2a;
+            --an-border: #333330;
+            --an-text: #eceae4;
+            --an-muted: #9c9990;
+            --an-accent: #4C8BF5;
+            color-scheme: dark;
+        }
+    }
+}
+
+/* === Dock 容器布局 === */
+.audit-note-dock {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--an-bg);
+}
+
+/* === Resolve dialog === */
 .an-resolve-dialog {
     display: flex;
     flex-direction: column;
@@ -123,20 +139,20 @@ html[data-theme-mode="dark"] .an-shell {
     opacity: 0.9;
 }
 
-/* Settings dialog styling */
+/* === Settings dialog === */
 .an-settings-dialog {
     display: flex;
     flex-direction: column;
     gap: 12px;
     padding: 16px;
-    color: var(--an-text, #191919);
+    color: var(--an-text);
     font-size: 13px;
 }
 
 .an-settings-label {
     font-size: 12px;
     font-weight: 500;
-    color: var(--an-muted, #7d7a70);
+    color: var(--an-muted);
 }
 
 .an-settings-select-wrap {
@@ -146,10 +162,10 @@ html[data-theme-mode="dark"] .an-shell {
 .an-settings-select {
     width: 100%;
     padding: 6px 10px;
-    border: 1px solid var(--an-border, #e6e5e0);
+    border: 1px solid var(--an-border);
     border-radius: 6px;
-    background: var(--an-panel, #ffffff);
-    color: var(--an-text, #191919);
+    background: var(--an-panel);
+    color: var(--an-text);
     font-size: 13px;
     font-family: inherit;
     outline: none;
@@ -158,7 +174,7 @@ html[data-theme-mode="dark"] .an-shell {
 }
 
 .an-settings-select:focus {
-    border-color: var(--an-accent, #3573F0);
+    border-color: var(--an-accent);
 }
 
 .an-settings-select:disabled {
@@ -168,7 +184,7 @@ html[data-theme-mode="dark"] .an-shell {
 
 .an-settings-hint {
     font-size: 11px;
-    color: var(--an-muted, #7d7a70);
+    color: var(--an-muted);
     line-height: 1.4;
 }
 
@@ -181,24 +197,24 @@ html[data-theme-mode="dark"] .an-shell {
 
 .an-settings-cancel {
     padding: 5px 14px;
-    border: 1px solid var(--an-border, #e6e5e0);
+    border: 1px solid var(--an-border);
     border-radius: 6px;
     background: transparent;
-    color: var(--an-muted, #7d7a70);
+    color: var(--an-muted);
     font-size: 12px;
     cursor: pointer;
 }
 
 .an-settings-cancel:hover {
-    color: var(--an-text, #191919);
-    background: var(--an-panel-soft, #f1f0ec);
+    color: var(--an-text);
+    background: var(--an-panel-soft);
 }
 
 .an-settings-save {
     padding: 5px 14px;
     border: 0;
     border-radius: 6px;
-    background: var(--an-accent, #3573F0);
+    background: var(--an-accent);
     color: #fff;
     font-size: 12px;
     font-weight: 500;
@@ -212,4 +228,19 @@ html[data-theme-mode="dark"] .an-shell {
 .an-settings-save:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* === 锚定文本持久荧光笔高亮（全局，非 scoped） === */
+
+/* 块级高亮：整块锚定 / 文本级降级 */
+.an-anchor-highlight {
+    background-color: rgba(255, 235, 59, 0.15);
+    border-left: 3px solid var(--an-accent, #3573F0);
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+/* 文本级高亮：CSS Custom Highlight API（选中文本锚定） */
+::highlight(an-anchor) {
+    background-color: rgba(255, 235, 59, 0.35);
 }

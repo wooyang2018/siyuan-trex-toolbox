@@ -1,10 +1,17 @@
 <script lang="ts">
+  import { fetchSyncPost } from "siyuan";
+  import { onMount, onDestroy } from "svelte";
   import type { AuditEntry, Severity } from "./lib/index";
+  import { stripInlineMd, extractSearchKey, findRangeInFlat } from "./lib/index";
 
   export let entries: AuditEntry[] = [];
   export let onResolve: (entry: AuditEntry) => void;
   export let onOpenSettings: () => void;
+  export let onRefresh: () => void;
   export let loading = false;
+
+  // --- 持久荧光笔高亮状态管理 ---
+  let currentHighlightBlock: HTMLElement | null = null;
 
   $: openEntries = entries.filter(e => e.status === "open");
   $: resolvedEntries = entries.filter(e => e.status === "resolved");
@@ -30,9 +37,170 @@
   }
 
   function extractComment(body: string): string {
-    const m = body.replace(/^#\s*Comment\s*/i, "").split(/^#\s*Resolution/im)[0]?.trim() ?? "";
+    let m = body.replace(/^#\s*Comment\s*/i, "").split(/^#\s*Resolution/im)[0]?.trim() ?? "";
+    // 去除 kramdown IAL 行 {: id="..." updated="..."}
+    m = m.replace(/^\s*\{:[^}]*\}\s*$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
     return m.length > 120 ? m.slice(0, 120) + "..." : m;
   }
+
+  async function jumpToTarget(entry: AuditEntry) {
+    if (!entry.target) return;
+    try {
+      const sanitized = entry.target.replace(/'/g, "''");
+      const res = await fetchSyncPost("/api/query/sql", {
+        stmt: `SELECT id FROM blocks WHERE type='d' AND hpath='${sanitized}' LIMIT 1`,
+      });
+      const docId = res?.data?.[0]?.id;
+      if (!docId) return;
+      // 打开目标文档
+      window.open(`siyuan://blocks/${docId}`);
+      // 轮询等待文档加载，然后定位并高亮锚定文本
+      waitForDocAndHighlight(entry);
+    } catch (e) {
+      console.warn("[AuditNote] jumpToTarget failed", e);
+    }
+  }
+
+  /** 在可见的 protyle 中搜索包含 searchKey 的块 */
+  function findAnchorBlock(searchKey: string): HTMLElement | null {
+    if (!searchKey) return null;
+    const protyles = document.querySelectorAll(".protyle");
+    for (const protyle of Array.from(protyles)) {
+      if (!(protyle instanceof HTMLElement) || !isProtyleVisible(protyle)) continue;
+      const wysiwyg = protyle.querySelector(".protyle-wysiwyg");
+      if (!wysiwyg) continue;
+      const blocks = wysiwyg.querySelectorAll("[data-node-id]");
+      for (const block of Array.from(blocks)) {
+        if ((block.textContent || "").includes(searchKey)) {
+          return block as HTMLElement;
+        }
+      }
+    }
+    return null;
+  }
+
+  function isProtyleVisible(el: HTMLElement): boolean {
+    let curr: HTMLElement | null = el;
+    while (curr && curr !== document.body) {
+      if (curr.classList.contains("fn__none") || curr.style.display === "none") return false;
+      curr = curr.parentElement;
+    }
+    return true;
+  }
+
+  /**
+   * 在可见 protyle 中按 [data-node-id] 块为单位，将块内文本节点拼成扁平字符串
+   * 进行匹配，返回精确覆盖 searchKey 的 Range。支持跨文本节点（剥离 md 后的纯文本
+   * 可能横跨 <strong> 等内联标签的多个文本节点，如 `三种检索对比` 与 `：向量`）。
+   */
+  function findAnchorRange(searchKey: string): Range | null {
+    if (!searchKey) return null;
+    const protyles = document.querySelectorAll(".protyle");
+    for (const protyle of Array.from(protyles)) {
+      if (!(protyle instanceof HTMLElement) || !isProtyleVisible(protyle)) continue;
+      const wysiwyg = protyle.querySelector(".protyle-wysiwyg");
+      if (!wysiwyg) continue;
+      const blocks = wysiwyg.querySelectorAll("[data-node-id]");
+      for (const block of Array.from(blocks)) {
+        const range = findRangeInBlock(block as HTMLElement, searchKey);
+        if (range) return range;
+      }
+    }
+    return null;
+  }
+
+  /** 在单个块内收集有效文本节点，扁平化匹配 searchKey，返回跨节点 Range */
+  function findRangeInBlock(block: HTMLElement, searchKey: string): Range | null {
+    const textNodes: Text[] = [];
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
+      acceptNode(node: Text): number {
+        const parent = node.parentElement;
+        if (!parent || parent.closest('.protyle-attr, [contenteditable="false"]')) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    let n: Node | null;
+    while ((n = walker.nextNode())) textNodes.push(n as Text);
+    if (!textNodes.length) return null;
+
+    const texts = textNodes.map(t => t.textContent || "");
+    const fr = findRangeInFlat(texts, searchKey);
+    if (!fr) return null;
+
+    const range = document.createRange();
+    range.setStart(textNodes[fr.startIdx]!, fr.startOffset);
+    range.setEnd(textNodes[fr.endIdx]!, fr.endOffset);
+    return range;
+  }
+
+  /** 清除所有持久高亮（CSS Custom Highlight + 块级 class） */
+  function clearAnchorHighlight(): void {
+    const highlights = (CSS as any).highlights;
+    if (highlights) highlights.delete("an-anchor");
+    if (currentHighlightBlock) {
+      currentHighlightBlock.classList.remove("an-anchor-highlight");
+      currentHighlightBlock = null;
+    }
+  }
+
+  /** 轮询等待文档加载，找到锚定文本后滚动并持久高亮 */
+  function waitForDocAndHighlight(entry: AuditEntry) {
+    clearAnchorHighlight();
+    const searchKey = extractSearchKey(entry.anchor_text);
+    const isWholeBlock = !entry.anchor_before && !entry.anchor_after;
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts++;
+      if (attempts > 20) {
+        clearInterval(timer);
+        return;
+      }
+
+      if (!isWholeBlock) {
+        // 选中文本锚定：优先文本级 Range 高亮
+        const range = findAnchorRange(searchKey);
+        if (range) {
+          clearInterval(timer);
+          const scrollTarget = range.startContainer.parentElement;
+          if (scrollTarget) scrollTarget.scrollIntoView({ behavior: "smooth", block: "center" });
+          const HighlightCtor = (window as any).Highlight;
+          const highlights = (CSS as any).highlights;
+          if (HighlightCtor && highlights) {
+            highlights.set("an-anchor", new HighlightCtor(range));
+            return;
+          }
+          // 降级：CSS Custom Highlight API 不可用 → 回退块级高亮
+        }
+      }
+
+      // 整块锚定 或 文本级降级：块级高亮
+      const block = findAnchorBlock(searchKey);
+      if (block) {
+        clearInterval(timer);
+        block.scrollIntoView({ behavior: "smooth", block: "center" });
+        block.classList.add("an-anchor-highlight");
+        currentHighlightBlock = block;
+      }
+    }, 300);
+  }
+
+  // 清理监听器：点击空白处 / 开始编辑时清除高亮
+  onMount(() => {
+    const onDocClick = () => clearAnchorHighlight();
+    const onDocInput = () => clearAnchorHighlight();
+    document.addEventListener("click", onDocClick, { capture: true });
+    document.addEventListener("input", onDocInput, { capture: true });
+    return () => {
+      document.removeEventListener("click", onDocClick, { capture: true } as any);
+      document.removeEventListener("input", onDocInput, { capture: true } as any);
+    };
+  });
+
+  onDestroy(() => {
+    clearAnchorHighlight();
+  });
 </script>
 
 <div class="an-panel">
@@ -47,6 +215,13 @@
     </div>
     <div class="an-header-right">
       <span class="an-count">{openEntries.length} open</span>
+      <button class="an-refresh-btn" on:click={onRefresh} title="刷新" class:spinning={loading}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </button>
       <button class="an-settings-btn" on:click={onOpenSettings} title="设置">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
@@ -84,9 +259,24 @@
               </span>
               <span class="an-card-time">{formatTime(entry.created)}</span>
             </div>
+            {#if entry.target}
+              <div class="an-card-target" title={entry.target}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="an-card-target-text">{entry.target}</span>
+              </div>
+            {/if}
             <div class="an-card-comment">{extractComment(entry.body)}</div>
             {#if entry.anchor_text}
-              <div class="an-card-anchor">"{entry.anchor_text.length > 80 ? entry.anchor_text.slice(0, 80) + '...' : entry.anchor_text}"</div>
+              <div class="an-card-anchor" role="button" tabindex="0"
+                on:click={() => jumpToTarget(entry)}
+                on:keydown={(e) => { if (e.key === 'Enter') jumpToTarget(entry); }}
+                title="点击跳转到目标文档">
+                <span class="an-card-anchor-label">锚定文本 · 点击跳转</span>
+                <div class="an-card-anchor-text">{entry.anchor_text.length > 100 ? entry.anchor_text.slice(0, 100) + '...' : entry.anchor_text}</div>
+              </div>
             {/if}
             <div class="an-card-actions">
               <button class="an-resolve-btn" on:click={() => onResolve(entry)}>
@@ -151,6 +341,30 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  .an-refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--an-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--an-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .an-refresh-btn:hover {
+    color: var(--an-text);
+    border-color: var(--an-accent);
+    background: var(--an-panel-soft);
+  }
+
+  .an-refresh-btn.spinning svg {
+    animation: anSpin 0.8s linear infinite;
   }
 
   .an-settings-btn {
@@ -287,15 +501,62 @@
     word-break: break-word;
   }
 
-  .an-card-anchor {
+  .an-card-target {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 11px;
     color: var(--an-muted);
-    font-style: italic;
-    line-height: 1.45;
-    padding: 4px 8px;
+    overflow: hidden;
+  }
+
+  .an-card-target svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .an-card-target-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--an-font-mono);
+  }
+
+  .an-card-anchor {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 8px;
     border-radius: 4px;
     background: var(--an-bg);
-    border-left: 2px solid var(--an-border);
+    border-left: 2px solid var(--an-accent);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .an-card-anchor:hover {
+    background: var(--an-panel-soft);
+  }
+
+  .an-card-anchor:focus {
+    outline: 2px solid var(--an-accent);
+    outline-offset: -2px;
+  }
+
+  .an-card-anchor-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--an-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .an-card-anchor-text {
+    font-size: 11px;
+    color: var(--an-text);
+    line-height: 1.45;
+    word-break: break-word;
+    opacity: 0.85;
   }
 
   .an-card-actions {

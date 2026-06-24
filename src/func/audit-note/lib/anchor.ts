@@ -1,31 +1,7 @@
 import type { Anchor } from "./schema";
-import { CONTEXT_CHARS } from "./schema";
+import { computeAnchor, offsetsToLines } from "./anchor-core";
 
-/**
- * Compute an anchor from a file's full text and a selection range
- * (character offsets, 0-indexed, selEnd exclusive).
- */
-export function computeAnchor(
-  fileText: string,
-  selStart: number,
-  selEnd: number,
-  context = CONTEXT_CHARS,
-): Anchor {
-  if (selStart < 0 || selEnd > fileText.length || selStart >= selEnd) {
-    throw new Error(
-      `computeAnchor: invalid range [${selStart}, ${selEnd}) for text of length ${fileText.length}`,
-    );
-  }
-  const { lineStart, lineEnd } = offsetsToLines(fileText, selStart, selEnd);
-  const beforeStart = Math.max(0, selStart - context);
-  const afterEnd = Math.min(fileText.length, selEnd + context);
-  return {
-    target_lines: [lineStart, lineEnd],
-    anchor_before: fileText.slice(beforeStart, selStart),
-    anchor_text: fileText.slice(selStart, selEnd),
-    anchor_after: fileText.slice(selEnd, afterEnd),
-  };
-}
+export { computeAnchor, offsetsToLines };
 
 export interface ResolvedAnchor {
   charStart: number;
@@ -108,35 +84,4 @@ function findAll(haystack: string, needle: string): number[] {
     from = idx + 1;
   }
   return out;
-}
-
-/**
- * 1-indexed line numbers for a half-open character range [start, end).
- */
-export function offsetsToLines(
-  text: string,
-  start: number,
-  end: number,
-): { lineStart: number; lineEnd: number } {
-  let line = 1;
-  let lineStart = 1;
-  let lineEnd = 1;
-  let seenStart = false;
-  let seenEnd = false;
-  for (let i = 0; i < text.length; i++) {
-    if (!seenStart && i >= start) {
-      lineStart = line;
-      seenStart = true;
-    }
-    if (!seenEnd && i >= end) {
-      lineEnd = line;
-      seenEnd = true;
-      break;
-    }
-    if (text[i] === "\n") line++;
-  }
-  if (!seenStart) lineStart = line;
-  if (!seenEnd) lineEnd = line;
-  if (lineEnd < lineStart) lineEnd = lineStart;
-  return { lineStart, lineEnd };
 }

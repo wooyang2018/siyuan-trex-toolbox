@@ -2,6 +2,7 @@
   import type { Severity } from "./lib/index";
 
   export let selectedText = "";
+  export let isWholeBlock = false;
   export let onSubmit: (data: { severity: Severity; comment: string }) => void;
   export let onCancel: () => void;
 
@@ -33,10 +34,10 @@
     <span>新建标注</span>
   </div>
 
-  <!-- Selected text preview -->
+  <!-- Anchored text preview -->
   {#if selectedText}
     <div class="an-fb-preview">
-      <div class="an-fb-preview-label">选中文本</div>
+      <div class="an-fb-preview-label">{isWholeBlock ? "锚定块内容" : "选中文本"}</div>
       <div class="an-fb-preview-text">"{selectedText.length > 200 ? selectedText.slice(0, 200) + '...' : selectedText}"</div>
     </div>
   {/if}

@@ -124,8 +124,8 @@ export async function listAudits(
 
     try {
       const entry = await readAuditEntry(doc.id, rel);
-      // Filter by target document if specified
-      if (targetHpath && normalizeRelPath(entry.target) !== normalizeRelPath(targetHpath)) continue;
+      // Filter by target document if specified (skip if current doc is an audit doc itself)
+      if (targetHpath && !targetHpath.startsWith("/audit") && normalizeRelPath(entry.target) !== normalizeRelPath(targetHpath)) continue;
       entries.push(entry);
     } catch {
       // SiYuan's SQL index can briefly return deleted documents; skip them.
@@ -175,10 +175,14 @@ export async function createAudit(params: {
     body: `# Comment\n\n${comment.trim()}\n\n# Resolution\n\n<!-- filled in when the audit is processed -->\n`,
   };
 
-  await createDocWithMd(notebookId, `/${relPath}`, toBody(entry));
-  const docId = await lookupDocId(notebookId, relPath);
+  // createDocWithMd 直接返回新文档 ID；优先使用它，避免 SQL 索引时序问题
+  const docId = await createDocWithMd(notebookId, `/${relPath}`, toBody(entry));
   if (docId) {
     await writeAuditAttrs(docId, entry);
+  } else {
+    // 兜底：极少数情况下 API 未返回 ID，回退到 SQL 查询
+    const fallbackId = await lookupDocId(notebookId, relPath);
+    if (fallbackId) await writeAuditAttrs(fallbackId, entry);
   }
 
   return { id, entry };
@@ -290,6 +294,8 @@ async function lookupDocId(notebookId: string, rel: string): Promise<string | nu
 
 async function findAuditDocById(notebookId: string, auditId: string): Promise<{ id: string; hpath: string }[]> {
   const sanitized = notebookId.replace(/'/g, "''");
-  const stmt = `SELECT id, hpath FROM blocks WHERE box='${sanitized}' AND type='d' AND hpath LIKE '/audit/%' AND name LIKE '${auditId.replace(/'/g, "''")}%' LIMIT 10`;
+  const auditIdSanitized = auditId.replace(/'/g, "''");
+  // 文档块的 name 字段未被设置，用 hpath 匹配（hpath 形如 /audit/<auditId>[-slug]）
+  const stmt = `SELECT id, hpath FROM blocks WHERE box='${sanitized}' AND type='d' AND hpath LIKE '/audit/${auditIdSanitized}%' LIMIT 10`;
   return sqlQuery<{ id: string; hpath: string }>(stmt);
 }

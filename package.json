@@ -16,7 +16,8 @@
     "build:analyze": "cross-env ANALYZE_BUNDLE=true NODE_ENV=production vite build",
     "update-version": "node scripts/update_version.js",
     "make-install": "pnpm run build && node scripts/make_install.js",
-    "make-install:srcmap": "pnpm run build:srcmap && node scripts/make_install.js"
+    "make-install:srcmap": "pnpm run build:srcmap && node scripts/make_install.js",
+    "test": "node scripts/tests/run-all.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.1.0",
