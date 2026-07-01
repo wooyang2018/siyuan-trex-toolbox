@@ -1,0 +1,66 @@
+@import '../core/index.scss';
+@import '../review/index.scss';
+
+.srs-viewer-container { display: flex; flex-direction: column; height: 100%; color: var(--srs-text); overflow: hidden; padding: 18px; gap: 14px; }
+.srs-viewer-toolbar { display: flex; align-items: center; gap: 12px; padding: 16px; flex-wrap: wrap; flex-shrink: 0; }
+.srs-viewer-toolbar__title { min-width: 220px; margin-right: auto; }
+.srs-viewer-selector-group { display: flex; align-items: center; gap: 6px; }
+.srs-viewer-label { font-size: 12px; font-weight: 650; color: var(--srs-text-secondary); white-space: nowrap; }
+.srs-viewer-nb-select { min-width: 120px; }
+.srs-viewer-doc-select { min-width: 240px; max-width: 360px; }
+.srs-viewer-deck-select { min-width: 140px; }
+.srs-viewer-progress { display: flex; align-items: center; gap: 12px; padding: 0 4px; color: var(--srs-text-secondary); font-size: 12px; }
+.srs-viewer-workspace { flex: 1; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; min-height: 0; }
+.srs-card-map-rail { padding: 14px; overflow-y: auto; }
+.srs-card-map-rail__title { margin-bottom: 10px; font-size: 13px; font-weight: 700; color: var(--srs-text-secondary); }
+.srs-card-map-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 9px 10px; border-radius: 12px; border: 1px solid var(--srs-border); background: var(--srs-surface); color: var(--srs-text); cursor: pointer; transition: all var(--srs-motion-fast); }
+.srs-card-map-item span { display: inline-flex; justify-content: center; align-items: center; width: 24px; height: 24px; border-radius: 999px; background: var(--srs-surface-soft); font-weight: 700; }
+.srs-card-map-item small { color: var(--srs-text-tertiary); }
+.srs-card-map-item--active { border-color: var(--srs-primary); background: color-mix(in srgb, var(--srs-primary) 10%, var(--srs-surface)); }
+.srs-card-map-item--done span { background: var(--srs-success); color: white; }
+.srs-viewer-card-area { min-height: 0; overflow-y: auto; display: flex; align-items: center; justify-content: center; padding: 10px; }
+.srs-viewer-loading,
+.srs-viewer-empty { color: var(--srs-text-secondary); font-size: 15px; }
+.srs-viewer-card { max-width: 760px; width: 100%; padding: 26px 32px; animation: srs-card-in 220ms ease; }
+.srs-viewer-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.srs-viewer-card-type-badge { font-size: 12px; padding: 4px 10px; border-radius: 999px; font-weight: 700; color: white; }
+.srs-type-cloze { background: var(--srs-cloze); }
+.srs-type-qa { background: var(--srs-qa); }
+.srs-type-single-choice { background: var(--srs-warning); }
+.srs-type-multi-choice { background: var(--srs-error); }
+.srs-type-unknown { background: var(--srs-list); }
+.srs-viewer-card-progress { font-size: 13px; color: var(--srs-text-secondary); font-variant-numeric: tabular-nums; }
+.srs-viewer-card-body { font-size: 17px; line-height: 1.75; }
+.srs-viewer-question { margin-bottom: 18px; font-weight: 600; }
+.srs-viewer-answer { margin-top: 16px; padding: 18px; border-radius: 16px; background: color-mix(in srgb, var(--srs-accent) 10%, var(--srs-surface)); border: 1px solid color-mix(in srgb, var(--srs-accent) 24%, transparent); }
+.srs-answer-label { font-weight: 700; color: var(--srs-primary); }
+.srs-answer-content { white-space: pre-wrap; margin-top: 8px; }
+.srs-cloze-hole { display: inline-block; min-width: 62px; padding: 2px 10px; margin: 0 2px; background: color-mix(in srgb, var(--srs-warning) 22%, transparent); color: transparent; border-radius: 8px; text-align: center; }
+.srs-cloze-revealed { color: var(--srs-warning); font-weight: 700; background: color-mix(in srgb, var(--srs-warning) 14%, transparent); }
+.srs-viewer-options { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+.srs-viewer-option { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid var(--srs-border); border-radius: 14px; cursor: pointer; transition: all var(--srs-motion-fast); user-select: none; background: var(--srs-surface); }
+.srs-viewer-option:hover { border-color: var(--srs-primary); transform: translateY(-1px); box-shadow: var(--srs-shadow-sm); }
+.srs-option-selected { border-color: var(--srs-primary); background: color-mix(in srgb, var(--srs-primary) 9%, var(--srs-surface)); }
+.srs-option-correct { border-color: var(--srs-success) !important; background: color-mix(in srgb, var(--srs-success) 10%, var(--srs-surface)) !important; }
+.srs-option-wrong { border-color: var(--srs-error) !important; background: color-mix(in srgb, var(--srs-error) 10%, var(--srs-surface)) !important; }
+.srs-option-missed { border-color: var(--srs-warning) !important; background: color-mix(in srgb, var(--srs-warning) 10%, var(--srs-surface)) !important; }
+.srs-option-label { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; font-weight: 800; color: var(--srs-primary); background: var(--srs-surface-soft); }
+.srs-option-text { flex: 1; }
+.srs-option-icon { font-size: 18px; font-weight: 800; }
+.srs-reveal-btn,
+.srs-submit-btn { margin-top: 16px; border: 0 !important; color: white !important; background: linear-gradient(135deg, var(--srs-primary), var(--srs-primary-2)) !important; }
+.srs-viewer-result { margin-top: 12px; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 14px; }
+.srs-result-correct { background: color-mix(in srgb, var(--srs-success) 14%, transparent); color: var(--srs-success); }
+.srs-result-wrong { background: color-mix(in srgb, var(--srs-error) 14%, transparent); color: var(--srs-error); }
+.srs-viewer-explanation { margin-top: 12px; padding: 14px 16px; background: var(--srs-surface-soft); border-radius: 12px; font-size: 14px; line-height: 1.6; }
+.srs-explanation-label { font-weight: 700; color: var(--srs-text-secondary); }
+.srs-viewer-card-footer { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--srs-border); }
+.srs-viewer-card-footer button:disabled { opacity: 0.45; cursor: not-allowed; }
+.srs-key-hint { font-size: 11px; opacity: 0.6; margin-left: 4px; }
+.srs-viewer-summary { width: min(680px, 100%); padding: 34px; }
+
+@media (max-width: 920px) {
+    .srs-viewer-workspace { grid-template-columns: 1fr; }
+    .srs-card-map-rail { display: flex; overflow-x: auto; gap: 8px; }
+    .srs-card-map-item { min-width: 112px; }
+}

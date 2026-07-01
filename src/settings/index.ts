@@ -106,7 +106,12 @@ export const initSetting = async (plugin: FMiscPlugin) => {
         }
         updateConfigs();
 
-        saveConfigDebounced();
+        // Enable 组的变更（模块开关）需要立即保存，避免刷新丢失
+        if (group === 'Enable') {
+            plugin.saveConfigs();
+        } else {
+            saveConfigDebounced();
+        }
         settingChangedDebounced(plugin, group, key, value);
     }
 

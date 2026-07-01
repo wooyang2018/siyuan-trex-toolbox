@@ -681,3 +681,142 @@ export async function unfold(blockID: BlockId, sessionId: string = "", appId: st
     let url = '/api/transactions'
     return request(url, payload);
 }
+
+
+// **************************************** Riffcard (Flashcard) ****************************************
+
+function normalizeDeckId(result: any): string {
+    if (typeof result === 'string') return result;
+    return result?.id ?? result?.deckID ?? result?.deckId ?? '';
+}
+
+function normalizeRiffBlocks(result: any): any[] {
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.cards)) return result.cards;
+    if (Array.isArray(result?.blocks)) return result.blocks;
+    return [];
+}
+
+function getRiffPageCount(result: any): number {
+    const pageCount = Number(result?.pageCount ?? result?.pages ?? 1);
+    return Number.isFinite(pageCount) && pageCount > 0 ? pageCount : 1;
+}
+
+/**
+ * Create a riffcard deck (flashcard deck).
+ */
+export async function createRiffDeck(name: string): Promise<string> {
+    const url = '/api/riff/createRiffDeck';
+    const result = await request(url, { name });
+    return normalizeDeckId(result);
+}
+
+/**
+ * Add blocks as riffcards to a native deck.
+ */
+export async function addRiffCards(deckID: string, blockIDs: string[]): Promise<any> {
+    const url = '/api/riff/addRiffCards';
+    return request(url, { deckID, blockIDs });
+}
+
+/**
+ * Get riffcards from a deck. Returns block IDs or native card objects depending on SiYuan version.
+ */
+export async function getRiffCards(deckID: string, reviewType: string = 'all'): Promise<any[]> {
+    const url = '/api/riff/getRiffCards';
+    try {
+        const pageSize = 999;
+        const first = await request(url, { id: deckID, page: 1, pageSize });
+        const blocks = normalizeRiffBlocks(first);
+        const pageCount = getRiffPageCount(first);
+        for (let page = 2; page <= pageCount; page++) {
+            const result = await request(url, { id: deckID, page, pageSize });
+            blocks.push(...normalizeRiffBlocks(result));
+        }
+        return blocks;
+    } catch (e) {
+        console.error('[API] getRiffCards paged form failed, fallback to legacy form:', e);
+        const result = await request(url, { deckID, reviewType });
+        return normalizeRiffBlocks(result);
+    }
+}
+
+/**
+ * Get native riffcard details by block IDs.
+ */
+export async function getRiffCardsByBlockIDs(blockIDs: string[]): Promise<any[]> {
+    if (blockIDs.length === 0) return [];
+    const url = '/api/riff/getRiffCardsByBlockIDs';
+    const result = await request(url, { blockIDs });
+    return normalizeRiffBlocks(result);
+}
+
+/**
+ * Review a riffcard.
+ * @param deckID - Deck ID
+ * @param cardID - Block ID of the card
+ * @param rating - Rating (1=again, 2=hard, 3=good, 4=easy/mastered)
+ */
+export async function reviewRiffCard(deckID: string, cardID: string, rating: number): Promise<any> {
+    const url = '/api/riff/reviewRiffCard';
+    return request(url, { deckID, cardID, rating });
+}
+
+/**
+ * Skip a riffcard during native review.
+ */
+export async function skipReviewRiffCard(deckID: string, cardID: string): Promise<any> {
+    const url = '/api/riff/skipReviewRiffCard';
+    return request(url, { deckID, cardID });
+}
+
+/**
+ * Remove riffcards from a deck.
+ * @param deckID - Deck ID
+ * @param blockIDs - Array of block IDs to remove
+ */
+export async function removeRiffCards(deckID: string, blockIDs: string[]): Promise<any> {
+    const url = '/api/riff/removeRiffCards';
+    return request(url, { deckID, blockIDs });
+}
+
+/**
+ * Reset riffcards' native schedule state.
+ */
+export async function resetRiffCards(deckID: string, blockIDs: string[] = []): Promise<any> {
+    const url = '/api/riff/resetRiffCards';
+    return request(url, { type: 'deck', id: deckID, deckID, blockIDs });
+}
+
+/**
+ * Batch set native riffcards due time. due must be YYYYMMDDHHmmss.
+ */
+export async function batchSetRiffCardsDueTime(cardDues: Array<{ id: string; due: string }>): Promise<any> {
+    const url = '/api/riff/batchSetRiffCardsDueTime';
+    return request(url, { cardDues });
+}
+
+/**
+ * Get all riffcard decks.
+ */
+export async function getRiffDecks(): Promise<any[]> {
+    const url = '/api/riff/getRiffDecks';
+    const result = await request(url, {});
+    return Array.isArray(result) ? result : (result?.decks ?? []);
+}
+
+/**
+ * Rename a riffcard deck.
+ */
+export async function renameRiffDeck(deckID: string, name: string): Promise<any> {
+    const url = '/api/riff/renameRiffDeck';
+    return request(url, { deckID, name });
+}
+
+/**
+ * Remove a riffcard deck.
+ */
+export async function removeRiffDeck(deckID: string): Promise<any> {
+    const url = '/api/riff/removeRiffDeck';
+    return request(url, { deckID });
+}

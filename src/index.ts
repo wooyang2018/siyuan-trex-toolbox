@@ -179,10 +179,11 @@ export default class FMiscPlugin extends Plugin {
     private initTopBar() {
         const showMenu = () => {
             let menu = new Menu("trex-toolbox-topbar");
-            let menuItems: IMenu[] = [];
 
+            // 构建"打开思源目录"菜单项
+            let openDirItem: IMenuItem | null = null;
             if (electron) {
-                menuItems.push({
+                openDirItem = {
                     label: '打开思源目录',
                     icon: 'iconFolder',
                     type: 'submenu',
@@ -212,16 +213,30 @@ export default class FMiscPlugin extends Plugin {
                             }
                         }
                     ]
-                });
+                };
             }
 
-            for (let key in this.customMenuItems) {
-                let menuItems = this.customMenuItems[key];
-                for (let item of menuItems) {
-                    menu.addItem(item);
+            // 将 customMenuItems 展平为一个数组，不同 key 之间插入分隔符
+            let allItems: IMenuItem[] = [];
+            let keys = Object.keys(this.customMenuItems);
+            for (let i = 0; i < keys.length; i++) {
+                if (i > 0) {
+                    allItems.push({ type: 'separator' } as IMenuItem);
+                }
+                allItems.push(...this.customMenuItems[keys[i]]);
+            }
+
+            // 将"打开思源目录"插入到"插入文档目录"的紧邻后面
+            if (openDirItem) {
+                let insertIdx = allItems.findIndex(item => item.label === '插入文档目录');
+                if (insertIdx >= 0) {
+                    allItems.splice(insertIdx + 1, 0, openDirItem);
+                } else {
+                    allItems.unshift(openDirItem);
                 }
             }
-            for (let item of menuItems) {
+
+            for (let item of allItems) {
                 menu.addItem(item);
             }
 
