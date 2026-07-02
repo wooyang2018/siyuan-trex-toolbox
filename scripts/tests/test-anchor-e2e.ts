@@ -19,7 +19,7 @@ import { stripInlineMd, extractSearchKey, stripKramdownIAL, findSelectionOffsets
 import { findRangeInFlat } from '../../src/func/audit-note/lib/range-match.ts';
 import { computeAnchor } from '../../src/func/audit-note/lib/anchor-core.ts';
 
-const SIYUAN = 'http://127.0.0.1:6806';
+const SIYUAN = process.env.SIYUAN_API || 'http://127.0.0.1:6806';
 
 // SiYuan API 调用（测试工具，非被测函数，故自实现而非 import 源码）
 async function siyuanPost(endpoint, payload = {}) {
