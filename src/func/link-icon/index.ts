@@ -11,11 +11,7 @@ export let name = "LinkIcon";
 export let enabled = false;
 let pluginInstance: LinkIconPlugin | null = null;
 
-export const declareToggleEnabled = {
-    title: '🔗 链接图标',
-    description: '在文档链接前显示图标',
-    defaultEnabled: false
-};
+export const category: SettingCategory = 'ui';
 
 /**
  * 加载链接图标插件

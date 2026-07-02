@@ -27,11 +27,12 @@ const I18n = {
 export let name: string = "DocContext";
 export let enabled: boolean = false;
 
-export const declareToggleEnabled = {
-    title: '📑 文档上下文',
+export const category: SettingCategory = 'document';
+export const declareSetting = {
+    title: '文档上下文',
     description: '快速跳转父文档和子文档',
-    defaultEnabled: true
-} as const;
+    toggle: { defaultEnabled: true }
+};
 
 
 /**

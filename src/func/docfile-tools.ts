@@ -10,11 +10,12 @@ import { floatingContainer } from "@/libs/components/floating-container";
 export let name: string = "InboxFunctions";
 export let enabled: boolean = false;
 
-export const declareToggleEnabled = {
-    title: '📑 文档工具',
+export const category: SettingCategory = 'document';
+export const declareSetting = {
+    title: '文档工具',
     description: '一些文档管理相关的工具',
-    defaultEnabled: false
-} as const;
+    toggle: { defaultEnabled: false }
+};
 
 interface DocInfo {
     id: string;

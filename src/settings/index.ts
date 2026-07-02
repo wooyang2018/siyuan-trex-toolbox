@@ -1,186 +1,124 @@
 /*
  * Copyright (c) 2024 by frostime. All Rights Reserved.
  * @Author       : frostime
- * @Date         : 2024-04-04 17:43:26
  * @FilePath     : /src/settings/index.ts
- * @LastEditTime : 2025-01-06 22:04:27
- * @Description  : 
+ * @Description  : 设置初始化与持久化逻辑
  */
 import type FMiscPlugin from '@/index';
-import type { ISettingItem } from "@/types";
 import { toggleEnable, ModulesAlwaysEnable, ModulesToEnable } from '@/func';
 
 import Settings from "@/settings/settings";
 import { solidDialog } from '@/libs/dialog';
 import { debounce } from '@frostime/siyuan-plugin-kits';
 
-// Enable Setting Item 的 key 必须遵守 `Enable${module.name}` 的格式
+/** 所有有声明的设置模块（按声明顺序，后续在 UI 中按 category 分组） */
+const allModules = [...ModulesToEnable, ...ModulesAlwaysEnable].filter(
+    module => module.declareSetting
+);
 
-const Enable: ISettingItem[] = ModulesToEnable.map(module => {
-    if (module.declareToggleEnabled === undefined) {
-        return {
-            type: 'checkbox',
-            title: module.name,
-            description: `无声明，默认直接启用 ${module.name}`,
-            key: `Enable${module.name}`,
-            value: true
-        }
-    }
-    return {
-        type: 'checkbox',
-        title: module.declareToggleEnabled.title,
-        description: module.declareToggleEnabled.description,
-        key: `Enable${module.name}`,
-        value: module.declareToggleEnabled.defaultEnabled ?? false
-    };
-});
-
-let CustomPanels: {
-    key: string;
-    title: string;
-    element: any;
-}[] = [];
-[...ModulesAlwaysEnable, ...ModulesToEnable].forEach(module => {
-    //@ts-ignore
-    if (module?.declareSettingPanel) {
-        //@ts-ignore
-        CustomPanels.push(...module.declareSettingPanel);
-    }
-});
-
-let CustomModuleConfigs: IFuncModule['declareModuleConfig'][] = [];
-[...ModulesAlwaysEnable, ...ModulesToEnable].forEach(module => {
-    if (module?.declareModuleConfig) {
-        CustomModuleConfigs.push(module.declareModuleConfig);
-    }
-});
-
-const onSettingChanged = (plugin: FMiscPlugin, group: string, key: string, value: string) => {
-    //动态启用或禁用功能
-    if (group === 'Enable') {
-        //@ts-ignore
-        toggleEnable(plugin, key, value);
-    } else if (group == 'Docky') {
-        if (key === 'DockyProtyle') return;
-        let enable = plugin.getConfig('Docky', 'DockyEnableZoom');
-        let factor = plugin.getConfig('Docky', 'DockyZoomFactor');
-        if (enable === false) {
-            document.documentElement.style.setProperty('--plugin-docky-zoom', 'unset');
-        } else {
-            document.documentElement.style.setProperty('--plugin-docky-zoom', `${factor}`);
-        }
-    }
-}
-
+/** 需要持久化配置的模块（有 configs 且经过统一存储） */
+const modulesWithConfigs = allModules.filter(
+    module => module.declareSetting?.configs && module.declareSetting.configs.length > 0
+);
 
 export const initSetting = async (plugin: FMiscPlugin) => {
-    //1. 初始化 plugin settings 配置
-    let configs = {}
-    configs['Enable'] = Object.fromEntries(Enable.map(item => [item.key, item.value]));
-    //@ts-ignore
+    // ====== 1. 初始化 Enable 配置 ======
+    let configs: any = {
+        Enable: {}
+    };
+    ModulesToEnable.forEach(module => {
+        if (module.declareSetting?.toggle) {
+            configs.Enable[`Enable${module.name}`] = module.declareSetting.toggle.defaultEnabled ?? false;
+        }
+    });
     plugin.data['configs'] = configs;
-
-    //3. 导入文件并合并配置
     await plugin.loadConfigs();
 
-    const updateConfigs = () => {
-        const UpdateConfig = (setting: ISettingItem[], key: string) => {
-            setting.forEach(item => {
-                item.value = plugin.getConfig(key, item.key);
-            });
-        }
-        UpdateConfig(Enable, 'Enable');
-    }
-
-    updateConfigs();
-
-    const saveConfigDebounced = debounce(() => plugin.saveConfigs(), 1000 * 10);
-    const settingChangedDebounced = debounce(onSettingChanged, 1000 * 2);
-
-    const onChanged = (e: { group: string, key: string, value: any }) => {
-        let { group, key, value } = e;
-        console.debug(`Group: ${group}, Key: ${key}, Value: ${value}`);
-        const pluginConfigs = plugin.data['configs'];
-        if (pluginConfigs[group] && pluginConfigs[group][key] !== undefined) {
-            pluginConfigs[group][key] = value;
-        }
-        updateConfigs();
-
-        // Enable 组的变更（模块开关）需要立即保存，避免刷新丢失
-        if (group === 'Enable') {
-            plugin.saveConfigs();
-        } else {
-            saveConfigDebounced();
-        }
-        settingChangedDebounced(plugin, group, key, value);
-    }
-
-    // ====== Module Configs ======
-    // 由于历史原因，之前把各个模块的配置存储管理全部耦合在 plugin 里面了
-    // customModuleConfigs 是新的做法, plugin 只管 load/save，各个模块的配置自行负责
+    // ====== 2. 加载自定义模块配置 ======
     const storageName = 'custom-module.config.json';
-    // 导入并初始化配置
     let storage = await plugin.loadData(storageName);
     storage = storage || {};
-    if (storage) {
-        CustomModuleConfigs.forEach(config => {
-            if (!storage[config.key]) return;
-            config.load(storage[config.key]);
-        });
-    }
 
+    modulesWithConfigs.forEach(module => {
+        const configKey = module.name;
+        if (storage[configKey] && module.declareSetting?.configLoad) {
+            module.declareSetting.configLoad(storage[configKey]);
+        }
+    });
+
+    // ====== 3. 配置持久化 ======
     const saveModuleConfig = async () => {
         try {
-            let configs = Object.fromEntries(CustomModuleConfigs.map(config => {
-                if (config.dump) {
-                    return [config.key, config.dump()];
-                } else {
-                    return [
-                        config.key,
-                        Object.fromEntries(config.items.map(item => [item.key, item.get()]))
-                    ]
-                }
-            }));
-            await plugin.saveData(storageName, configs);
-            console.debug('Module configs saved:', configs);
+            let configsToSave = Object.fromEntries(
+                modulesWithConfigs.map(module => {
+                    const s = module.declareSetting;
+                    if (s?.configDump) {
+                        return [module.name, s.configDump()];
+                    } else if (s?.configs) {
+                        return [
+                            module.name,
+                            Object.fromEntries(s.configs.map(item => [item.key, item.get()]))
+                        ];
+                    }
+                    return [module.name, {}];
+                })
+            );
+            await plugin.saveData(storageName, configsToSave);
+            console.debug('Module configs saved:', configsToSave);
         } catch (e) {
             console.error('Failed to save module configs:', e);
         }
-    }
+    };
     let saveModuleConfigDebounced = debounce(saveModuleConfig, 1000 * 5);
-    // inject set function, to get the change event
-    const onModuleConfigChanged = (moduleKey: string, key: string, value: any) => {
-        if (!storage[moduleKey]) storage[moduleKey] = {};
-        storage[moduleKey][key] = value;
-        saveModuleConfigDebounced();
-    }
-    /**
-     * Inject set function, to get the change event
-     */
-    CustomModuleConfigs.forEach(config => {
-        config.items.forEach(item => {
+
+    // 注入 set 函数，拦截配置变更以触发保存
+    modulesWithConfigs.forEach(module => {
+        const s = module.declareSetting;
+        if (!s?.configs) return;
+        s.configs.forEach(item => {
             let initialSetCb = item.set.bind(item);
             item.set = (value: any) => {
                 initialSetCb(value);
-                onModuleConfigChanged(config.key, item.key, value);
-            }
+                if (!storage[module.name]) storage[module.name] = {};
+                storage[module.name][item.key] = value;
+                saveModuleConfigDebounced();
+            };
         });
     });
 
-    // ====== Open Setting ======
+    // ====== 4. 开关切换处理 ======
+    const onToggle = (moduleName: string, enabled: boolean) => {
+        const enableKey = `Enable${moduleName}`;
+        const pluginConfigs = plugin.data['configs'];
+        if (pluginConfigs?.Enable && pluginConfigs.Enable[enableKey] !== undefined) {
+            pluginConfigs.Enable[enableKey] = enabled;
+        }
+        // Enable 组变更立即保存，避免刷新丢失
+        plugin.saveConfigs();
+        // 动态启用/禁用模块
+        toggleEnable(plugin, enableKey as any, enabled);
+    };
+
+    // ====== 5. 构建 enabledMap ======
+    const getEnabledMap = (): Record<string, boolean> => {
+        const map: Record<string, boolean> = {};
+        ModulesToEnable.forEach(module => {
+            map[module.name] = plugin.getConfig('Enable', `Enable${module.name}`) ?? false;
+        });
+        return map;
+    };
+
+    // ====== 6. 打开设置 ======
     plugin.openSetting = () => {
         solidDialog({
             title: "霸王龙工具箱设置",
             width: "1200px",
-            height: "672px",
+            height: "760px",
             loader: () => Settings({
-                GroupEnabled: Enable,
-                changed: onChanged,
-                customPanels: CustomPanels,
-                customModuleConfigs: CustomModuleConfigs
+                modules: allModules,
+                enabledMap: getEnabledMap(),
+                onToggle,
             })
         });
-        // const container = dialog.element.querySelector('.b3-dialog__container') as HTMLElement;
-    }
+    };
 }
-

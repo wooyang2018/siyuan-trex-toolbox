@@ -1,12 +1,3 @@
-/* 浮动工具栏 */
-.layout-tab-container>.protyle:has(.protyle-content .protyle-title__input[contenteditable="true"])>.protyle-toolbar {
-    align-items: center;
-    height: 20px !important;
-    left: auto !important;
-    top: auto !important;
-    margin-top: 32px !important;
-}
-
 /* 片趣打卡 */
 #dockRight span[data-type="pinchPinch-habit"][data-title="Pinch-habit"] {
     & svg {
@@ -90,3 +81,12 @@ body:not(.body--mobile, .body--window)>#toolbar {
 .layout__center.fn__flex.fn__flex-1 > div > div > div.fn__flex > ul.fn__flex.layout-tab-bar > li.item.item--focus[aria-label="轻语"] {
     overflow: clip !important;
 }
+
+/* 浮动工具栏 */
+/* .layout-tab-container>.protyle:has(.protyle-content .protyle-title__input[contenteditable="true"])>.protyle-toolbar {
+    align-items: center;
+    height: 20px !important;
+    left: auto !important;
+    top: auto !important;
+    margin-top: 32px !important;
+} */

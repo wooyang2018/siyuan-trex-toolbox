@@ -6,10 +6,11 @@ import type { doOperation } from "@/types";
 export let name = "AdjustTitleLevel";
 export let enabled = false;
 
-export const declareToggleEnabled = {
-    title: '🔤 调整标题层级',
+export const category: SettingCategory = 'editing';
+export const declareSetting = {
+    title: '调整标题层级',
     description: '在块菜单/文档菜单中批量转换标题层级',
-    defaultEnabled: false
+    toggle: { defaultEnabled: false }
 };
 
 let plugin: FMiscPlugin = null;

@@ -1,154 +1,70 @@
-import { type Component, For, type JSX, Show, createSignal, onCleanup } from "solid-js";
-import type { ISettingItem } from "@/types";
-import SettingPanel from "@/libs/components/setting-panel";
-
-import Form, { FormWrap as SettingItemWrap } from '@/libs/components/Form';
-
-// import TogglSetting from "@/func/toggl/setting";
-import { Dynamic } from "solid-js/web";
-
-
-/********** Events **********/
-interface IChangeEvent {
-    group: string;
-    key: string;
-    value: any;
-}
+/*
+ * 设置页面主组件 — 单页分组滚动布局
+ * 所有模块按功能类别分组，纵向排列展示
+ */
+import { type Component, For, Show, createMemo } from "solid-js";
+import ModuleCard from "./module-card";
+import css from "./settings.module.scss";
 
 interface IArgs {
-    GroupEnabled: ISettingItem[];
-    changed: (e: IChangeEvent) => void;
-    customPanels?: {
-        key: string;
-        title: string;
-        element: () => JSX.Element;
-    }[];
-    customModuleConfigs?: IFuncModule['declareModuleConfig'][];
+    modules: IFuncModule[];
+    enabledMap: Record<string, boolean>;
+    onToggle: (moduleName: string, enabled: boolean) => void;
 }
 
+const CATEGORY_LABELS: Record<SettingCategory, string> = {
+    editing: '编辑增强',
+    ai: 'AI 工具',
+    document: '文档与导航',
+    ui: '界面与窗口',
+    advanced: '高级设置',
+};
+
+const CATEGORY_ORDER: SettingCategory[] = ['editing', 'ai', 'document', 'ui', 'advanced'];
 
 const App: Component<IArgs> = (props) => {
-    let groups: { key: string, text: string }[] = [
-        { key: 'Enable', text: '✅ 启用功能' },
-        { key: 'Misc', text: '🔧 其他设置' },
-    ];
-
-    props.customPanels?.forEach(panel => {
-        groups.push({
-            key: panel.key,
-            text: panel.title,
-        });
-    });
-
-    let [focus, setFocus] = createSignal(groups[0].key);
-
-    const changed = props.changed;
-
-    onCleanup(() => {
-        console.log("Setting Pannel Clearup");
-    });
-
-    const Enable = () => (
-        <SettingPanel
-            group={groups[0].key}
-            settingItems={props.GroupEnabled}
-            onChanged={changed}
-        />
-    );
-
-    const Misc = () => (
-        <SettingPanel
-            group={groups[1].key}
-            settingItems={[]}
-            onChanged={changed}
-        >
-            <CustomModuleConfigs />
-        </SettingPanel>
-    );
-
-    const CustomModuleConfigs = () => (
-        <>
-            <For each={props.customModuleConfigs || []}>
-                {(config) => (
-                    <div style={{
-                        margin: '5px 24px',
-                        padding: '5px 0',
-                        "border-radius": 0,
-                        'border': '1px solid var(--b3-theme-primary)',
-                    }}>
-                        <h3 style={{
-                            padding: '5px 0',
-                            "text-align": 'center',
-                            color: 'var(--b3-theme-primary)',
-                            "border-radius": 0,
-                            'border-bottom': '1px dashed var(--b3-theme-primary)',
-                        }}>
-                            {config.title || config.key}
-                        </h3>
-                        <For each={config.items ?? []}>
-                            {(item) => (
-                                <Form.Wrap
-                                    title={item.title}
-                                    description={item.description}
-                                    direction={item?.direction}
-                                >
-                                    <Form.Input
-                                        type={item.type}
-                                        key={item.key}
-                                        value={item.get()}
-                                        placeholder={item?.placeholder}
-                                        options={item?.options}
-                                        slider={item?.slider}
-                                        button={item?.button}
-                                        number={item?.number}
-                                        changed={(v) => item.set(v)}
-                                        style={item?.direction === 'row' ? { width: '100%' } : null}
-                                    />
-                                </Form.Wrap>
-                            )}
-                        </For>
-                        <Show when={config.customPanel}>
-                            {config.customPanel()}
-                        </Show>
-                    </div>
-                )}
-            </For>
-        </>
-    )
-
-    let showGroups = {
-        Enable,
-        Misc,
-    }
-
-    props.customPanels?.forEach(panel => {
-        showGroups[panel.key] = panel.element;
+    const groupedModules = createMemo(() => {
+        const groups: Record<SettingCategory, IFuncModule[]> = {
+            editing: [],
+            ai: [],
+            document: [],
+            ui: [],
+            advanced: [],
+        };
+        for (const module of props.modules) {
+            if (module.declareSetting && groups[module.category]) {
+                groups[module.category].push(module);
+            }
+        }
+        return groups;
     });
 
     return (
-        <>
-            <div class="fn__flex-1 fn__flex config__panel" style={{ "height": "100%" }}>
-                <ul class="b3-tab-bar b3-list b3-list--background trex-settings-tab-bar" style={{ width: '180px', 'min-width': '180px' }}>
-                    <For each={groups}>
-                        {(group: { key: string, text: string }) => (
-                            <li
-                                data-name="editor"
-                                class={`b3-list-item${group.key === focus() ? " b3-list-item--focus" : ""}`}
-                                style="padding-left: 1rem; padding-right: 0.75rem"
-                                onClick={() => setFocus(group.key)}
-                                onKeyDown={() => { }}
-                            >
-                                <span class="b3-list-item__text" style={{ overflow: 'visible', 'text-overflow': 'clip', 'white-space': 'nowrap' }}>{group.text}</span>
-                            </li>
-                        )}
-                    </For>
-                </ul>
-                <div class="config__tab-wrap">
-                    <Dynamic component={showGroups[focus()]} />
-                </div>
-            </div>
-        </>
+        <div class={`${css.settingsPage} config__tab-container`}>
+            <For each={CATEGORY_ORDER}>
+                {(category) => (
+                    <Show when={groupedModules()[category].length > 0}>
+                        <div class={css.group}>
+                            <div class={css.groupTitle}>
+                                {CATEGORY_LABELS[category]}
+                            </div>
+                            <div class={css.moduleList}>
+                                <For each={groupedModules()[category]}>
+                                    {(module) => (
+                                        <ModuleCard
+                                            module={module}
+                                            enabled={props.enabledMap[module.name] ?? false}
+                                            onToggle={(enabled) => props.onToggle(module.name, enabled)}
+                                        />
+                                    )}
+                                </For>
+                            </div>
+                        </div>
+                    </Show>
+                )}
+            </For>
+        </div>
     );
-}
+};
 
 export default App;

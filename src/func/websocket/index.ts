@@ -13,10 +13,14 @@ import { Handlers } from "./handlers";
 export let name = "WebSocket";
 export let enabled = false;
 
-export const declareToggleEnabled = {
-    title: '💬 WebSocket',
+export const category: SettingCategory = 'advanced';
+export const declareSetting = {
+    title: 'WebSocket',
     description: '监听思源 WebSocket 消息并执行自定义操作',
-    defaultEnabled: false
+    toggle: { defaultEnabled: false },
+    configs: [],
+    configLoad: () => { },
+    customPanel: () => Configs()
 };
 
 /**
@@ -71,9 +75,3 @@ export const getAlive = () => {
     return wsManager?.isOpen() ?? false;
 }
 
-export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
-    key: 'WebSocket',
-    load: () => { },
-    items: [],
-    customPanel: () => Configs()
-}

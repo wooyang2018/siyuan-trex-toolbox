@@ -15,11 +15,12 @@ import "./index.scss";
 export const name = "AuditNote";
 export let enabled = false;
 
-export const declareToggleEnabled = {
+export const category: SettingCategory = 'editing';
+export const declareSetting = {
     title: "Audit Note",
     description:
         "文档审计标注工具。在思源编辑器中选中文本添加反馈标注，支持审计列表查看和标记已解决。",
-    defaultEnabled: false,
+    toggle: { defaultEnabled: false },
 };
 
 /**

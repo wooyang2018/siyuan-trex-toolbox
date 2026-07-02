@@ -28,10 +28,11 @@ export function openSourceBlock(blockId: string): void {
     openTab({ app, doc: { id: blockId, zoomIn: true } });
 }
 
-export const declareToggleEnabled = {
-    title: "SRS 学习复习插件",
+export const category: SettingCategory = 'document';
+export const declareSetting = {
+    title: "SRS 学习复习",
     description: "统一提供提取练习、卡包管理、闪卡地图三个核心功能，底层复用思源原生闪卡与 FSRS 调度。",
-    defaultEnabled: false,
+    toggle: { defaultEnabled: false },
 };
 
 function openReviewDialog(queueType: QueueType = "retrieval"): void {

@@ -2,7 +2,7 @@
  * Claude Note 模块（trex-toolbox IFuncModule 接口实现）
  *
  * 这是 Claude Note 在 trex-toolbox 中的入口，负责：
- *   1. 暴露符合 IFuncModule 协议的导出（name/enabled/load/unload/declareToggleEnabled/allowToUse）
+ *   1. 暴露符合 IFuncModule 协议的导出（name/enabled/load/unload/declareSetting/allowToUse）
  *   2. 引入模块样式（index.scss）
  *   3. 在桌面端 Electron 环境下委托 plugin-entry.ts 完成实际加载
  */
@@ -15,11 +15,12 @@ import "./index.scss";
 export const name = "ClaudeNote";
 export let enabled = false;
 
-export const declareToggleEnabled = {
-    title: "🤖 Claude Note",
+export const category: SettingCategory = 'ai';
+export const declareSetting = {
+    title: "Claude Note",
     description:
         "在思源内调起本地 Claude Code CLI，作为常驻 AI 协作面板。仅桌面端可用，需先安装 claude 命令行工具。",
-    defaultEnabled: false,
+    toggle: { defaultEnabled: false },
 };
 
 /**

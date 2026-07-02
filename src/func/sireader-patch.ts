@@ -169,6 +169,7 @@ installHook();
 
 export const name = 'SiReaderPatch';
 export let enabled = true; // 标记为已启用（hook 已在文件加载时安装）
+export const category: SettingCategory = 'advanced';
 
 export const load = (_plugin: FMiscPlugin) => {
     // hook 已在文件加载时自动安装，这里确保状态正确

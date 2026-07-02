@@ -7,10 +7,11 @@ import { formatUtil } from "./utils";
 export let name = "Typography";
 export let enabled = false;
 
-export const declareToggleEnabled = {
-    title: '📝 中文排版',
+export const category: SettingCategory = 'editing';
+export const declareSetting = {
+    title: '中文排版',
     description: '格式化文档中的中英文间距、标点符号等排版问题',
-    defaultEnabled: false
+    toggle: { defaultEnabled: false }
 };
 
 let plugin: FMiscPlugin = null;

@@ -33,10 +33,12 @@ const DEFAULT_PROMPTS: PromptPreset[] = [
 export const name = 'AIBridge';
 export let enabled = false;
 
-export const declareToggleEnabled = {
-    title: '🤖 AI 助手侧边栏',
+export const category: SettingCategory = 'ai';
+export const declareSetting = {
+    title: 'AI 助手侧边栏',
     description: '在侧边栏嵌入 AI Agent 网页，支持多地址切换、拖拽块 ID 到 AI 输入框、提示词预设',
-    defaultEnabled: false,
+    toggle: { defaultEnabled: false },
+    customPanel: () => <AIBridgeSettingPanel />,
 };
 
 // ===== 模块配置 =====
@@ -258,12 +260,7 @@ function AIBridgeSettingPanel(): JSX.Element {
     );
 }
 
-// ===== 设置面板声明（独立 Tab）=====
-export const declareSettingPanel: IFuncModule['declareSettingPanel'] = [{
-    key: 'ai-bridge',
-    title: '🤖 AI 助手',
-    element: () => <AIBridgeSettingPanel />,
-}];
+
 
 // ===== Dock =====
 function createDock(plugin: FMiscPlugin) {

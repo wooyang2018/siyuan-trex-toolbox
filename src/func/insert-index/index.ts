@@ -52,10 +52,11 @@ const config: InsertIndexConfig = {
 export const name = "InsertIndex";
 export let enabled = false;
 
-export const declareToggleEnabled = {
-    title: "🗂️ 一键插入目录",
+export const category: SettingCategory = 'editing';
+export const declareSetting = {
+    title: "一键插入目录",
     description: "点击顶栏菜单为当前文档一键生成目录列表",
-    defaultEnabled: false,
+    toggle: { defaultEnabled: false },
 };
 
 // ==================== 核心逻辑 ====================

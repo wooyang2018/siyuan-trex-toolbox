@@ -25,12 +25,13 @@ const configDefinitions = [
 
 const configAdapter = createSettingAdapter(configDefinitions);
 
-export const declareModuleConfig: IFuncModule['declareModuleConfig'] = {
-    key: "global-configs",
+export const category: SettingCategory = 'advanced';
+export const declareSetting = {
     title: "公用配置",
-    load: (itemValues: any) => configAdapter.init(itemValues),
-    dump: () => configAdapter.dump(),
-    items: configDefinitions.map(item => ({
+    description: "管理全局配置项和用户自定义常量",
+    configLoad: (itemValues: any) => configAdapter.init(itemValues),
+    configDump: () => configAdapter.dump(),
+    configs: configDefinitions.map(item => ({
         ...item,
         get: () => configAdapter.get(item.key),
         set: (value: any) => configAdapter.set(item.key, value)
