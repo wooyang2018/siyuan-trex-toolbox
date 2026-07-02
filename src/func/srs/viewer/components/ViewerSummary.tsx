@@ -1,6 +1,6 @@
 import type { ParsedFlashcard } from '../card-parser';
 
-export function ViewerSummary(props: { cards: ParsedFlashcard[]; answered: Set<number>; onRestart: () => void; onClose: () => void }) {
+export function ViewerSummary(props: { cards: ParsedFlashcard[]; answered: Set<number>; onRestart: () => void }) {
     const answeredCount = () => props.answered.size;
     return (
         <div class="srs-viewer-summary srs-panel">
@@ -14,7 +14,6 @@ export function ViewerSummary(props: { cards: ParsedFlashcard[]; answered: Set<n
                 <div><strong>{Math.round((answeredCount() / Math.max(1, props.cards.length)) * 100)}%</strong><span>完成度</span></div>
             </div>
             <div class="srs-review-start__actions">
-                <button class="b3-button b3-button--outline" onClick={props.onClose}>关闭</button>
                 <button class="b3-button srs-review-primary" onClick={props.onRestart}>重新学习</button>
             </div>
         </div>

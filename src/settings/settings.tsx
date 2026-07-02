@@ -128,17 +128,17 @@ const App: Component<IArgs> = (props) => {
     return (
         <>
             <div class="fn__flex-1 fn__flex config__panel" style={{ "height": "100%" }}>
-                <ul class="b3-tab-bar b3-list b3-list--background">
+                <ul class="b3-tab-bar b3-list b3-list--background trex-settings-tab-bar" style={{ width: '180px', 'min-width': '180px' }}>
                     <For each={groups}>
                         {(group: { key: string, text: string }) => (
                             <li
                                 data-name="editor"
                                 class={`b3-list-item${group.key === focus() ? " b3-list-item--focus" : ""}`}
-                                style="padding-left: 1rem"
+                                style="padding-left: 1rem; padding-right: 0.75rem"
                                 onClick={() => setFocus(group.key)}
                                 onKeyDown={() => { }}
                             >
-                                <span class="b3-list-item__text">{group.text}</span>
+                                <span class="b3-list-item__text" style={{ overflow: 'visible', 'text-overflow': 'clip', 'white-space': 'nowrap' }}>{group.text}</span>
                             </li>
                         )}
                     </For>

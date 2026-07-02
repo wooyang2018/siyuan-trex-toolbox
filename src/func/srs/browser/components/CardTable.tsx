@@ -4,8 +4,9 @@
 import { createSignal, For, Show } from 'solid-js';
 import type { SRSCard } from '@/types/srs';
 import { CARD_TYPE_LABELS } from '../../shared/card-type-labels';
-import type { SortField, SortOrder } from '../types';
+import type { DeckInfo, SortField, SortOrder } from '../types';
 import { sortCards, batchDeleteCards, batchMoveToDeck, batchResetSrs, batchPostpone, editSrsData } from '../browser-controller';
+import { getCardPreview, toBrowserCardType } from '../card-display';
 
 const STATE_LABELS: Record<string, string> = {
     new: '新卡', learning: '学习', review: '复习', relearning: '重学',
@@ -31,13 +32,15 @@ function isDue(card: SRSCard): boolean {
 
 export function CardTable(props: {
     cards: SRSCard[];
+    decks: DeckInfo[];
+    selectedCardId?: string | null;
     onCardClick: (card: SRSCard) => void;
-    onRefresh: () => void;
+    onBeforeMove?: () => void | Promise<void>;
+    onRefresh: () => void | Promise<void>;
 }) {
     const [selected, setSelected] = createSignal<Set<string>>(new Set());
     const [sortField, setSortField] = createSignal<SortField>('nextReview');
     const [sortOrder, setSortOrder] = createSignal<SortOrder>('asc');
-    const [showMoveMenu, setShowMoveMenu] = createSignal(false);
     const [moveDeckId, setMoveDeckId] = createSignal('');
     const [postponeDays, setPostponeDays] = createSignal(1);
     const [showPostponeInput, setShowPostponeInput] = createSignal(false);
@@ -92,14 +95,18 @@ export function CardTable(props: {
         props.onRefresh();
     };
 
-    const handleBatchMove = async () => {
+    const handleBatchMove = async (deckId: string) => {
         const ids = Array.from(selected());
-        if (!ids.length || !moveDeckId()) return;
-        await batchMoveToDeck(ids, moveDeckId());
+        if (!ids.length || !deckId) return;
+        await batchMoveToDeck(ids, deckId);
         setSelected(new Set<string>());
-        setShowMoveMenu(false);
         setMoveDeckId('');
         props.onRefresh();
+    };
+
+    const handleMoveSelect = async (deckId: string) => {
+        setMoveDeckId(deckId);
+        await handleBatchMove(deckId);
     };
 
     const handleBatchPostpone = async () => {
@@ -119,32 +126,24 @@ export function CardTable(props: {
         props.onRefresh();
     };
 
-    const availableDecks = () => {
-        const decks = new Set<string>();
-        for (const c of props.cards) decks.add(c.deckId);
-        return [...decks];
-    };
+    const deckLabel = (card: SRSCard) => card.deckName || card.deckId;
 
     return (
         <div class="srs-card-table-container">
             <Show when={selected().size > 0}>
                 <div class="srs-batch-bar">
                     <span class="srs-batch-count">已选 {selected().size} 张</span>
-                    <button class="b3-button b3-button--small b3-button--outline" onClick={() => setShowMoveMenu(!showMoveMenu())}>移动到牌组</button>
+                    <label class="srs-batch-move-control">
+                        <span>移动到</span>
+                        <select class="b3-select" value={moveDeckId()} onFocus={() => props.onBeforeMove?.()} onChange={e => handleMoveSelect(e.currentTarget.value)}>
+                            <option value="">选择牌组...</option>
+                            <For each={props.decks}>{deck => <option value={deck.id}>{deck.name}</option>}</For>
+                        </select>
+                    </label>
                     <button class="b3-button b3-button--small b3-button--outline" onClick={() => setShowPostponeInput(!showPostponeInput())}>推迟</button>
                     <button class="b3-button b3-button--small b3-button--outline" onClick={handleBatchReset}>重置SRS</button>
                     <button class="b3-button b3-button--small b3-button--error" onClick={handleBatchDelete}>删除</button>
                     <button class="b3-button b3-button--small b3-button--text" onClick={() => setSelected(new Set<string>())}>取消选择</button>
-                </div>
-            </Show>
-
-            <Show when={showMoveMenu()}>
-                <div class="srs-batch-submenu">
-                    <select class="b3-select" value={moveDeckId()} onChange={e => setMoveDeckId(e.currentTarget.value)}>
-                        <option value="">选择牌组...</option>
-                        <For each={availableDecks()}>{d => <option value={d}>{d}</option>}</For>
-                    </select>
-                    <button class="b3-button b3-button--small" onClick={handleBatchMove} disabled={!moveDeckId()}>确认移动</button>
                 </div>
             </Show>
 
@@ -177,15 +176,15 @@ export function CardTable(props: {
                     <tbody>
                         <For each={sortedCards()}>
                             {(card) => (
-                                <tr classList={{ 'srs-row-selected': selected().has(card.id), 'srs-row-due': isDue(card) }}>
+                                <tr classList={{ 'srs-row-selected': selected().has(card.id), 'srs-row-active': props.selectedCardId === card.id, 'srs-row-due': isDue(card) }}>
                                     <td class="srs-col-check"><input type="checkbox" checked={selected().has(card.id)} onChange={() => toggleSelect(card.id)} /></td>
-                                    <td><span class={`srs-card-type-badge srs-card-type-badge--${card.type}`}>{CARD_TYPE_LABELS[card.type] || card.type}</span></td>
+                                    <td><span class={`srs-card-type-badge srs-card-type-badge--${toBrowserCardType(card.type)}`}>{CARD_TYPE_LABELS[toBrowserCardType(card.type)] || card.type}</span></td>
                                     <td class="srs-col-content" onClick={() => props.onCardClick(card)}>
-                                        <div class="srs-card-front-preview">{card.front.slice(0, 60)}</div>
+                                        <div class="srs-card-front-preview">{getCardPreview(card).slice(0, 80)}</div>
                                         <Show when={card.tags.length > 0}><div class="srs-card-tags-mini">{card.tags.slice(0, 3).join(' / ')}</div></Show>
                                     </td>
                                     <td><span class="srs-state-badge" data-state={card.state}>{STATE_LABELS[card.state] || card.state}</span></td>
-                                    <td class="srs-col-deck">{card.deckId}</td>
+                                    <td class="srs-col-deck">{deckLabel(card)}</td>
                                     <td classList={{ 'srs-due-text': isDue(card) }}>{formatDate(card.nextReview)}</td>
                                     <td class="srs-col-editable" onDblClick={() => { setEditingCell({ id: card.id, field: 'stability' }); setEditValue(String(card.stability)); }}>
                                         <Show when={editingCell()?.id === card.id && editingCell()?.field === 'stability'} fallback={card.stability.toFixed(1)}>

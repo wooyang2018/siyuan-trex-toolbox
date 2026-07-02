@@ -1,6 +1,3 @@
-/**
- * QueueIndicator - shows current queue type
- */
 import type { QueueType } from '@/types/srs';
 
 const QUEUE_LABELS: Record<QueueType, string> = {

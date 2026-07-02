@@ -1,4 +1,5 @@
 import type { Rating, SRSCard, QueueType, CardState } from '@/types/srs';
+import type { ParsedFlashcard } from '../viewer/card-parser';
 
 export type ReviewMode = 'tab' | 'dialog' | 'split';
 
@@ -45,8 +46,7 @@ export interface ReviewSummaryData extends ReviewStats {
 
 export interface CardRenderData {
     card: SRSCard;
-    front: string;
-    back: string;
+    display: ParsedFlashcard;
     isRevealed: boolean;
     intervals: number[];
 }

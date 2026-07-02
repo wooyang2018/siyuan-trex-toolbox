@@ -5,16 +5,17 @@ import { getHealthTone } from '../../shared/srs-metrics';
 
 export function DeckSidebar(props: {
     selectedDeck: string | null;
-    onSelectDeck: (deckId: string | null) => void;
+    decks: DeckInfo[];
+    onSelectDeck: (deckId: string | null, deck?: DeckInfo | null) => void;
+    onDecksChange: (decks: DeckInfo[]) => void;
     onRefresh: () => void;
 }) {
-    const [decks, setDecks] = createSignal<DeckInfo[]>([]);
     const [showCreate, setShowCreate] = createSignal(false);
     const [newDeckName, setNewDeckName] = createSignal('');
     const [editingId, setEditingId] = createSignal<string | null>(null);
     const [editName, setEditName] = createSignal('');
 
-    const refresh = async () => setDecks(await getAllDecks());
+    const refresh = async () => props.onDecksChange(await getAllDecks());
     onMount(refresh);
 
     const handleCreate = async () => {
@@ -42,13 +43,13 @@ export function DeckSidebar(props: {
         const msg = `确认删除思源原生卡包「${deck.name}」？卡包内的卡片会从该卡包移除。`;
         if (!confirm(msg)) return;
         await deleteDeck(deck.id, deck.type);
-        if (props.selectedDeck === deck.id) props.onSelectDeck(null);
+        if (props.selectedDeck === deck.id) props.onSelectDeck(null, null);
         await refresh();
         props.onRefresh();
     };
 
-    const totalCount = () => decks().reduce((s, d) => s + d.cardCount, 0);
-    const totalDue = () => decks().reduce((s, d) => s + (d.dueCount || 0), 0);
+    const totalCount = () => props.decks.reduce((s, d) => s + d.cardCount, 0);
+    const totalDue = () => props.decks.reduce((s, d) => s + (d.dueCount || 0), 0);
 
     return (
         <div class="srs-deck-sidebar">
@@ -68,14 +69,14 @@ export function DeckSidebar(props: {
             </Show>
 
             <div class="srs-deck-list">
-                <div class="srs-deck-item srs-deck-item--all" classList={{ 'srs-deck-item--active': props.selectedDeck === null }} onClick={() => props.onSelectDeck(null)}>
+                <div class="srs-deck-item srs-deck-item--all" classList={{ 'srs-deck-item--active': props.selectedDeck === null }} onClick={() => props.onSelectDeck(null, null)}>
                     <div class="srs-deck-main"><span class="srs-deck-name">全部卡片</span><span class="srs-deck-count">{totalCount()}</span></div>
                     <div class="srs-deck-meta">跨卡包总览 · {totalDue()} 待处理</div>
                 </div>
 
-                <For each={decks()}>
+                <For each={props.decks}>
                     {(deck) => (
-                        <div class="srs-deck-item" classList={{ 'srs-deck-item--active': props.selectedDeck === deck.id }} onClick={() => props.onSelectDeck(deck.id)}>
+                        <div class="srs-deck-item" classList={{ 'srs-deck-item--active': props.selectedDeck === deck.id }} onClick={() => props.onSelectDeck(deck.id, deck)}>
                             <div class="srs-deck-main">
                                 <Show when={editingId() === deck.id} fallback={<span class="srs-deck-name" onDblClick={() => { setEditingId(deck.id); setEditName(deck.name); }}>{deck.name}</span>}>
                                     <input class="b3-text-field srs-deck-edit-input" type="text" value={editName()} onInput={e => setEditName(e.currentTarget.value)} onBlur={() => handleRename(deck)} onKeyDown={e => { if (e.key === 'Enter') handleRename(deck); if (e.key === 'Escape') setEditingId(null); }} />

@@ -40,9 +40,11 @@ export interface ParsedFlashcard {
  */
 function stripKramdownArtifacts(text: string): string {
     return text
-        .replace(/\{\{\{row/g, '')
+        .replace(/\{\{\{row\s*/g, '')
         .replace(/\}\}\}/g, '')
         .replace(/\{: [^}]*\}/g, '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 }
 
@@ -88,22 +90,36 @@ function parseCloze(raw: string): ParsedFlashcard {
 /** QA superblock: first block = question, second block = answer */
 function parseQA(raw: string): ParsedFlashcard {
     const cleaned = stripKramdownArtifacts(raw);
-    // Split on block boundaries — blocks separated by blank lines
-    const blocks = cleaned
-        .split(/\n\s*\n/)
-        .map(b => b.trim())
-        .filter(b => b.length > 0);
+    const blocks = splitQaBlocks(cleaned);
 
     const question = blocks[0] || cleaned;
     const answer = blocks.slice(1).join('\n\n');
     return {
         type: CardType.QA,
         question,
-        answer,
+        answer: answer || cleaned,
         options: [],
         explanation: '',
         raw,
     };
+}
+
+function splitQaBlocks(cleaned: string): string[] {
+    const blocks = cleaned
+        .split(/\n\s*\n/)
+        .map(b => b.trim())
+        .filter(b => b.length > 0);
+    if (blocks.length > 1) return blocks;
+
+    const text = blocks[0] || cleaned;
+    const explicit = text.match(/^(?:问题|题目|Q|问)[：:]\s*(.+?)(?:\s+(?:答案|回答|A|答)[：:]\s*)(.+)$/s);
+    if (explicit) return [explicit[1].trim(), explicit[2].trim()];
+
+    const firstQuestionMark = text.search(/[？?]/);
+    if (firstQuestionMark > 0 && firstQuestionMark < text.length - 1) {
+        return [text.slice(0, firstQuestionMark + 1).trim(), text.slice(firstQuestionMark + 1).trim()];
+    }
+    return [text];
 }
 
 /** Choice: parse question, options, answer, explanation from markdown list format */

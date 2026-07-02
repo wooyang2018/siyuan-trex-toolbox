@@ -8,6 +8,7 @@ import { getAllCards, deleteCards, updateCard, refreshNativeCards, getCardsByDec
 import { getDeckHealth, isCardDue } from '../shared/srs-metrics';
 import { sqlSearchCards } from './sql-filter';
 import { getRiffDecks, createRiffDeck, renameRiffDeck, removeRiffDeck, removeRiffCards } from '@/api';
+import { toBrowserCardType } from './card-display';
 
 // ===== Native deck block-ID cache =====
 // Maps SiYuan riff deck ID → set of block IDs in that deck.
@@ -36,7 +37,7 @@ export async function getFilteredCards(filter: BrowserFilter): Promise<SRSCard[]
     if (filter.task === 'new') cards = cards.filter(c => c.state === 'new');
     if (filter.task === 'learning') cards = cards.filter(c => c.state === 'learning' || c.state === 'relearning');
     if (filter.task === 'lapseRisk') cards = cards.filter(c => c.lapses >= 2 || c.state === 'relearning');
-    if (filter.cardType) cards = cards.filter(c => c.type === filter.cardType);
+    if (filter.cardType) cards = cards.filter(c => toBrowserCardType(c.type) === filter.cardType);
     if (filter.dueOnly) cards = cards.filter(isCardDue);
     if (filter.tag) cards = cards.filter(c => c.tags.includes(filter.tag));
     if (filter.state) cards = cards.filter(c => c.state === filter.state);
@@ -133,6 +134,7 @@ export async function getAllDecks(): Promise<DeckInfo[]> {
             const deckId = String(d.id ?? d.ID ?? d.deckID ?? '');
             const deckName = String(d.name ?? d.Name ?? d.id ?? '');
             const deckCards = getCardsByDeckId(deckId);
+            const health = getDeckHealth(deckCards);
             const blockIds = new Set(deckCards.map(c => c.blockId));
             nativeDeckBlockIds.set(deckId, blockIds);
             decks.push({
@@ -140,6 +142,9 @@ export async function getAllDecks(): Promise<DeckInfo[]> {
                 name: deckName,
                 type: 'native',
                 cardCount: deckCards.length,
+                dueCount: health.due,
+                riskCount: health.lapseRiskCount,
+                healthScore: health.healthScore,
             });
         }
     } catch (e) {

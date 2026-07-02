@@ -190,11 +190,11 @@ export function ViewerView(props: { onClose: () => void }) {
                 <div class="srs-viewer-progress"><div class="srs-progress-track"><div class="srs-progress-fill" style={{ width: `${Math.round(stats().progress * 100)}%` }} /></div><span>{currentIndex() + 1} / {stats().total}</span></div>
             </Show>
 
-            <div class="srs-viewer-workspace">
+            <div class="srs-viewer-workspace" classList={{ 'srs-viewer-workspace--summary': completed() }}>
                 <Show when={cards().length > 0 && !completed()}><CardMapRail cards={cards()} current={currentIndex()} answered={answered()} onJump={setCurrentIndex} /></Show>
                 <div class="srs-viewer-card-area">
                     <Show when={loading()} fallback={<Show when={cards().length > 0} fallback={<div class="srs-viewer-empty srs-empty-card"><p>{error() || '暂无卡片，请选择页面和卡包后加载'}</p></div>}>
-                        <Show when={!completed()} fallback={<ViewerSummary cards={cards()} answered={answered()} onRestart={() => { setCompleted(false); setCurrentIndex(0); setAnswered(new Set<number>()); }} onClose={props.onClose} />}>
+                        <Show when={!completed()} fallback={<ViewerSummary cards={cards()} answered={answered()} onRestart={() => { setCompleted(false); setCurrentIndex(0); setAnswered(new Set<number>()); }} />}>
                             <FlashcardRenderer card={cards()[currentIndex()]} index={currentIndex()} total={cards().length} onNext={handleNext} onPrev={handlePrev} onAnswered={markAnswered} />
                         </Show>
                     </Show>}>

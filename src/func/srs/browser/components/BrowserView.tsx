@@ -1,27 +1,23 @@
-/**
- * BrowserView — Main card manager layout
- * Left: deck sidebar | Center: stats + filter + table | Modal: card detail
- */
 import { createSignal, Show, onMount, For } from 'solid-js';
-import type { SRSCard } from '@/types/srs';
+import type { CardState, SRSCard } from '@/types/srs';
 import { CardType } from '@/types/srs';
-import { getFilteredCards, exportCardsToJson, exportCardsToCsv } from '../browser-controller';
-import type { BrowserFilter } from '../types';
+import { getFilteredCards, exportCardsToJson, exportCardsToCsv, getAllDecks } from '../browser-controller';
+import type { BrowserFilter, BrowserTaskFilter, DeckInfo } from '../types';
+import { CARD_TYPE_LABELS } from '../../shared/card-type-labels';
 import { DeckSidebar } from './DeckSidebar';
 import { StatsBar } from './StatsBar';
 import { CardTable } from './CardTable';
-import { CardDetailModal } from './CardDetailModal';
+import { CardDetailPanel } from './CardDetailPanel';
 import { BrowserTaskFilters } from './BrowserTaskFilters';
-import type { BrowserTaskFilter } from '../types';
 
-const BROWSER_TYPE_OPTIONS: [string, string][] = [
-    [CardType.Cloze, '填空'],
-    [CardType.QA, '问答'],
-    [CardType.SingleChoice, '单选'],
-    [CardType.MultiChoice, '多选'],
+const BROWSER_TYPE_OPTIONS: Array<[CardType, string]> = [
+    [CardType.Cloze, CARD_TYPE_LABELS[CardType.Cloze]],
+    [CardType.QA, CARD_TYPE_LABELS[CardType.QA]],
+    [CardType.SingleChoice, CARD_TYPE_LABELS[CardType.SingleChoice]],
+    [CardType.MultiChoice, CARD_TYPE_LABELS[CardType.MultiChoice]],
 ];
 
-const STATE_OPTIONS = [
+const STATE_OPTIONS: Array<{ value: '' | CardState; label: string }> = [
     { value: '', label: '全部状态' },
     { value: 'new', label: '新卡' },
     { value: 'learning', label: '学习中' },
@@ -32,7 +28,9 @@ const STATE_OPTIONS = [
 export function BrowserView() {
     const [cards, setCards] = createSignal<SRSCard[]>([]);
     const [selectedDeck, setSelectedDeck] = createSignal<string | null>(null);
+    const [selectedDeckName, setSelectedDeckName] = createSignal('');
     const [selectedCard, setSelectedCard] = createSignal<SRSCard | null>(null);
+    const [decks, setDecks] = createSignal<DeckInfo[]>([]);
     const [filter, setFilter] = createSignal<BrowserFilter>({ task: 'all' });
     const [taskFilter, setTaskFilter] = createSignal<BrowserTaskFilter>('all');
     const [refreshTrigger, setRefreshTrigger] = createSignal(0);
@@ -45,18 +43,23 @@ export function BrowserView() {
         const filtered = await getFilteredCards(f);
         setCards(filtered);
         setRefreshTrigger(t => t + 1);
+        return filtered;
     };
-    onMount(refresh);
+    const refreshDecks = async () => setDecks(await getAllDecks());
+    onMount(async () => {
+        await refreshDecks();
+        await refresh();
+    });
 
-    const handleSelectDeck = (deckId: string | null) => {
+    const handleSelectDeck = (deckId: string | null, deck?: DeckInfo | null) => {
         setSelectedDeck(deckId);
-        // Clear deckId from filter — refresh() will set it from selectedDeck()
+        setSelectedDeckName(deck?.name || '');
+        setSelectedCard(null);
         setFilter(f => {
             const nf = { ...f };
             delete nf.deckId;
             return nf;
         });
-        // Use queueMicrotask to ensure signals are updated before refresh
         queueMicrotask(() => { refresh(); });
     };
 
@@ -108,11 +111,27 @@ export function BrowserView() {
         setShowExportMenu(false);
     };
 
+    const handleDetailSaved = async () => {
+        const selectedId = selectedCard()?.id;
+        const nextCards = await refresh();
+        await refreshDecks();
+        if (selectedId) {
+            setSelectedCard(nextCards.find(card => card.id === selectedId) ?? null);
+        }
+    };
+
+    const handleCardsChanged = async () => {
+        await refresh();
+        await refreshDecks();
+    };
+
     return (
         <div class="srs-browser-container srs-shell-gradient">
             <DeckSidebar
                 selectedDeck={selectedDeck()}
+                decks={decks()}
                 onSelectDeck={handleSelectDeck}
+                onDecksChange={setDecks}
                 onRefresh={refresh}
             />
 
@@ -123,7 +142,15 @@ export function BrowserView() {
                         <div class="srs-section-subtitle">用健康度、风险和到期压力管理你的长期记忆资产。</div>
                     </div>
                     <div class="srs-browser-hero__actions">
-                        <button class="b3-button b3-button--outline" onClick={() => setShowExportMenu(!showExportMenu())}>导出</button>
+                        <div class="srs-export-group">
+                            <button class="b3-button b3-button--outline" onClick={() => setShowExportMenu(!showExportMenu())}>导出</button>
+                            <Show when={showExportMenu()}>
+                                <div class="srs-export-popover">
+                                    <button class="b3-button b3-button--text" onClick={() => handleExport('json')}>JSON</button>
+                                    <button class="b3-button b3-button--text" onClick={() => handleExport('csv')}>CSV</button>
+                                </div>
+                            </Show>
+                        </div>
                         <button class="b3-button b3-button--outline" onClick={refresh}>刷新</button>
                     </div>
                 </div>
@@ -133,7 +160,7 @@ export function BrowserView() {
                 <div class="srs-filter-bar srs-panel">
                     <select class="b3-select" onChange={e => handleFilterChange('cardType', e.currentTarget.value)}>
                         <option value="">全部类型</option>
-                        <For each={BROWSER_TYPE_OPTIONS}>{(entry: [string, string]) => <option value={entry[0]}>{entry[1]}</option>}</For>
+                        <For each={BROWSER_TYPE_OPTIONS}>{entry => <option value={entry[0]}>{entry[1]}</option>}</For>
                     </select>
                     <select class="b3-select" onChange={e => handleFilterChange('state', e.currentTarget.value)}>
                         <For each={STATE_OPTIONS}>{opt => <option value={opt.value}>{opt.label}</option>}</For>
@@ -151,32 +178,32 @@ export function BrowserView() {
                     />
                     <Show when={selectedDeck()}>
                         <span class="srs-deck-filter-tag">
-                            牌组: {selectedDeck()}
-                            <button class="srs-clear-filter" onClick={() => handleSelectDeck(null)}>x</button>
+                            牌组: {selectedDeckName() || selectedDeck()}
+                            <button class="srs-clear-filter" onClick={() => handleSelectDeck(null, null)}>x</button>
                         </span>
                     </Show>
                     <div style={{ 'flex': '1' }} />
                 </div>
 
-                <Show when={showExportMenu()}>
-                    <div class="srs-export-menu">
-                        <button class="b3-button b3-button--text" onClick={() => handleExport('json')}>导出 JSON</button>
-                        <button class="b3-button b3-button--text" onClick={() => handleExport('csv')}>导出 CSV</button>
-                    </div>
-                </Show>
-
-                <CardTable
-                    cards={cards()}
-                    onCardClick={(card) => setSelectedCard(card)}
-                    onRefresh={refresh}
-                />
+                <div class="srs-browser-workspace">
+                    <CardTable
+                        cards={cards()}
+                        decks={decks()}
+                        selectedCardId={selectedCard()?.id ?? null}
+                        onCardClick={(card) => setSelectedCard(card)}
+                        onBeforeMove={() => refreshDecks()}
+                        onRefresh={handleCardsChanged}
+                    />
+                    <Show when={selectedCard()}>
+                        <CardDetailPanel
+                            card={selectedCard()}
+                            decks={decks()}
+                            onClose={() => setSelectedCard(null)}
+                            onSaved={handleDetailSaved}
+                        />
+                    </Show>
+                </div>
             </div>
-
-            <CardDetailModal
-                card={selectedCard()}
-                onClose={() => setSelectedCard(null)}
-                onSaved={refresh}
-            />
         </div>
     );
 }

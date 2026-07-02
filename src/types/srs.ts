@@ -48,6 +48,7 @@ export interface SRSCard {
     rootId: string;
     type: CardType;
     deckId: string;
+    deckName?: string;
     front: string;
     back: string;
     /** FSRS fields */

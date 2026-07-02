@@ -1,7 +1,7 @@
 import type { ReviewSummaryData } from '../types';
 import { formatElapsed, formatPercent } from '../../shared/format';
 
-export function ReviewSummary(props: { summary: ReviewSummaryData | null; onRestart: () => void; onClose: () => void }) {
+export function ReviewSummary(props: { summary: ReviewSummaryData | null; onRestart: () => void }) {
     const summary = () => props.summary;
     return (
         <div class="srs-review-summary srs-panel">
@@ -21,7 +21,6 @@ export function ReviewSummary(props: { summary: ReviewSummaryData | null; onRest
                 <span>简单 {summary()?.ratingCounts[4] || 0}</span>
             </div>
             <div class="srs-review-start__actions">
-                <button class="b3-button b3-button--outline" onClick={props.onClose}>关闭</button>
                 <button class="b3-button srs-review-primary" onClick={props.onRestart}>再来一轮</button>
             </div>
         </div>

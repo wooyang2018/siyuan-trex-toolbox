@@ -121,7 +121,7 @@ export async function refreshNativeCards(): Promise<void> {
                 for (const blockId of deckBlockIds) {
                     const block = blocks.get(blockId);
                     const detail = nativeDetails.get(makeCardId(deck.id, blockId)) ?? nativeDetails.get(blockId);
-                    const card = buildCard(deck.id, blockId, block, detail, attrsByBlock.get(blockId));
+                    const card = buildCard(deck, blockId, block, detail, attrsByBlock.get(blockId));
                     nextCache.set(card.id, card);
                 }
             }
@@ -446,7 +446,7 @@ async function loadSrsAttrs(blockIds: string[]): Promise<Map<string, CardAttrs>>
         if (chunkIds.length === 0) continue;
         const ids = chunkIds.map(sqlString).join(',');
         const rows = await sql(
-            `SELECT block_id, name, value FROM attributes WHERE block_id IN (${ids}) AND name LIKE 'custom-srs-%' LIMIT ${chunkIds.length * 16}`
+            `SELECT block_id, name, value FROM attributes WHERE block_id IN (${ids}) AND (name LIKE 'custom-srs-%' OR name = 'custom-card-type') LIMIT ${chunkIds.length * 16}`
         );
         for (const row of rows ?? []) {
             const current = attrsByBlock.get(row.block_id) ?? {};
@@ -460,6 +460,7 @@ async function loadSrsAttrs(blockIds: string[]): Promise<Map<string, CardAttrs>>
 function applyAttr(attrs: CardAttrs, name: string, value: string): void {
     switch (name) {
         case 'custom-srs-type': attrs.type = normalizeCardType(value); break;
+        case 'custom-card-type': attrs.type = normalizeCardType(value); break;
         case 'custom-srs-front': attrs.front = value; break;
         case 'custom-srs-back': attrs.back = value; break;
         case 'custom-srs-tags': attrs.tags = value ? value.split(',').map((t) => t.trim()).filter(Boolean) : []; break;
@@ -473,7 +474,7 @@ function applyAttr(attrs: CardAttrs, name: string, value: string): void {
     }
 }
 
-function buildCard(deckId: string, blockId: string, block?: BlockRow, detail?: NativeRiffCard, attrs?: CardAttrs): SRSCard {
+function buildCard(deck: NativeDeck, blockId: string, block?: BlockRow, detail?: NativeRiffCard, attrs?: CardAttrs): SRSCard {
     const now = Date.now();
     const content = (block?.markdown || block?.content || '').trim();
     const createdAt = parseNativeTime(detail?.Created ?? block?.created) ?? now;
@@ -484,11 +485,12 @@ function buildCard(deckId: string, blockId: string, block?: BlockRow, detail?: N
     const interval = Number(detail?.Interval ?? 0) || 0;
 
     return {
-        id: makeCardId(deckId, blockId),
+        id: makeCardId(deck.id, blockId),
         blockId,
         rootId: block?.root_id || '',
-        type: attrs?.type ?? CardType.QA,
-        deckId,
+        type: attrs?.type ?? inferTypeFromContent(content),
+        deckId: deck.id,
+        deckName: deck.name,
         front: attrs?.front || content,
         back: attrs?.back || content,
         stability: interval,
@@ -530,7 +532,27 @@ async function writeSrsAttrs(blockId: string, card: Partial<SRSCard>): Promise<v
 }
 
 function normalizeCardType(value: string): CardType {
-    return (Object.values(CardType) as string[]).includes(value) ? value as CardType : CardType.QA;
+    const normalized = value.trim();
+    if ((Object.values(CardType) as string[]).includes(normalized)) return normalized as CardType;
+    const alias = normalized.toLowerCase().replace(/[_\s]/g, '-');
+    switch (alias) {
+        case 'singlechoice':
+        case 'single-choice': return CardType.SingleChoice;
+        case 'multichoice':
+        case 'multi-choice': return CardType.MultiChoice;
+        case 'image-occlusion': return CardType.ImageOcclusion;
+        case 'ordered-list': return CardType.OrderedList;
+        case 'unordered-list': return CardType.UnorderedList;
+        case 'concept-definition': return CardType.ConceptDefinition;
+        default: return CardType.QA;
+    }
+}
+
+function inferTypeFromContent(content: string): CardType {
+    if (/【单选题】/.test(content)) return CardType.SingleChoice;
+    if (/【多选题】/.test(content)) return CardType.MultiChoice;
+    if (/==.+?==/.test(content)) return CardType.Cloze;
+    return CardType.QA;
 }
 
 function normalizeState(state: NativeRiffCard['State'], reps: number): SRSCard['state'] {

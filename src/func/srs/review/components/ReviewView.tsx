@@ -2,7 +2,6 @@ import { createSignal, Show, onCleanup, onMount } from 'solid-js';
 import { CardRenderer } from './CardRenderer';
 import { RatingBar } from './RatingBar';
 import { QueueIndicator } from './QueueIndicator';
-import { ReviewStartPanel } from './ReviewStartPanel';
 import { ReviewSummary } from './ReviewSummary';
 import { startReview, getCurrentCardData, revealCard, rateCard, skipCard, getReviewStats, getLastSummary, endReview, undoLastRating, canUndo } from '../review-controller';
 import { openSourceBlock } from '../../module';
@@ -12,7 +11,7 @@ import type { CardRenderData, ReviewStats, ReviewSummaryData } from '../types';
 import { EmptyState } from '../../shared/components/EmptyState';
 
 export function ReviewView(props: { queueType: QueueType; onClose: () => void }) {
-    const [phase, setPhase] = createSignal<'loading' | 'ready' | 'reviewing' | 'done' | 'empty'>('loading');
+    const [phase, setPhase] = createSignal<'loading' | 'reviewing' | 'done' | 'empty'>('loading');
     const [cardData, setCardData] = createSignal<CardRenderData | null>(null);
     const [stats, setStats] = createSignal<ReviewStats | null>(null);
     const [summary, setSummary] = createSignal<ReviewSummaryData | null>(null);
@@ -23,7 +22,7 @@ export function ReviewView(props: { queueType: QueueType; onClose: () => void })
         if (!s) { setPhase('empty'); return; }
         setCardData(getCurrentCardData());
         setStats(getReviewStats());
-        setPhase('ready');
+        setPhase('reviewing');
     };
 
     onMount(prepare);
@@ -42,8 +41,6 @@ export function ReviewView(props: { queueType: QueueType; onClose: () => void })
     onCleanup(() => {
         if (phase() !== 'done') endReview();
     });
-
-    const begin = () => setPhase('reviewing');
 
     const finish = () => {
         setSummary(getLastSummary());
@@ -131,14 +128,11 @@ export function ReviewView(props: { queueType: QueueType; onClose: () => void })
                 <Show when={phase() === 'empty'}>
                     <EmptyState title="当前没有可复习的卡片" description="所有卡片可能已经完成，或当前队列暂无到期卡片。" action={<button class="b3-button b3-button--outline" style={{ 'margin-top': '16px' }} onClick={props.onClose}>关闭</button>} />
                 </Show>
-                <Show when={phase() === 'ready'}>
-                    <ReviewStartPanel stats={stats()} onStart={begin} />
-                </Show>
                 <Show when={phase() === 'reviewing' && cardData()}>
                     <CardRenderer data={cardData()!} onReveal={handleReveal} onJumpSource={handleJumpSource} />
                 </Show>
                 <Show when={phase() === 'done'}>
-                    <ReviewSummary summary={summary()} onRestart={prepare} onClose={props.onClose} />
+                    <ReviewSummary summary={summary()} onRestart={prepare} />
                 </Show>
             </div>
             <Show when={phase() === 'reviewing' && cardData()?.isRevealed}>

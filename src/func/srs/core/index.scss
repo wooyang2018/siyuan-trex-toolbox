@@ -45,6 +45,9 @@
 }
 
 .srs-shell-gradient {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
     background:
         radial-gradient(circle at top left, color-mix(in srgb, var(--srs-primary) 18%, transparent), transparent 34%),
         radial-gradient(circle at bottom right, color-mix(in srgb, var(--srs-accent) 14%, transparent), transparent 32%),
@@ -208,6 +211,8 @@
     &--unorderedList { background: var(--srs-list); }
     &--cdf { background: var(--srs-cdf); }
     &--concept { background: var(--srs-concept); }
+    &--single-choice { background: var(--srs-warning); }
+    &--multi-choice { background: var(--srs-error); }
 }
 
 @media (max-width: 720px) {

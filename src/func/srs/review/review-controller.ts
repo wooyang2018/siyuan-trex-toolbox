@@ -4,6 +4,7 @@ import { getCard, reviewCardById, undoLastReview, getAllCards, refreshNativeCard
 import { getSettings } from '../core/module';
 import { previewIntervals, formatInterval } from '../core/scheduler';
 import { buildRetrievalQueue, addToQueue, persistQueues } from '../core/queue-manager';
+import { getCardDisplay } from '../browser/card-display';
 
 let currentSession: ReviewSession | null = null;
 let lastSummary: ReviewSummaryData | null = null;
@@ -64,7 +65,7 @@ export function getCurrentCardData(): CardRenderData | null {
     const card = getCard(cardId);
     if (!card) return null;
     const intervals = previewIntervals(card, getSettings());
-    return { card, front: card.front, back: card.back, isRevealed: currentSession.revealed, intervals };
+    return { card, display: getCardDisplay(card), isRevealed: currentSession.revealed, intervals };
 }
 
 export function revealCard(): void {

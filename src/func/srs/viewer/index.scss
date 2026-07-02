@@ -1,7 +1,7 @@
-@import '../core/index.scss';
-@import '../review/index.scss';
+@use '../core/index.scss' as *;
+@use '../review/index.scss' as *;
 
-.srs-viewer-container { display: flex; flex-direction: column; height: 100%; color: var(--srs-text); overflow: hidden; padding: 18px; gap: 14px; }
+.srs-viewer-container { display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; color: var(--srs-text); overflow: hidden; padding: 18px; gap: 14px; }
 .srs-viewer-toolbar { display: flex; align-items: center; gap: 12px; padding: 16px; flex-wrap: wrap; flex-shrink: 0; }
 .srs-viewer-toolbar__title { min-width: 220px; margin-right: auto; }
 .srs-viewer-selector-group { display: flex; align-items: center; gap: 6px; }
@@ -11,6 +11,7 @@
 .srs-viewer-deck-select { min-width: 140px; }
 .srs-viewer-progress { display: flex; align-items: center; gap: 12px; padding: 0 4px; color: var(--srs-text-secondary); font-size: 12px; }
 .srs-viewer-workspace { flex: 1; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; min-height: 0; }
+.srs-viewer-workspace--summary { grid-template-columns: 1fr; }
 .srs-card-map-rail { padding: 14px; overflow-y: auto; }
 .srs-card-map-rail__title { margin-bottom: 10px; font-size: 13px; font-weight: 700; color: var(--srs-text-secondary); }
 .srs-card-map-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 9px 10px; border-radius: 12px; border: 1px solid var(--srs-border); background: var(--srs-surface); color: var(--srs-text); cursor: pointer; transition: all var(--srs-motion-fast); }
