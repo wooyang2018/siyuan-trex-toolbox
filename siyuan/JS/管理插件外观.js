@@ -62,6 +62,7 @@ const replaceTextMap = {
     "搜 easy": "搜索",
     "data-id:siyuan-plugins-mcp-sisyphus": "思源MCP",
     "data-id:siyuan-embed-excalidraw": "嵌入Excalidraw",
+    "data-id:plugin_siyuan-plugin-text-process_0": "粘贴文本处理",
 };
 async function replaceMenuLabels() {
     await whenElementExist('#commonMenu .b3-menu__items .b3-menu__item');
