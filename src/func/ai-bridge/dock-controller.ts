@@ -43,6 +43,8 @@ export interface DockDeps {
     saveConfig: () => void;
     /** 是否使用 webview（Electron 桌面端）；否则使用 iframe */
     useWebview: boolean;
+    /** 获取块的 Markdown 内容（清理 IAL 后），失败时降级返回块 ID */
+    fetchBlockContent: (blockId: string) => Promise<string>;
 }
 
 const BLOCK_ID_TEXT_TYPE = 'text/siyuan-block-id';
@@ -100,6 +102,7 @@ export class DockController {
 
         this.renderTabs();
         this.renderPromptBar();
+        this.updateDropHint();
         this.createMedia();
     }
 
@@ -289,6 +292,22 @@ export class DockController {
 
     // ===== 拖拽 =====
 
+    /** 根据 useWebview 更新拖拽提示文案 */
+    private updateDropHint = (): void => {
+        const { dropHint } = this.layout;
+        if (this.deps.useWebview) {
+            dropHint.innerHTML =
+                `<span style="font-size:22px;">📝</span>
+                 <span>松开鼠标，将块内容插入光标处</span>
+                 <span style="font-size:11px;opacity:0.7;">（自动获取块的 Markdown 内容，无需粘贴）</span>`;
+        } else {
+            dropHint.innerHTML =
+                `<span style="font-size:22px;">📋</span>
+                 <span>松开鼠标，块内容将复制到剪贴板</span>
+                 <span style="font-size:11px;opacity:0.7;">在 AI 输入框中 Ctrl+V 粘贴即可</span>`;
+        }
+    };
+
     private showDrop = (): void => {
         if (!this.activeDragId) return;
         const { dropHint } = this.layout;
@@ -321,17 +340,26 @@ export class DockController {
             this.activeDragId = null;
             if (!blockId) return;
 
+            // 获取块的 Markdown 内容（参考 claude-note 实现）
+            showMessage('正在获取块内容...', 1500, 'info');
+            let textToInsert = blockId;
+            try {
+                textToInsert = await this.deps.fetchBlockContent(blockId);
+            } catch {
+                textToInsert = blockId; // 降级为块 ID
+            }
+
             if (this.deps.useWebview && this.media) {
-                const result = await injectTextToWebview(this.media, blockId, e.clientX, e.clientY);
+                const result = await injectTextToWebview(this.media, textToInsert, e.clientX, e.clientY);
                 if (result === 'ok') {
-                    showMessage('块 ID 已插入', 1500, 'info');
+                    showMessage('块内容已插入', 1500, 'info');
                 } else {
-                    this.deps.copyToClipboard(blockId);
-                    showMessage('未找到输入框，块 ID 已复制到剪贴板', 3000, 'info');
+                    this.deps.copyToClipboard(textToInsert);
+                    showMessage('未找到输入框，已复制到剪贴板', 3000, 'info');
                 }
             } else {
-                this.deps.copyToClipboard(blockId);
-                showMessage('块 ID 已复制到剪贴板，在 AI 输入框粘贴即可', 3000, 'info');
+                this.deps.copyToClipboard(textToInsert);
+                showMessage('已复制到剪贴板，在 AI 输入框粘贴即可', 3000, 'info');
             }
         });
     }

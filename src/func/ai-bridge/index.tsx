@@ -1,13 +1,13 @@
 /**
  * AI Bridge 模块
- * @description 在侧边栏嵌入 AI Agent 网页，支持多 URL 切换、拖拽块 ID 直接插入网页输入框、提示词预设
+ * @description 在侧边栏嵌入 AI Agent 网页，支持多 URL 切换、拖拽块内容插入网页输入框、提示词预设
  */
 import type FMiscPlugin from "@/index";
 import { For, type JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import Form from "@/libs/components/Form";
 import { showMessage } from "siyuan";
-import { getBlockByID } from "@/api";
+import { getBlockByID, getBlockKramdown } from "@/api";
 import { getActiveDoc } from "@frostime/siyuan-plugin-kits";
 
 import { DockController, type DockConfig, type DockDeps, type AIBridgeUrl, type PromptPreset } from './dock-controller';
@@ -36,7 +36,7 @@ export let enabled = false;
 export const category: SettingCategory = 'ai';
 export const declareSetting = {
     title: 'AI 助手侧边栏',
-    description: '在侧边栏嵌入 AI Agent 网页，支持多地址切换、拖拽块 ID 到 AI 输入框、提示词预设',
+    description: '在侧边栏嵌入 AI Agent 网页，支持多地址切换、拖拽块内容到 AI 输入框、提示词预设',
     toggle: { defaultEnabled: false },
     customPanel: () => <AIBridgeSettingPanel />,
 };
@@ -80,6 +80,25 @@ const copyToClipboard = (text: string) => {
         try { document.execCommand('copy'); } catch { /* ignore */ }
         ta.remove();
     });
+};
+
+// ===== 辅助：获取块内容（参考 claude-note 实现）=====
+/**
+ * 通过 block/getBlockKramdown API 获取块的 kramdown 内容，
+ * 清理 IAL 属性标记后返回纯 Markdown 文本。
+ * 失败或内容为空时降级返回块 ID。
+ */
+const fetchBlockContent = async (blockId: string): Promise<string> => {
+    try {
+        const result = await getBlockKramdown(blockId);
+        const kramdown = result?.kramdown || '';
+        if (!kramdown.trim()) return blockId;
+        // 清理 IAL 属性标记 {: id="..." updated="..." ...}
+        const cleaned = kramdown.replace(/\{:[^}]*\}/g, '').trim();
+        return cleaned || blockId;
+    } catch {
+        return blockId;
+    }
 };
 
 // ===== 辅助：Electron webview 检测 =====
@@ -273,6 +292,7 @@ function createDock(plugin: FMiscPlugin) {
         blockIdFromTransfer,
         saveConfig,
         useWebview,
+        fetchBlockContent,
     };
 
     plugin.addDock({
