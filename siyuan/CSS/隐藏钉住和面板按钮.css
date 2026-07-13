@@ -36,3 +36,13 @@
 #toolbar #toolbarVIP {
     display: none;
 }
+
+/** 隐藏右侧边栏的任务助手按钮 **/
+#dockRight span[data-type="siyuan-plugin-bullet-journalbullet-journal-ai-chat"] {
+    display: none;
+}
+
+/** 隐藏右侧边栏的智能体按钮 **/
+#dockRight span[data-type="agentChat"] {
+    display: none;
+}
