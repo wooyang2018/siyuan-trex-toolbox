@@ -1,7 +1,3 @@
-:root {
-    --plugin-docky-zoom: unset;
-}
-
 div.plugin-insert-time__conf-item {
     div.form-row {
         display: flex;
@@ -61,6 +57,3 @@ section.doc-context {
     }
 }
 
-/******************** claude note ********************/
-// claude-note 模块的样式由 src/func/claude-note/module.ts 内部 import "./index.scss" 引入
-// 不在这里 @import，避免重复加载
