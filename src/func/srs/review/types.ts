@@ -6,10 +6,9 @@ export type ReviewMode = 'tab' | 'dialog' | 'split';
 export interface UndoSnapshot {
     cardId: string;
     rating: Rating;
+    wasCorrect: boolean;
     nextReview: number;
     state: CardState;
-    stability: number;
-    difficulty: number;
     reps: number;
     lapses: number;
 }
@@ -48,10 +47,4 @@ export interface CardRenderData {
     card: SRSCard;
     display: ParsedFlashcard;
     isRevealed: boolean;
-    intervals: number[];
-}
-
-export interface PlanningOptions {
-    days: number;
-    onlyOutstanding: boolean;
 }

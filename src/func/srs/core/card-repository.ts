@@ -54,6 +54,15 @@ interface NativeRiffCard {
     Reviews?: number;
     Lapses?: number;
     Interval?: number;
+    // SiYuan API may nest scheduling data under riffCard
+    riffCard?: {
+        due?: string | number;
+        reps?: number;
+        lapses?: number;
+        state?: number | string;
+        lastReview?: string | number;
+    };
+    riffCardID?: string;
 }
 
 interface BlockRow {
@@ -97,15 +106,19 @@ export async function refreshNativeCards(): Promise<void> {
     refreshing = (async () => {
         try {
             const decks = await getNativeDecks();
-            const blockIdsByDeck = new Map<string, string[]>();
             const allBlockIds = new Set<string>();
+            // Cache raw card data from getRiffCards — it already contains block + riffCard info
+            const rawCardByBlock = new Map<string, { deck: NativeDeck; raw: any }>();
 
             for (const deck of decks) {
                 const rawCards = await getRiffCards(deck.id, 'all');
-                const blockIds = unique(rawCards.map(extractBlockId).filter(Boolean));
-                blockIdsByDeck.set(deck.id, blockIds);
-                blockIds.forEach((id) => allBlockIds.add(id));
-                console.log(`[SRS-Core] refreshNativeCards: deck "${deck.name}" (${deck.id}) → ${blockIds.length} block IDs (rawCards: ${rawCards.length})`);
+                for (const raw of rawCards) {
+                    const blockId = extractBlockId(raw);
+                    if (!blockId) continue;
+                    allBlockIds.add(blockId);
+                    rawCardByBlock.set(blockId, { deck, raw });
+                }
+                console.log(`[SRS-Core] refreshNativeCards: deck "${deck.name}" (${deck.id}) → ${rawCards.length} raw cards`);
             }
 
             const blockIds = [...allBlockIds];
@@ -116,14 +129,14 @@ export async function refreshNativeCards(): Promise<void> {
             ]);
 
             const nextCache = new Map<string, SRSCard>();
-            for (const deck of decks) {
-                const deckBlockIds = blockIdsByDeck.get(deck.id) ?? [];
-                for (const blockId of deckBlockIds) {
-                    const block = blocks.get(blockId);
-                    const detail = nativeDetails.get(makeCardId(deck.id, blockId)) ?? nativeDetails.get(blockId);
-                    const card = buildCard(deck, blockId, block, detail, attrsByBlock.get(blockId));
-                    nextCache.set(card.id, card);
-                }
+            for (const [blockId, { deck, raw }] of rawCardByBlock) {
+                const block = blocks.get(blockId) ?? extractBlockFromRaw(raw);
+                // Prefer detail from nativeDetails (getRiffCardsByBlockIDs), fall back to raw
+                const detail = nativeDetails.get(makeCardId(deck.id, blockId))
+                    ?? nativeDetails.get(blockId)
+                    ?? extractRiffCardFromRaw(raw);
+                const card = buildCard(deck, blockId, block, detail, attrsByBlock.get(blockId));
+                nextCache.set(card.id, card);
             }
             cardCache = nextCache;
             console.log(`[SRS-Core] refreshNativeCards: loaded ${nextCache.size} cards from ${decks.length} decks`);
@@ -134,13 +147,6 @@ export async function refreshNativeCards(): Promise<void> {
         }
     })();
     return refreshing;
-}
-
-/**
- * Cards are stored by SiYuan native riffcard decks. This is intentionally a no-op.
- */
-export async function persistCards(): Promise<void> {
-    // Cards are persisted only by SiYuan's native riffcard subsystem.
 }
 
 /**
@@ -192,8 +198,6 @@ export async function createCard(partial: Omit<Partial<SRSCard>, 'id'> & { block
         deckId,
         front: partial.front || '',
         back: partial.back || '',
-        stability: 0,
-        difficulty: 0,
         lastReview: 0,
         nextReview: now,
         reps: 0,
@@ -212,14 +216,6 @@ export async function createCard(partial: Omit<Partial<SRSCard>, 'id'> & { block
     };
     cardCache.set(id, fallback);
     return fallback;
-}
-
-export async function createCards(partials: Array<Omit<Partial<SRSCard>, 'id'> & { blockId: string; type: SRSCard['type'] }>): Promise<SRSCard[]> {
-    const cards: SRSCard[] = [];
-    for (const partial of partials) {
-        cards.push(await createCard(partial));
-    }
-    return cards;
 }
 
 export async function updateCard(cardId: string, updates: Partial<SRSCard>): Promise<SRSCard | null> {
@@ -245,14 +241,6 @@ export async function updateCard(cardId: string, updates: Partial<SRSCard>): Pro
 
     await refreshNativeCards();
     return cardCache.get(makeCardId(deckId, card.blockId)) ?? { ...card, ...updates, deckId, updatedAt: Date.now() };
-}
-
-export async function deleteCard(cardId: string): Promise<boolean> {
-    const card = cardCache.get(cardId);
-    if (!card) return false;
-    await removeRiffCards(card.deckId, [card.blockId]);
-    cardCache.delete(cardId);
-    return true;
 }
 
 export async function deleteCards(cardIds: string[]): Promise<number> {
@@ -282,7 +270,9 @@ export async function deleteCardsByBlockId(blockId: string): Promise<number> {
 }
 
 /**
- * Review a card in SiYuan native riffcard storage.
+ * Review a card using SiYuan's native riffcard scheduler (SM-2 based).
+ * The native API handles due time, reps, lapses, and state transitions.
+ * We only sync the result to in-memory cache and review log.
  */
 export async function reviewCardById(
     cardId: string,
@@ -292,19 +282,30 @@ export async function reviewCardById(
     const card = cardCache.get(cardId);
     if (!card) return null;
 
-    await reviewRiffCard(card.deckId, card.blockId, rating);
+    // Call native riffcard review API — it computes the new due time and state
+    try {
+        await reviewRiffCard(card.deckId, card.blockId, rating);
+    } catch (e) {
+        console.error('[SRS-Core] reviewCardById: native reviewRiffCard failed:', e);
+        return null;
+    }
+
+    // Refresh native data to get updated scheduling fields
     await refreshNativeCards();
-    const updatedCard = cardCache.get(cardId) ?? { ...card, lastReview: Date.now(), reps: card.reps + 1 };
-    const timestamp = Date.now();
+    const updatedCard = cardCache.get(cardId);
+    if (!updatedCard) return null;
+
+    // Record review log
+    const now = Date.now();
     const log: ReviewLogEntry = {
         cardId,
         rating,
-        state: updatedCard.state,
-        stability: updatedCard.stability,
-        difficulty: updatedCard.difficulty,
-        timestamp,
-        elapsedDays: card.lastReview ? Math.max(0, Math.floor((timestamp - card.lastReview) / 86400000)) : 0,
-        scheduledDays: Math.max(0, Math.round((updatedCard.nextReview - timestamp) / 86400000)),
+        state: card.state,  // Pre-review state for daily limit counting
+        reps: updatedCard.reps,
+        lapses: updatedCard.lapses,
+        timestamp: now,
+        elapsedDays: card.lastReview ? Math.max(0, Math.floor((now - card.lastReview) / 86400000)) : 0,
+        scheduledDays: Math.max(0, Math.floor((updatedCard.nextReview - now) / 86400000)),
     };
 
     reviewLogCache.push(log);
@@ -318,7 +319,6 @@ export async function reviewCardById(
 
 /**
  * Undo the most recent review: restore native due time and in-memory card fields.
- * FSRS internal state (stability/difficulty) is best-effort restored from snapshot.
  */
 export async function undoLastReview(snapshot: UndoSnapshot): Promise<boolean> {
     const card = cardCache.get(snapshot.cardId);
@@ -334,8 +334,6 @@ export async function undoLastReview(snapshot: UndoSnapshot): Promise<boolean> {
         ...card,
         nextReview: snapshot.nextReview,
         state: snapshot.state,
-        stability: snapshot.stability,
-        difficulty: snapshot.difficulty,
         reps: snapshot.reps,
         lapses: snapshot.lapses,
         updatedAt: Date.now(),
@@ -355,20 +353,6 @@ export function getReviewLog(): ReviewLogEntry[] {
     return [...reviewLogCache];
 }
 
-export function getCardReviewLog(cardId: string): ReviewLogEntry[] {
-    return reviewLogCache.filter((l) => l.cardId === cardId);
-}
-
-export function searchCards(query: string): SRSCard[] {
-    const lower = query.toLowerCase();
-    return getAllCards().filter(
-        (c) =>
-            c.front.toLowerCase().includes(lower) ||
-            c.back.toLowerCase().includes(lower) ||
-            c.tags.some((t) => t.toLowerCase().includes(lower)),
-    );
-}
-
 function makeCardId(deckId: string, blockId: string): string {
     return `${deckId}${CARD_ID_SEPARATOR}${blockId}`;
 }
@@ -378,19 +362,60 @@ function extractBlockId(card: any): string {
     return card?.BlockID ?? card?.blockID ?? card?.blockId ?? card?.id ?? card?.ID ?? '';
 }
 
+/** Extract a BlockRow from getRiffCards raw data (which includes markdown, content, root_id, etc.) */
+function extractBlockFromRaw(raw: any): BlockRow | undefined {
+    if (typeof raw === 'string' || !raw) return undefined;
+    return {
+        id: String(raw.id ?? raw.ID ?? raw.BlockID ?? raw.blockID ?? ''),
+        content: raw.content ?? raw.fcontent,
+        markdown: raw.markdown,
+        root_id: raw.rootID ?? raw.root_id ?? raw.rootId,
+    };
+}
+
+/** Extract a NativeRiffCard detail from getRiffCards raw data (which nests scheduling under riffCard) */
+function extractRiffCardFromRaw(raw: any): NativeRiffCard | undefined {
+    if (typeof raw === 'string' || !raw) return undefined;
+    return {
+        ID: raw.riffCardID,
+        id: raw.riffCardID,
+        BlockID: raw.id ?? raw.ID,
+        riffCard: raw.riffCard,
+        riffCardID: raw.riffCardID,
+    };
+}
+
 function extractDeckId(card: NativeRiffCard, fallbackDeckId: string = ''): string {
-    return card.DeckID ?? card.deckID ?? card.deckId ?? fallbackDeckId;
+    const direct = card.DeckID ?? card.deckID ?? card.deckId;
+    if (direct) return String(direct);
+    // For built-in deck cards, deck ID is stored in ial.custom-riff-decks
+    const ial = (card as any)?.ial;
+    if (ial?.['custom-riff-decks']) {
+        return String(ial['custom-riff-decks']);
+    }
+    return fallbackDeckId;
 }
 
 function unique<T>(items: T[]): T[] {
     return [...new Set(items)];
 }
 
+const BUILTIN_DECK_ID = '20230218211946-2kw8jgx';
+const BUILTIN_DECK_NAME = '内置卡包';
+
 async function getNativeDecks(): Promise<NativeDeck[]> {
     const decks = await getRiffDecks();
-    return decks
+    const result = decks
         .map((d: any) => ({ id: String(d.id ?? d.ID ?? d.deckID ?? ''), name: String(d.name ?? d.Name ?? d.id ?? '') }))
         .filter((d) => d.id);
+
+    // SiYuan's getRiffDecks API does NOT return the built-in deck, but getRiffCards
+    // can still query its cards. We must inject it manually.
+    if (!result.some((d) => d.id === BUILTIN_DECK_ID)) {
+        result.unshift({ id: BUILTIN_DECK_ID, name: BUILTIN_DECK_NAME });
+    }
+
+    return result;
 }
 
 async function resolveDeckId(deckIdOrName?: string): Promise<string> {
@@ -446,7 +471,7 @@ async function loadSrsAttrs(blockIds: string[]): Promise<Map<string, CardAttrs>>
         if (chunkIds.length === 0) continue;
         const ids = chunkIds.map(sqlString).join(',');
         const rows = await sql(
-            `SELECT block_id, name, value FROM attributes WHERE block_id IN (${ids}) AND (name LIKE 'custom-srs-%' OR name = 'custom-card-type') LIMIT ${chunkIds.length * 16}`
+            `SELECT block_id, name, value FROM attributes WHERE block_id IN (${ids}) AND (name LIKE 'custom-srs-%' OR name = 'custom-card-type') LIMIT ${chunkIds.length * 24}`
         );
         for (const row of rows ?? []) {
             const current = attrsByBlock.get(row.block_id) ?? {};
@@ -479,10 +504,20 @@ function buildCard(deck: NativeDeck, blockId: string, block?: BlockRow, detail?:
     const content = (block?.markdown || block?.content || '').trim();
     const createdAt = parseNativeTime(detail?.Created ?? block?.created) ?? now;
     const updatedAt = parseNativeTime(detail?.Updated ?? block?.updated) ?? createdAt;
-    const nextReview = parseNativeTime(detail?.Due) ?? now;
-    const reps = Number(detail?.Reviews ?? 0) || 0;
-    const lapses = Number(detail?.Lapses ?? 0) || 0;
-    const interval = Number(detail?.Interval ?? 0) || 0;
+
+    // SiYuan API nests scheduling data under riffCard: {due, reps, lapses, state, lastReview}
+    // Legacy/native riffcard APIs may use flat fields: Due, Reviews, Lapses, State, Interval
+    const rc = detail?.riffCard;
+    const nextReview = parseNativeTime(rc?.due ?? detail?.Due) ?? now;
+    const nativeReps = Number(rc?.reps ?? detail?.Reviews ?? 0) || 0;
+    const nativeLapses = Number(rc?.lapses ?? detail?.Lapses ?? 0) || 0;
+    const nativeState = rc?.state ?? detail?.State;
+    const nativeLastReview = rc?.lastReview ? parseNativeTime(rc.lastReview) : null;
+
+    const reps = nativeReps;
+    const lapses = nativeLapses;
+    const state = normalizeState(nativeState, reps);
+    const lastReview = nativeLastReview ?? (reps > 0 ? updatedAt : 0);
 
     return {
         id: makeCardId(deck.id, blockId),
@@ -493,13 +528,11 @@ function buildCard(deck: NativeDeck, blockId: string, block?: BlockRow, detail?:
         deckName: deck.name,
         front: attrs?.front || content,
         back: attrs?.back || content,
-        stability: interval,
-        difficulty: 0,
-        lastReview: reps > 0 ? updatedAt : 0,
+        lastReview,
         nextReview,
         reps,
         lapses,
-        state: normalizeState(detail?.State, reps),
+        state,
         tags: attrs?.tags ?? [],
         createdAt,
         updatedAt,

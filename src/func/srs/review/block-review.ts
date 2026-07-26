@@ -15,7 +15,7 @@ import { sql } from '@/api';
  * Uses rootId-based lookup as primary strategy for documents (catches all
  * nested cards), falls back to blockId + children traversal.
  */
-export async function collectBlockCards(blockId: BlockId, includeChildren: boolean = true): Promise<string[]> {
+async function collectBlockCards(blockId: BlockId, includeChildren: boolean = true): Promise<string[]> {
     await refreshNativeCards();
     const cardIdSet = new Set<string>();
 

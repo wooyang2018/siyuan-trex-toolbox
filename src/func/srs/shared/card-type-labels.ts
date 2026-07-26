@@ -28,10 +28,17 @@ export const CARD_TYPE_SHORT_LABELS: Record<string, string> = {
     [CardType.MultiChoice]: '多选',
 };
 
-export function getCardTypeLabel(type: string): string {
-    return CARD_TYPE_LABELS[type] ?? type;
-}
-
-export function getCardTypeShortLabel(type: string): string {
-    return CARD_TYPE_SHORT_LABELS[type] ?? type;
-}
+/**
+ * Card types that users can actually generate via SiYuan's native flashcard system.
+ * Used to populate the type filter dropdown in ViewerView — only these 4 types
+ * have reachable creation paths (native SiYuan flashcards).
+ * Other types (Formula, ImageOcclusion, CDF, ConceptDefinition, OrderedList,
+ * UnorderedList) have no user-accessible creation entry and are excluded to avoid
+ * showing empty filter options.
+ */
+export const GENERATABLE_CARD_TYPES: Partial<Record<CardType, string>> = {
+    [CardType.Cloze]: '填空',
+    [CardType.QA]: '问答',
+    [CardType.SingleChoice]: '单选',
+    [CardType.MultiChoice]: '多选',
+};

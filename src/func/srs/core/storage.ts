@@ -25,17 +25,6 @@ export function setPlugin(plugin: FMiscPlugin): void {
     pluginRef = plugin;
 }
 
-export function getPlugin(): FMiscPlugin | null {
-    return pluginRef;
-}
-
-export function requirePlugin(): FMiscPlugin {
-    if (!pluginRef) {
-        throw new Error('[SRS] Plugin not initialized');
-    }
-    return pluginRef;
-}
-
 // ===== Generic load/save =====
 async function loadData<T>(key: string): Promise<T | null> {
     if (!pluginRef) {
@@ -76,7 +65,7 @@ export async function saveSettings(settings: SRSSettings): Promise<void> {
     await saveData(STORAGE_KEYS.settings, settings);
 }
 
-// ===== Review Log (for FSRS optimizer) =====
+// ===== Review Log (for daily limit tracking) =====
 export async function loadReviewLog(): Promise<ReviewLogEntry[]> {
     const data = await loadData<ReviewLogEntry[]>(STORAGE_KEYS.reviewLog);
     return Array.isArray(data) ? data : [];
@@ -84,20 +73,4 @@ export async function loadReviewLog(): Promise<ReviewLogEntry[]> {
 
 export async function saveReviewLog(log: ReviewLogEntry[]): Promise<void> {
     await saveData(STORAGE_KEYS.reviewLog, log);
-}
-
-// ===== Utility =====
-
-/**
- * Get today's review date boundary (based on dayStartHour setting).
- * Returns a timestamp; cards with nextReview < this timestamp are "due today".
- */
-export function getTodayBoundary(dayStartHour: number): number {
-    const now = new Date();
-    const boundary = new Date(now);
-    boundary.setHours(dayStartHour, 0, 0, 0);
-    if (now.getHours() < dayStartHour) {
-        boundary.setDate(boundary.getDate() - 1);
-    }
-    return boundary.getTime();
 }

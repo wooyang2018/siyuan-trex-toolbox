@@ -3,10 +3,10 @@
  * SRS 统一插件端到端测试
  *
  * 合并原 test-srs-e2e / test-srs-cards-e2e / test-srs-native-e2e /
- * test-srs-queues-e2e。当前 SRS 对外只提供：提取练习、卡包管理、闪卡地图。
+ * test-srs-queues-e2e。当前 SRS 对外只提供：提取练习、闪卡地图。
  *
  * 覆盖范围：
- *   Part A — FSRS v6 调度基础
+ *   Part A — 原生调度基础（移除 FSRS，改用原生 reviewRiffCard）
  *   Part B — 内部卡片解析器边界
  *   Part C — 提取练习队列与卡包任务筛选
  *   Part D — 原生 riffcard 投影模型
@@ -17,8 +17,6 @@
  *
  * 运行: node --experimental-strip-types scripts/tests/test-srs-e2e.ts
  */
-
-import { fsrs, Rating, State, generatorParameters, createEmptyCard } from 'ts-fsrs';
 
 const SIYUAN = process.env.SIYUAN_API || 'http://127.0.0.1:6806';
 const TOKEN = process.env.SIYUAN_TOKEN || '';
@@ -233,13 +231,8 @@ interface SRSCard {
 }
 
 interface SRSSettings {
-  fsrsParams: number[];
   requestRetention: number;
   maximumInterval: number;
-  enableFuzz: boolean;
-  enableShortTerm: boolean;
-  learningSteps: number[];
-  relearningSteps: number[];
   newPerDay: number;
   reviewsPerDay: number;
   dayStartHour: number;
@@ -258,21 +251,9 @@ interface BrowserTaskFilterInput {
   search?: string;
 }
 
-const DEFAULT_FSRS_PARAMS = [
-  0.4072, 1.1829, 3.1262, 15.4722, 7.2102,
-  0.5316, 1.0651, 0.0234, 1.616, 0.1544,
-  1.0824, 1.9813, 0.0953, 0.2975, 2.2042,
-  0.2407, 2.9466, 0.5034, 0.6567,
-];
-
 const DEFAULT_SRS_SETTINGS: SRSSettings = {
-  fsrsParams: DEFAULT_FSRS_PARAMS,
   requestRetention: 0.9,
   maximumInterval: 36500,
-  enableFuzz: false,
-  enableShortTerm: true,
-  learningSteps: [1, 10],
-  relearningSteps: [10],
   newPerDay: 20,
   reviewsPerDay: 200,
   dayStartHour: 4,
@@ -543,50 +524,29 @@ function makeFutureCard(overrides: Partial<SRSCard> = {}): SRSCard {
   });
 }
 
-// ===================== Part A: FSRS v6 调度 =====================
+// ===================== Part A: 原生调度基础 =====================
 
 function partA() {
-  console.log('\n\x1b[36mPart A: FSRS v6 调度基础\x1b[0m');
+  console.log('\n\x1b[36mPart A: 原生调度基础（FSRS 已移除）\x1b[0m');
 
-  const card = createEmptyCard(new Date());
-  assertEq('新卡 state = New', card.state, State.New);
-  assertEq('新卡 reps = 0', card.reps, 0);
-  assertEq('新卡 lapses = 0', card.lapses, 0);
-
-  const scheduler = fsrs(generatorParameters({
-    w: DEFAULT_FSRS_PARAMS,
-    enable_fuzz: false,
-    enable_short_term: true,
-    request_retention: 0.9,
-    maximum_interval: 36500,
-  }));
-  assertTrue('调度器创建成功', typeof scheduler.repeat === 'function');
-
-  const now = new Date();
-  const result = scheduler.repeat(card, now);
-  const again = result[Rating.Again];
-  const hard = result[Rating.Hard];
-  const good = result[Rating.Good];
-  const easy = result[Rating.Easy];
-  assertTrue('四种评分结果存在', !!again && !!hard && !!good && !!easy);
-
-  const intervalAgain = new Date(again.card.due as any).getTime() - now.getTime();
-  const intervalHard = new Date(hard.card.due as any).getTime() - now.getTime();
-  const intervalGood = new Date(good.card.due as any).getTime() - now.getTime();
-  const intervalEasy = new Date(easy.card.due as any).getTime() - now.getTime();
-  assertGte('Hard 间隔 >= Again', intervalHard, intervalAgain);
-  assertGte('Good 间隔 >= Hard', intervalGood, intervalHard);
-  assertGte('Easy 间隔 >= Good', intervalEasy, intervalGood);
-  assertEq('Good 后 reps = 1', good.card.reps, 1);
-  assertTrue('Good 后 stability > 0', good.card.stability > 0);
-  assertTrue('Good 后 difficulty > 0', good.card.difficulty > 0);
-
+  // FSRS 已移除，调度改用原生 reviewRiffCard API
+  // 这里验证 formatInterval 和基本数据结构仍可用
   assertEq('formatInterval <1m', formatInterval(0), '<1m');
   assertEq('formatInterval 10m', formatInterval(10 / 1440), '10m');
   assertEq('formatInterval 12h', formatInterval(0.5), '12h');
   assertEq('formatInterval 7d', formatInterval(7), '7d');
   assertEq('formatInterval 6mo', formatInterval(180), '6mo');
   assertEq('formatInterval 1y', formatInterval(365), '1.0y');
+
+  // 验证 SRSSettings 不再包含 FSRS 字段
+  const settings = DEFAULT_SRS_SETTINGS;
+  assertTrue('设置不含 fsrsParams', !('fsrsParams' in settings));
+  assertTrue('设置不含 enableFuzz', !('enableFuzz' in settings));
+  assertTrue('设置不含 enableShortTerm', !('enableShortTerm' in settings));
+  assertTrue('设置不含 learningSteps', !('learningSteps' in settings));
+  assertTrue('设置不含 relearningSteps', !('relearningSteps' in settings));
+  assertTrue('设置含 reviewsPerDay', 'reviewsPerDay' in settings);
+  assertTrue('设置含 newPerDay', 'newPerDay' in settings);
 }
 
 // ===================== Part B: 卡片解析器边界 =====================
@@ -785,14 +745,15 @@ async function partF() {
       'difficulty',
       'retrieval',
       '提取练习',
-      '卡包管理',
       '闪卡地图',
     ];
     const found = patterns.filter(p => indexJs.includes(p));
     console.log(`    SRS 模式: ${found.length}/${patterns.length} 找到`);
-    assertGte('统一 SRS 模式找到 >= 6/9', found.length, 6);
+    assertGte('统一 SRS 模式找到 >= 5/8', found.length, 5);
+    assertFalse('部署产物不应再包含卡包管理入口', indexJs.includes('卡包管理'));
     assertFalse('部署产物不应再包含神经漫游入口', indexJs.includes('神经漫游'));
     assertFalse('部署产物不应再包含渐进阅读入口', indexJs.includes('渐进阅读'));
+    assertFalse('部署产物不应再包含 ts-fsrs', indexJs.includes('ts-fsrs'));
   }
 
   const indexCss = await siyuanGetFile(`${REMOTE_BASE}/index.css`);

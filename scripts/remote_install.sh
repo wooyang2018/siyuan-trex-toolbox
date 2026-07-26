@@ -33,8 +33,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── 校验 ────────────────────────────────────────────────
-if [[ -z "$API_URL" || -z "$TOKEN" ]]; then
-    echo "ERROR: API URL or Token not set. Use --api-url and --token, or configure ~/.siyuan-sisyphus/config.json"
+if [[ -z "$API_URL" ]]; then
+    echo "ERROR: API URL not set. Use --api-url, or configure ~/.siyuan-sisyphus/config.json"
     exit 1
 fi
 if [[ ! -d "$DIST_DIR" ]]; then
@@ -42,10 +42,18 @@ if [[ ! -d "$DIST_DIR" ]]; then
     exit 1
 fi
 
+# token 为空或 "none" 时视为开放模式，不发送 Authorization 头
+if [[ -z "$TOKEN" || "$TOKEN" == "none" ]]; then
+    AUTH_HEADER=()
+else
+    AUTH_HEADER=(-H "Authorization: Token $TOKEN")
+fi
+
 echo "============================================"
 echo "  Remote Plugin Installer"
 echo "============================================"
 echo "  API URL    : $API_URL"
+echo "  Token      : ${TOKEN:-(open mode)}"
 echo "  Plugin     : $PLUGIN_NAME"
 echo "  Remote base: $REMOTE_BASE"
 echo "  Dist dir   : $DIST_DIR"
@@ -56,7 +64,7 @@ echo ""
 api_post_json() {
     local endpoint="$1" body="$2"
     curl -s -X POST "$API_URL$endpoint" \
-        -H "Authorization: Token $TOKEN" \
+        ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} \
         -H "Content-Type: application/json" \
         -d "$body"
 }
@@ -64,7 +72,7 @@ api_post_json() {
 api_post_form() {
     local endpoint="$1"; shift
     curl -s -X POST "$API_URL$endpoint" \
-        -H "Authorization: Token $TOKEN" \
+        ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} \
         "$@"
 }
 
@@ -157,7 +165,7 @@ echo "[4/5] Verifying SRS modules in remote bundle..."
 # 读回远程 index.js（入口文件，含 require 指向主 bundle）
 TMP_ENTRY=$(mktemp)
 curl -s -X POST "$API_URL/api/file/getFile" \
-    -H "Authorization: Token $TOKEN" \
+    ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} \
     -H "Content-Type: application/json" \
     -d "{\"path\":\"$REMOTE_BASE/index.js\"}" -o "$TMP_ENTRY" 2>/dev/null
 
@@ -176,7 +184,7 @@ echo "  Main bundle to verify: $MAIN_BUNDLE"
 # 下载主 bundle 到临时文件
 TMP_JS=$(mktemp)
 curl -s -X POST "$API_URL/api/file/getFile" \
-    -H "Authorization: Token $TOKEN" \
+    ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} \
     -H "Content-Type: application/json" \
     -d "{\"path\":\"$REMOTE_BASE/$MAIN_BUNDLE\"}" -o "$TMP_JS" 2>/dev/null
 

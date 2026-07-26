@@ -132,51 +132,37 @@ function parseChoice(raw: string, multi: boolean): ParsedFlashcard {
     const lines = clean.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
     let question = '';
+    const questionParts: string[] = [];
     const options: ChoiceOption[] = [];
     let answerLine = '';
     let explanation = '';
 
-    // Parse lines: find question (starts with 【...题】), options, answer, explanation
+    // Parse lines: find question, options, answer, explanation
     let inAnswer = false;
     let optionIndex = 0;
 
     for (const line of lines) {
-        // Question line (starts with 【 or is the first non-option line)
-        if (/^[【]/.test(line)) {
-            if (!question) {
-                question = line;
-            }
-            continue;
-        }
-
         // Option line: "- A. text" or "- [ ] text" or "- [X] text"
-        // Format 1: "- A. option text" (single-choice style)
-        // Format 2: "- [ ] option text" or "- [X] option text" (multi-choice checkbox style)
         const labeledOptMatch = line.match(/^-\s*([A-Z])[.、)]\s*(.*)$/);
         const checkboxOptMatch = line.match(/^-\s*\[([ xX])\]\s*(.*)$/);
 
         if (labeledOptMatch) {
-            // Labeled format: "- A. text"
             const label = labeledOptMatch[1];
             const text = labeledOptMatch[2];
-            const correct = false; // Will be set from answer line later
-            options.push({ label, text, correct });
+            options.push({ label, text, correct: false });
             inAnswer = false;
             continue;
         } else if (checkboxOptMatch) {
-            // Checkbox format: "- [ ] text" or "- [X] text"
             const isChecked = checkboxOptMatch[1] === 'x' || checkboxOptMatch[1] === 'X';
             const text = checkboxOptMatch[2];
             if (inAnswer && options.length > 0) {
-                // This is a correct option list after the answer line — match by text
                 const existing = options.find(o => o.text.trim() === text.trim());
                 if (existing) {
                     existing.correct = isChecked;
                     continue;
                 }
             }
-            // New option from the question section
-            const label = String.fromCharCode(65 + optionIndex); // A, B, C, D...
+            const label = String.fromCharCode(65 + optionIndex);
             options.push({ label, text, correct: isChecked });
             optionIndex++;
             inAnswer = false;
@@ -184,22 +170,26 @@ function parseChoice(raw: string, multi: boolean): ParsedFlashcard {
         }
 
         // Answer line: "答案：A" or "答案：B、C、D。"
-        if (line.startsWith('答案') || line.startsWith('答案：')) {
+        if (line.startsWith('答案')) {
             answerLine = line;
             inAnswer = true;
             continue;
         }
 
         // Explanation
-        if (inAnswer && (line.startsWith('解析') || !line.startsWith('-'))) {
-            if (line.startsWith('解析')) {
-                explanation = line.replace(/^解析[：:]\s*/, '');
-            } else {
-                explanation += (explanation ? '\n' : '') + line;
-            }
+        if (inAnswer && line.startsWith('解析')) {
+            explanation = line.replace(/^解析[：:]\s*/, '');
             continue;
         }
+
+        // Non-option, non-answer, non-explanation line → question text
+        // (includes lines starting with 【单选题】 etc., or plain question text)
+        if (!inAnswer) {
+            questionParts.push(line);
+        }
     }
+
+    question = questionParts.join('\n').trim();
 
     // If options don't have correct marks from the question section, parse answerLine
     if (answerLine) {

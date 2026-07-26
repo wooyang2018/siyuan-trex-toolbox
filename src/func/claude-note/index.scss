@@ -1833,9 +1833,9 @@ html[data-theme-mode="dark"] .cn-search-overlay {
 }
 
 /* ==========================================================================
-   Custom Premium Tooltips (Ensures perfect tooltip rendering across all views)
+   Custom Premium Tooltips (Scoped to Claude Note panel only — avoids breaking SiYuan's global .b3-tooltips layout)
    ========================================================================== */
-.b3-tooltips {
+.cn-shell .b3-tooltips {
     position: relative !important;
     overflow: visible !important;
 

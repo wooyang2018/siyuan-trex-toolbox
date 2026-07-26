@@ -3,15 +3,12 @@ import { showMessage, openTab, type App } from "siyuan";
 import { solidDialog } from "@/libs/dialog";
 import { load as initCore, unload as unloadCore } from "./core/module";
 import { getAllCards, refreshNativeCards } from "./core/card-repository";
-import { ReviewView } from "./review/components/ReviewView";
-import { BrowserView } from "./browser/components/BrowserView";
-import { ViewerView } from "./viewer/components/ViewerView";
+import { ModeRouter } from "./mode-router/ModeRouter";
 import { startBlockReview } from "./review/block-review";
 import type { QueueType } from "@/types/srs";
 import "./core/index.scss";
-import "./review/index.scss";
-import "./browser/index.scss";
-import "./viewer/index.scss";
+import "./creator/index.scss";
+import "./focus/index.scss";
 
 export const name = "SRS";
 export let enabled = false;
@@ -31,62 +28,42 @@ export function openSourceBlock(blockId: string): void {
 export const category: SettingCategory = 'document';
 export const declareSetting = {
     title: "SRS 学习复习",
-    description: "统一提供提取练习、卡包管理、闪卡地图三个核心功能，底层复用思源原生闪卡与 FSRS 调度。",
+    description: "统一提供提取练习和闪卡地图两个核心功能，底层复用思源原生闪卡调度。",
     toggle: { defaultEnabled: false },
 };
 
-function openReviewDialog(queueType: QueueType = "retrieval"): void {
+function openSrsDialog(initialMode?: 'creator' | 'focus'): void {
     const dialog = solidDialog({
-        title: "SRS 提取练习",
-        width: "900px",
-        height: "680px",
-        maxWidth: "96vw",
-        loader: () => ReviewView({ queueType, onClose: () => dialog?.close() }),
-    });
-}
-
-async function openReviewWithGuard(queueType: QueueType = "retrieval"): Promise<void> {
-    await refreshNativeCards();
-    const allCards = getAllCards();
-    if (allCards.length === 0) {
-        showMessage("暂无闪卡，请先在思源原生闪卡中添加卡片后再复习", 3000);
-        return;
-    }
-    openReviewDialog(queueType);
-}
-
-function openBrowserDialog(): void {
-    solidDialog({
-        title: "SRS 卡包管理",
-        width: "94%",
-        height: "88vh",
-        maxWidth: "1480px",
-        loader: () => BrowserView(),
-    });
-}
-
-function openViewerDialog(): void {
-    const dialog = solidDialog({
-        title: "SRS 闪卡地图",
+        title: "SRS 闪卡",
         width: "94%",
         height: "88vh",
         maxWidth: "1180px",
-        loader: () => ViewerView({ onClose: () => dialog?.close() }),
+        loader: () => ModeRouter({ onClose: () => dialog?.close(), initialMode }),
     });
+}
+
+function openReviewWithGuard(queueType: QueueType = "retrieval"): Promise<void> {
+    return (async () => {
+        await refreshNativeCards();
+        const allCards = getAllCards();
+        if (allCards.length === 0) {
+            showMessage("暂无闪卡，请先在思源原生闪卡中添加卡片后再复习", 3000);
+            return;
+        }
+        openSrsDialog('focus');
+    })();
 }
 
 function registerTopMenu(plugin: FMiscPlugin): void {
     plugin.registerMenuTopMenu("srs", [
-        { label: "提取练习", icon: "iconRiffCard", click: () => openReviewWithGuard("retrieval") },
-        { label: "卡包管理", icon: "iconList", click: () => openBrowserDialog() },
-        { label: "闪卡地图", icon: "iconEye", click: () => openViewerDialog() },
+        { label: "管理卡片", icon: "iconEye", click: () => openSrsDialog('creator') },
+        { label: "开始学习", icon: "iconRiffCard", click: () => openReviewWithGuard("retrieval") },
     ]);
 }
 
 function registerCommands(plugin: FMiscPlugin): void {
     plugin.addCommandV2({ langKey: "srsReview_retrieval", hotkey: "⌥+R", callback: () => openReviewWithGuard("retrieval") });
-    plugin.addCommandV2({ langKey: "srsOpenBrowser", hotkey: "⌥+B", callback: () => openBrowserDialog() });
-    plugin.addCommandV2({ langKey: "srsOpenViewer", hotkey: "⌥+M", callback: () => openViewerDialog() });
+    plugin.addCommandV2({ langKey: "srsOpenViewer", hotkey: "⌥+M", callback: () => openSrsDialog('creator') });
 }
 
 function registerBlockReview(plugin: FMiscPlugin): void {
@@ -106,7 +83,7 @@ function registerBlockReview(plugin: FMiscPlugin): void {
                     showMessage("当前块及其子块没有闪卡", 2000);
                     return;
                 }
-                openReviewDialog("retrieval");
+                openSrsDialog('focus');
             },
         });
     });

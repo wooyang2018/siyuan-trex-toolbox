@@ -3,12 +3,11 @@
  * Manages queue commit semantics: New → Learning → Review → Relearning.
  * Each queue has independent commit/rollback rules.
  */
-import type { SRSCard, SRSQueue, QueueType, SRSSettings } from '@/types/srs';
+import type { SRSCard, QueueType, SRSSettings } from '@/types/srs';
 import { loadQueues, saveQueues } from './storage';
-import { isCardDue } from './scheduler';
 
 // ===== In-memory queue state =====
-let queues: Record<string, SRSQueue> = {};
+let queues: Record<string, any> = {};
 let initialized = false;
 
 const QUEUE_KEYS: Record<QueueType, string> = {
@@ -39,13 +38,6 @@ export async function persistQueues(): Promise<void> {
 }
 
 /**
- * Get a queue by type.
- */
-export function getQueue(type: QueueType): SRSQueue {
-    return queues[QUEUE_KEYS[type]] ?? { type, cardIds: [], currentIndex: 0 };
-}
-
-/**
  * Add cards to a specific queue.
  */
 export function addToQueue(type: QueueType, cardIds: string[], insertAt?: number): void {
@@ -61,19 +53,6 @@ export function addToQueue(type: QueueType, cardIds: string[], insertAt?: number
 }
 
 /**
- * Remove cards from a specific queue.
- */
-export function removeFromQueue(type: QueueType, cardIds: string[]): void {
-    const key = QUEUE_KEYS[type];
-    if (!queues[key]) return;
-    const queue = queues[key];
-    queue.cardIds = queue.cardIds.filter((id) => !cardIds.includes(id));
-    if (queue.currentIndex >= queue.cardIds.length) {
-        queue.currentIndex = Math.max(0, queue.cardIds.length - 1);
-    }
-}
-
-/**
  * Clear a queue.
  */
 export function clearQueue(type: QueueType): void {
@@ -85,74 +64,51 @@ export function clearQueue(type: QueueType): void {
 }
 
 /**
- * Get the current card ID in a queue.
- */
-export function getCurrentCardId(type: QueueType): string | null {
-    const queue = getQueue(type);
-    return queue.cardIds[queue.currentIndex] ?? null;
-}
-
-/**
- * Advance to the next card in a queue. Returns null if at end.
- */
-export function advanceQueue(type: QueueType): string | null {
-    const key = QUEUE_KEYS[type];
-    if (!queues[key]) return null;
-    const queue = queues[key];
-    queue.currentIndex++;
-    if (queue.currentIndex >= queue.cardIds.length) {
-        return null;
-    }
-    return queue.cardIds[queue.currentIndex];
-}
-
-/**
- * Get the current index and total for a queue.
- */
-export function getQueueProgress(type: QueueType): { current: number; total: number } {
-    const queue = getQueue(type);
-    return { current: queue.currentIndex + 1, total: queue.cardIds.length };
-}
-
-/**
  * Build the retrieval practice queue from due cards.
  * Review cards sorted by due date, new cards limited by newPerDay.
  * Total review cards limited by reviewsPerDay.
+ *
+ * Daily limits are tracked across sessions using the review log:
+ * if the user has already reviewed N cards today, the remaining
+ * allowance is max(0, limit - N).
  */
-export function buildRetrievalQueue(cards: SRSCard[], settings: SRSSettings): string[] {
-    const dueCards = cards.filter((c) => isCardDue(c, settings.dayStartHour));
+export function buildRetrievalQueue(
+    cards: SRSCard[],
+    settings: SRSSettings,
+    todayReviewedCount?: { review: number; new: number },
+): string[] {
+    const dueCards = cards.filter((c) => isCardDueInline(c, settings.dayStartHour));
+
+    // Cross-session daily limit enforcement
+    const reviewedToday = todayReviewedCount ?? { review: 0, new: 0 };
+    const remainingReviewSlots = Math.max(0, settings.reviewsPerDay - reviewedToday.review);
+    const remainingNewSlots = Math.max(0, settings.newPerDay - reviewedToday.new);
+
     // Sort: new cards last, then by due date
     const reviewCards = dueCards
         .filter((c) => c.state !== 'new')
         .sort((a, b) => a.nextReview - b.nextReview)
-        .slice(0, settings.reviewsPerDay);
+        .slice(0, remainingReviewSlots);
     const newCards = dueCards
         .filter((c) => c.state === 'new')
-        .slice(0, settings.newPerDay);
+        .slice(0, remainingNewSlots);
     return [...reviewCards.map((c) => c.id), ...newCards.map((c) => c.id)];
 }
 
 /**
- * Sort a queue by the given comparator.
+ * Check if a card is due for review (inlined from former scheduler.ts).
+ * A card is due if its nextReview timestamp is in the past, or if it's new.
+ * Learning/Relearning cards already reviewed today won't reappear.
  */
-export function sortQueue(type: QueueType, compareFn: (a: string, b: string) => number): void {
-    const key = QUEUE_KEYS[type];
-    if (!queues[key]) return;
-    queues[key].cardIds.sort(compareFn);
-    queues[key].currentIndex = 0;
-}
-
-/**
- * Insert a card at a specific position in the queue.
- */
-export function insertAtPosition(type: QueueType, cardId: string, position: number): void {
-    const key = QUEUE_KEYS[type];
-    if (!queues[key]) queues[key] = { type, cardIds: [], currentIndex: 0 };
-    const queue = queues[key];
-    const existingIdx = queue.cardIds.indexOf(cardId);
-    if (existingIdx >= 0) {
-        queue.cardIds.splice(existingIdx, 1);
+function isCardDueInline(card: SRSCard, dayStartHour: number): boolean {
+    if (card.state === 'new') return true;
+    const now = Date.now();
+    if (card.nextReview > now) return false;
+    if ((card.state === 'learning' || card.state === 'relearning') && card.lastReview > 0) {
+        const d = new Date(now);
+        d.setHours(dayStartHour, 0, 0, 0);
+        if (d.getTime() > now) d.setDate(d.getDate() - 1);
+        if (card.lastReview >= d.getTime()) return false;
     }
-    const insertPos = Math.min(position, queue.cardIds.length);
-    queue.cardIds.splice(insertPos, 0, cardId);
+    return true;
 }

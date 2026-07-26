@@ -443,11 +443,10 @@ export async function sql(sql: string, params?: any[]): Promise<any[]> {
     // 参数化查询支持
     let processedSql = sql;
     if (params && params.length > 0) {
-        // 简单的参数替换，实际应该由后端处理参数化查询
-        // 这里主要是为了保持接口一致性
-        processedSql = sql.replace(/\?/g, (match, index) => {
-            if (index < params.length) {
-                const param = params[index];
+        let paramIdx = 0;
+        processedSql = sql.replace(/\?/g, () => {
+            if (paramIdx < params.length) {
+                const param = params[paramIdx++];
                 if (typeof param === 'string') {
                     return `'${param.replace(/'/g, "''")}'`;
                 } else if (typeof param === 'number') {
@@ -456,7 +455,7 @@ export async function sql(sql: string, params?: any[]): Promise<any[]> {
                     return `'${JSON.stringify(param).replace(/'/g, "''")}'`;
                 }
             }
-            return match;
+            return '?';
         });
     }
 
