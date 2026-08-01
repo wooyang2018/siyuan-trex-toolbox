@@ -235,6 +235,3 @@ export interface ISiyuanEventPaste {
 
 // 导出 API 响应类型
 export * from './api';
-
-// 导出 Claude Note 特定类型
-export * from './claude-note';
