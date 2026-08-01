@@ -1,0 +1,14 @@
+siyuan/CSS/隐藏钉住和面板按钮.css
+  h_cf037dcb817b82 16,19-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.12",
+  "base_commit_sha": "9205eac8c2883af066c21c1d260676d1db3f0d8d",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
