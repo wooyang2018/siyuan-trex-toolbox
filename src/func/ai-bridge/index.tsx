@@ -82,7 +82,7 @@ const copyToClipboard = (text: string) => {
     });
 };
 
-// ===== 辅助：获取块内容（参考 claude-note 实现）=====
+// ===== 辅助：获取块内容 =====
 /**
  * 通过 block/getBlockKramdown API 获取块的 kramdown 内容，
  * 清理 IAL 属性标记后返回纯 Markdown 文本。

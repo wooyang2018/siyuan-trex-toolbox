@@ -2,7 +2,7 @@
 // 定义一个字典，键是菜单项，值是替换字符串，空值表示隐藏该菜单项
 const matchTextReplacements = {
     'Oembed': '切换Oembed',
-    '添加为阅读材料': '添加阅读材料'
+    '复习此处闪卡': '复习闪卡',
 };
 // 定义一个字典，键是匹配开头的字符串，值是替换开头的字符串
 const partialTextReplacements = {
@@ -57,7 +57,6 @@ whenElementExist(menuItemsSelector).then((menuItemsElement) => {
 const replaceTextMap = {
     "(伪)文档面包屑": "文档面包屑",
     "Query&View": "Query View",
-    "在线图片文字识别(OCR)": "在线图片文字识别",
     "书签+": "书签增强",
     "搜 easy": "搜索",
     "data-id:siyuan-plugins-mcp-sisyphus": "思源MCP",

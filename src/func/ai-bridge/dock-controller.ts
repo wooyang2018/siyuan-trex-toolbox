@@ -340,7 +340,7 @@ export class DockController {
             this.activeDragId = null;
             if (!blockId) return;
 
-            // 获取块的 Markdown 内容（参考 claude-note 实现）
+            // 获取块的 Markdown 内容
             showMessage('正在获取块内容...', 1500, 'info');
             let textToInsert = blockId;
             try {
