@@ -92,7 +92,11 @@ function installHook() {
 
             // 拦截 getCloudUser 响应，替换头像 URL 避免外部图片加载失败
             if (url.includes(CLOUD_USER_API)) {
-                return _originalFetch.apply(globalThis, [input, init] as any).then(async (res: Response) => {
+                // 同下方透传逻辑：走当前的 window.fetch，避免绕过其他插件的 patch
+                const next: typeof window.fetch = (window.fetch === patchedFetch)
+                    ? _originalFetch
+                    : window.fetch;
+                return next.apply(globalThis, [input, init] as any).then(async (res: Response) => {
                     try {
                         const cloned = res.clone();
                         const json = await cloned.json();
@@ -132,8 +136,16 @@ function installHook() {
             console.error(TAG, '拦截逻辑异常，透传原始请求:', e);
         }
 
-        // 非目标请求，透传给原始 fetch
-        return _originalFetch.apply(globalThis, [input, init] as any);
+        // 非目标请求，透传。
+        // 注意：必须走当前的 window.fetch，而不是闭包里冻结的 _originalFetch。
+        // 其他插件可能在我们之后又包了一层 patch；若直接调 _originalFetch，
+        // 会跳过它们的逻辑（例如把 GET 重写为 POST、注入鉴权头），
+        // 导致请求以错误的方法/参数打到内核，产生 404。
+        // 仅当 window.fetch 就是我们自己时才回落到 _originalFetch，避免无限递归。
+        const next: typeof window.fetch = (window.fetch === patchedFetch)
+            ? _originalFetch
+            : window.fetch;
+        return next.apply(globalThis, [input, init] as any);
     } as typeof window.fetch;
 
     window.fetch = patchedFetch;
