@@ -15,109 +15,158 @@ import type FMiscPlugin from "@/index";
 import { updateStyleDom } from "@frostime/siyuan-plugin-kits";
 
 const keymapStyle = `
-.keymap-plugin-container {
-    padding: 12px;
+.keymap-plugin-container.config-keymap {
+    padding: 8px 12px;
     max-height: calc(100vh - 200px);
-    color: var(--b3-theme-on-background);
     overflow: auto;
+    box-sizing: border-box;
 }
 
-#keymap-plugin-search-input {
-    margin-right: 20px;
+.keymap-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--b3-border-color);
 }
 
-.repeated-key {
-    margin-right: 6px;
-    border: 1px solid var(--b3-theme-on-background);
-    cursor: pointer;
-    padding: 2px 4px;
+.keymap-toolbar .b3-form__icon {
+    flex: 0 1 200px;
+    min-width: 140px;
 }
 
-.repeated-key:hover {
-    background-color: var(--b3-list-hover);
-    border-radius: 2px;
+.keymap-toolbar .keymap-repeated-keys__label {
+    color: var(--b3-theme-on-surface);
+    font-size: 13px;
+    white-space: nowrap;
 }
 
-.keymap-plugin-search {
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--b3-theme-background-light);
-    padding-bottom: 10px;
+.keymap-section {
+    margin-bottom: 10px;
 }
 
-.keymap-plugin-header {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--b3-theme-background-light);
-    padding-bottom: 2px;
-}
-
-.keymap-plugin-header-2 {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--b3-theme-background-light);
-    padding-bottom: 2px;
-}
-
-.keymap-plugin-item {
-    width: 250px;
-    display: inline-block;
+.keymap-section__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+    padding: 2px 4px 4px;
     margin-bottom: 2px;
-    padding: 2px 6px;
-    position: relative;
-    height: 20px;
+    border-bottom: 1px solid var(--b3-theme-background-light);
 }
 
-.keymap-plugin-item.selected {
+.keymap-section__subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--b3-theme-on-surface);
+    padding: 6px 4px 2px;
+    margin-top: 2px;
+}
+
+.keymap-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
+.keymap-item {
+    width: 250px;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 1px 6px;
+    min-height: 22px;
+    box-sizing: border-box;
+    border-radius: var(--b3-border-radius);
+}
+
+.keymap-item:hover {
+    background-color: var(--b3-list-hover);
+}
+
+.keymap-item.selected {
     background-color: var(--b3-theme-primary-light);
     color: var(--b3-theme-primary);
-    border-color: var(--b3-theme-primary);
 }
 
-.keymap-plugin-item.conflict .keymap-plugin-value {
-    color: var(--b3-theme-error, #d23f31);
-    font-weight: bold;
-}
-
-.keymap-plugin-item:hover {
-    background-color: var(--b3-list-hover);
-    border-radius: 2px;
-}
-
-.keymap-plugin-title, .keymap-plugin-value {
-    display: inline-block;
-}
-
-.keymap-plugin-title {
-    position: absolute;
-    left: 4px;
-    max-width: 150px;
+.keymap-item__title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    overflow: hidden;
+    font-size: 13px;
+    line-height: 20px;
 }
 
-.keymap-plugin-value {
-    position: absolute;
-    right: 4px;
+.keymap-plugin-container.config-keymap .config-keymap__key {
+    padding: 2px 4px;
+    font-family: var(--b3-font-family-kbd);
+    font-variant-emoji: text;
+    line-height: 1;
+    color: var(--b3-theme-on-surface);
+    background-color: var(--b3-theme-background);
+    border: solid 1px var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+    box-shadow: inset 0 -1px 0 var(--b3-theme-surface-lighter);
+    flex-shrink: 0;
+    cursor: default;
+    height: 14px;
+    min-width: 17px;
+    text-align: center;
+    font-size: 12px;
 }
 
-.keymap-plugin-value[data-editable="true"] {
+.keymap-plugin-container.config-keymap .config-keymap__key:empty {
+    visibility: hidden;
+    min-width: 0;
+    width: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+}
+
+.keymap-item.conflict .config-keymap__key {
+    color: var(--b3-theme-error, #d23f31);
+    font-weight: bold;
+    border-color: var(--b3-theme-error, #d23f31);
+}
+
+.keymap-plugin-container.config-keymap .config-keymap__key[data-editable="true"] {
     cursor: pointer;
 }
 
-.keymap-plugin-value[data-editable="true"]:hover {
+.keymap-plugin-container.config-keymap .config-keymap__key[data-editable="true"]:hover {
     outline: 1px dashed var(--b3-theme-on-surface);
-    border-radius: 2px;
+}
+
+.keymap-repeated-key {
+    padding: 2px 5px;
+    font-family: var(--b3-font-family-kbd);
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--b3-theme-on-surface);
+    background-color: var(--b3-theme-background);
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+    box-shadow: inset 0 -1px 0 var(--b3-theme-surface-lighter);
+    cursor: pointer;
+}
+
+.keymap-repeated-key:hover {
+    background-color: var(--b3-list-hover);
 }
 
 .keymap-edit-input {
-    width: 110px;
-    height: 18px;
+    width: 88px;
+    height: 16px;
     box-sizing: border-box;
     padding: 0 4px;
     font-size: 12px;
+    flex-shrink: 0;
 }
 `;
 
@@ -148,20 +197,12 @@ interface ITypes {
  * 添加快捷键状态栏按钮
  */
 export const addStatus = (plugin: FMiscPlugin) => {
-    const tpl = document.createElement("template");
-    tpl.innerHTML = `
-        <div class="toolbar__item">
-            <svg>
-                <use xlink:href="#iconKeymap"></use>
-            </svg>
-            <span id="tts-content" style="margin-left: 4px">快捷键</span>
-        </div>`;
-
-    const rootEl = tpl.content.firstElementChild as HTMLElement;
-    const spanEl = rootEl.querySelector("span");
-
+    const rootEl = document.createElement("div");
+    rootEl.className = "toolbar__item";
+    rootEl.title = "快捷键";
+    rootEl.innerHTML = `<svg><use xlink:href="#iconKeymap"></use></svg>`;
+    rootEl.addEventListener("click", () => showDialog(plugin));
     plugin.addStatusBar({ element: rootEl });
-    spanEl?.addEventListener("click", () => showDialog(plugin));
 };
 
 /**
@@ -218,6 +259,19 @@ const escapeAttr = (s: string): string =>
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+
+const renderSectionTitle = (title: string, subtitle = false): string => `
+    <div class="${subtitle ? 'keymap-section__subtitle' : 'keymap-section__title'}">${escapeAttr(title)}</div>`;
+
+const renderSection = (title: string, itemsHtml: string): string => `
+    <div class="keymap-section">
+        ${renderSectionTitle(title)}
+        <div class="keymap-grid">${itemsHtml}</div>
+    </div>`;
+
+const renderSubSection = (title: string, itemsHtml: string): string => `
+    ${renderSectionTitle(title, true)}
+    <div class="keymap-grid">${itemsHtml}</div>`;
 
 /**
  * 显示快捷键对话框
@@ -293,19 +347,27 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
 
     let { types, repeatedKeys, pluginDisplayNames } = collect();
 
+    const searchPlaceholder = (window as any).siyuan?.languages?.search || '搜索';
+
     // 顶部搜索条与重复键追溯条；重复键追溯每次重渲会刷新
     const buildHeader = () => `
-        <div class="keymap-plugin-search">
-            <span>搜索</span>
-            <input class="b3-text-field" type="input" id="keymap-plugin-search-input" value="${escapeAttr(searchInput)}"/>
+        <div class="keymap-toolbar">
+            <label class="b3-form__icon fn__block">
+                <svg class="b3-form__icon-icon"><use xlink:href="#iconSearch"></use></svg>
+                <input id="keymap-plugin-search-input" class="b3-form__icon-input b3-text-field fn__block"
+                    placeholder="${escapeAttr(searchPlaceholder)}" value="${escapeAttr(searchInput)}"/>
+            </label>
             ${repeatedKeys.length > 0 ? `
-                <span>点击追溯重复快捷键: </span>
-                ${repeatedKeys.map((k) => `<span class="repeated-key" data-keymap="${escapeAttr(k)}">${escapeAttr(k)}</span>`).join('')}
+                <span class="keymap-repeated-keys__label">点击追溯重复快捷键:</span>
+                ${repeatedKeys.map((k) => `
+                    <button type="button" class="keymap-repeated-key"
+                        data-keymap-trace="${escapeAttr(k)}">${escapeAttr(k)}</button>
+                `).join('')}
             ` : ''}
         </div>`;
 
     const dialogContent = `
-    <div class="keymap-plugin-container">
+    <div class="config-keymap keymap-plugin-container" id="keymapList">
         <div id="keymap-plugin-header"></div>
         <div id="keymap-plugin-content"></div>
     </div>`;
@@ -315,10 +377,11 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         const dataAttrs = entry.editable
             ? ` data-editable="true" data-plugin-name="${escapeAttr(entry.pluginName!)}" data-lang-key="${escapeAttr(entry.langKey!)}"`
             : '';
+        const keyContent = entry.value ? escapeAttr(entry.value) : '';
         return `
-            <div class="keymap-plugin-item" data-keymap="${escapeAttr(entry.value)}">
-                <div class="keymap-plugin-title" title="${escapeAttr(entry.displayKey)}">${escapeAttr(entry.displayKey)}</div>
-                <div class="keymap-plugin-value config-keymap__key"${dataAttrs}>${escapeAttr(entry.value)}</div>
+            <div class="keymap-item" data-keymap="${escapeAttr(entry.value)}">
+                <span class="keymap-item__title" title="${escapeAttr(entry.displayKey)}">${escapeAttr(entry.displayKey)}</span>
+                <span class="config-keymap__key"${dataAttrs}>${keyContent}</span>
             </div>`;
     };
 
@@ -330,9 +393,10 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         let innerHTML = '';
 
         if (generals.length > 0) {
-            innerHTML += `
-            <div class="keymap-plugin-header">${(window as any).siyuan.languages["general"]}</div>
-            ${generals.map(renderItem).join("")}`;
+            innerHTML += renderSection(
+                (window as any).siyuan.languages["general"],
+                generals.map(renderItem).join(""),
+            );
         }
 
         const editorKeys = Object.keys(types.editor);
@@ -351,12 +415,17 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         }
 
         if (showEditor) {
+            const editorHtml = Object.keys(editor).map((v) =>
+                renderSubSection(
+                    (window as any).siyuan.languages[v] || v,
+                    editor[v].map(renderItem).join(""),
+                )
+            ).join("");
             innerHTML += `
-            <div class="keymap-plugin-header">${(window as any).siyuan.languages["editor"]}</div>
-            ${Object.keys(editor).map((v) => `
-                <div class="keymap-plugin-header-2">${(window as any).siyuan.languages[v] || v}</div>
-                ${editor[v].map(renderItem).join("")}
-            `).join("")}`;
+            <div class="keymap-section">
+                ${renderSectionTitle((window as any).siyuan.languages["editor"])}
+                ${editorHtml}
+            </div>`;
         }
 
         const pluginKeys = Object.keys(types.plugin);
@@ -375,12 +444,17 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         }
 
         if (showPlugin) {
+            const pluginHtml = Object.keys(pluginData).map((v) =>
+                renderSubSection(
+                    pluginDisplayNames[v] || v,
+                    pluginData[v].map(renderItem).join(""),
+                )
+            ).join("");
             innerHTML += `
-            <div class="keymap-plugin-header">${(window as any).siyuan.languages["plugin"]}</div>
-            ${Object.keys(pluginData).map((v) => `
-                <div class="keymap-plugin-header-2">${escapeAttr(pluginDisplayNames[v] || v)}</div>
-                ${pluginData[v].map(renderItem).join("")}
-            `).join("")}`;
+            <div class="keymap-section">
+                ${renderSectionTitle((window as any).siyuan.languages["plugin"])}
+                ${pluginHtml}
+            </div>`;
         }
 
         const contentEl = dialog.element.querySelector('#keymap-plugin-content') as HTMLElement | null;
@@ -388,7 +462,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
             contentEl.innerHTML = innerHTML;
             // 标注冲突项：value 出现在 repeatedKeys 集合里则加 conflict 类
             const conflictSet = new Set(repeatedKeys);
-            contentEl.querySelectorAll('.keymap-plugin-item').forEach((item) => {
+            contentEl.querySelectorAll('.keymap-item[data-keymap]').forEach((item) => {
                 const v = item.getAttribute('data-keymap') || '';
                 if (v && conflictSet.has(v)) {
                     item.classList.add('conflict');
@@ -429,7 +503,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         valueEl.textContent = original;
     };
 
-    /** 进入编辑态：把 .keymap-plugin-value 替换成内嵌 input */
+    /** 进入编辑态：把 .config-keymap__key 替换成内嵌 input */
     const enterEditing = (valueEl: HTMLElement) => {
         // 已在编辑态则忽略
         if (valueEl.querySelector('input.keymap-edit-input')) return;
@@ -452,10 +526,11 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         const target = e.target as HTMLElement;
 
         // 重复键追溯
-        if (target.classList.contains('repeated-key')) {
-            const v = target.getAttribute('data-keymap') || '';
+        const traceBtn = target.closest('[data-keymap-trace]') as HTMLElement | null;
+        if (traceBtn) {
+            const v = traceBtn.getAttribute('data-keymap-trace') || '';
             let top = 0;
-            container.querySelectorAll('.keymap-plugin-item').forEach((item) => {
+            container.querySelectorAll('.keymap-item[data-keymap]').forEach((item) => {
                 const el = item as HTMLElement;
                 if (v === el.getAttribute('data-keymap')) {
                     el.classList.add('selected');
@@ -469,7 +544,7 @@ const showDialog = (fmiscPlugin: FMiscPlugin) => {
         }
 
         // 进入编辑态：仅 plugin 区可编辑
-        const valueEl = target.closest('.keymap-plugin-value') as HTMLElement | null;
+        const valueEl = target.closest('.config-keymap__key') as HTMLElement | null;
         if (valueEl && valueEl.getAttribute('data-editable') === 'true') {
             // 先关闭其它正在编辑的 input
             container.querySelectorAll('input.keymap-edit-input').forEach((el) => {
