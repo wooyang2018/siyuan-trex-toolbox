@@ -1,58 +1,28 @@
-/* 底部栏图标统一使用 24px 工具项槽位，图标本体使用 18px */
+/* 只调整外部间距、字号和居中方式，不修改插件内部图标或状态逻辑 */
 #siyuan-tomato-timer {
-    display: flex !important;
-    align-items: center !important;
     gap: 0 !important;
     margin-left: 0 !important;
-    height: 24px !important;
-    font-size: 13px !important;
+    height: 24px;
+    line-height: normal;
 }
 
+/* 时间区域整体下移 2px；图标和数字属于同一文本节点，CSS-only 无法单独移动其中一个字符 */
 #siyuan-tomato-timer [data-tomato-role="time"] {
     display: inline-flex !important;
     align-items: center;
     height: 24px;
     line-height: normal;
+    font-size: 16px;
     vertical-align: middle;
+    position: relative;
+    top: 1px;
 }
 
-#siyuan-tomato-timer .tomy-timer-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 24px;
-    width: 24px;
-    height: 24px;
-    margin: 0;
-    color: var(--b3-theme-on-surface);
-}
-
-#siyuan-tomato-timer .tomy-timer-icon .toolbar__icon,
-#siyuan-tomato-timer [data-tomato-role="toggle"] .toolbar__icon {
-    width: 18px;
-    height: 18px;
-}
-
-#siyuan-tomato-timer .tomy-timer-icon .tomy-tomato-symbol {
-    transform: scale(1.12);
-}
-
+/* 右侧图标与时间区域保持同样的下移量 */
 #siyuan-tomato-timer [data-tomato-role="toggle"] {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     flex: 0 0 24px;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    margin: 0;
-    color: var(--b3-theme-on-surface);
-    background: transparent !important;
-    border: none !important;
-    cursor: pointer;
-    vertical-align: middle;
-}
-
-#siyuan-tomato-timer [data-tomato-role="toggle"]:hover {
-    background: var(--b3-list-hover) !important;
+    font-size: 16px !important;
+    line-height: normal;
+    position: relative;
+    top: 2px;
 }
