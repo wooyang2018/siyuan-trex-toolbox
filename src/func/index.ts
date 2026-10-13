@@ -21,9 +21,10 @@ import * as srp from './sireader-patch';
 import * as ab from './ai-bridge';
 import * as an from './audit-note/module';
 import * as srs from './srs/module';
+import * as oe from './oembed';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, an, srs];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, an, srs, oe];
 
 /** 始终启用的功能模块列表 */
 const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq, srp];

@@ -1,8 +1,7 @@
 /*
- * 模块卡片组件
- * 每个功能模块渲染为一个卡片：标题 + 描述 + 开关 + 配置项 + 自定义面板
+ * 模块卡片：默认只显示标题、说明和开关。有配置时点标题展开。
  */
-import { type Component, For, Show, createMemo } from "solid-js";
+import { type Component, For, Show, createMemo, createSignal } from "solid-js";
 import Form from "@/libs/components/Form";
 import css from "./settings.module.scss";
 
@@ -14,6 +13,7 @@ interface ModuleCardProps {
 
 const ModuleCard: Component<ModuleCardProps> = (props) => {
     const setting = () => props.module.declareSetting;
+    const [open, setOpen] = createSignal(false);
 
     const hasBody = createMemo(() => {
         const s = setting();
@@ -25,10 +25,30 @@ const ModuleCard: Component<ModuleCardProps> = (props) => {
         <Show when={setting()}>
             <div class={css.card}>
                 <div class={css.cardHeader}>
-                    <div class={css.cardTitleWrap}>
-                        <div class={css.cardTitle}>{setting()!.title}</div>
-                        <div class={css.cardDescription} innerHTML={setting()!.description} />
-                    </div>
+                    <Show
+                        when={hasBody()}
+                        fallback={
+                            <div class={css.cardMain}>
+                                <div class={css.cardTitleWrap}>
+                                    <div class={css.cardTitle}>{setting()!.title}</div>
+                                    <div class={css.cardDescription} innerHTML={setting()!.description} />
+                                </div>
+                            </div>
+                        }
+                    >
+                        <button
+                            type="button"
+                            class={`${css.cardMain} ${css.cardMainExpandable}`}
+                            aria-expanded={open()}
+                            onClick={() => setOpen(!open())}
+                        >
+                            <span class={css.chevron} classList={{ [css.chevronOpen]: open() }} />
+                            <div class={css.cardTitleWrap}>
+                                <div class={css.cardTitle}>{setting()!.title}</div>
+                                <div class={css.cardDescription} innerHTML={setting()!.description} />
+                            </div>
+                        </button>
+                    </Show>
                     <Show when={setting()!.toggle}>
                         <div class={css.cardToggle}>
                             <input
@@ -40,7 +60,7 @@ const ModuleCard: Component<ModuleCardProps> = (props) => {
                         </div>
                     </Show>
                 </div>
-                <Show when={hasBody()}>
+                <Show when={hasBody() && open()}>
                     <div class={css.cardBody}>
                         <Show when={setting()!.configs && setting()!.configs!.length > 0}>
                             <div class={css.configSection}>
@@ -61,7 +81,7 @@ const ModuleCard: Component<ModuleCardProps> = (props) => {
                                                 button={item?.button}
                                                 number={item?.number}
                                                 changed={(v) => item.set(v)}
-                                                style={item?.direction === 'row' ? { width: '100%' } : null}
+                                                style={item?.direction === "row" ? { width: "100%" } : null}
                                             />
                                         </Form.Wrap>
                                     )}

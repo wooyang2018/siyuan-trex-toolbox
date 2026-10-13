@@ -41,6 +41,10 @@ A feature-rich SiYuan Note plugin that integrates various practical tools to enh
 - 支持自定义图标映射
 - 美化文档中的超链接显示
 
+### 🔖 链接嵌入 / 书签卡片 (Oembed)
+- 把链接转成 oEmbed 嵌入，或 Ghost 风格的书签卡片；再执行一次还原成普通链接
+- 入口：斜杠命令（`/oembed`、`/card`）、块菜单、编辑器工具栏
+
 ### 📌 固定图片 (Pin Image)
 - 图片固定和预览功能
 - 支持图片缩放和位置调整

@@ -18,3 +18,5 @@ vite.config.ts.timestamp*
 .codebuddy
 .agent
 openspec
+__pycache__/
+*.py[cod]

@@ -16,6 +16,7 @@
         "isolatedModules": true,
         "verbatimModuleSyntax": true,
         "noEmit": true,
+        "allowImportingTsExtensions": true,
         "jsx": "preserve",
         "jsxImportSource": "solid-js",
         /* Linting */
