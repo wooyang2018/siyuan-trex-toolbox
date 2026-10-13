@@ -1,0 +1,143 @@
+src/func/oembed/index.ts
+  s_021a783b1c3d44::t_2d4786a6de38ed 1-6,8,10-12,16-27,29-34,37-38,40-46,48-65,67-70,72-158,160-183,187-194,196-200,202-228
+  s_021a783b1c3d44::t_3495b1c3f7500f 7
+  s_021a783b1c3d44::t_af1a8726d22b4e 159
+  s_021a783b1c3d44::t_92040785fd9ac8 13
+  s_021a783b1c3d44::t_a1b19d62c65d27 47
+  s_021a783b1c3d44::t_63dfb6b168b043 201
+  s_021a783b1c3d44::t_86f89fa70d06ea 9
+  s_021a783b1c3d44::t_cf742f936ddb5a 28
+  s_021a783b1c3d44::t_37c42aeec46e44 39
+  s_021a783b1c3d44::t_cd3f63b8aea85a 14
+  s_021a783b1c3d44::t_e7c59262e3730c 66
+  s_021a783b1c3d44::t_b6085c0f6bb9e7 71
+  s_021a783b1c3d44::t_15e4d83390d9cb 15
+  s_021a783b1c3d44::t_d936ebc41f280e 184-186
+  s_021a783b1c3d44::t_0ba66a7180b2ad 35-36
+  s_021a783b1c3d44::t_3151f7183733e4 195
+scripts/tests/dom-parser-shim.ts
+  s_021a783b1c3d44::t_3f74042550fe9b 1-5,8,13-30,32-71
+  s_021a783b1c3d44::t_00128689bdb436 31
+  s_021a783b1c3d44::t_ef68324069d667 6-7,9-12
+src/func/oembed/metadata.ts
+  s_021a783b1c3d44::t_3a2f473c95d775 23-24,27-43,70-80
+  s_021a783b1c3d44::t_d63715fb3943eb 66
+  s_021a783b1c3d44::t_988f488c283e96 8
+  s_021a783b1c3d44::t_87b1f5491cc937 1-7,9-22,81-122
+  s_021a783b1c3d44::t_7dddf1082a44ef 25-26,44-46,67-69
+  s_021a783b1c3d44::t_0d0bbc129cff33 47-65
+src/func/oembed/block.ts
+  s_021a783b1c3d44::t_0d7d399faafb07 33-37,42
+  s_021a783b1c3d44::t_03d1b384bcfb17 1-17,24-32,38-41,43-60
+  s_021a783b1c3d44::t_d613c68eea64a4 18-23
+tsconfig.json
+  s_021a783b1c3d44::t_c095d6f7e72e76 19
+src/func/index.ts
+  s_021a783b1c3d44::t_a526be29c4196b 24
+  s_021a783b1c3d44::t_0046b3c2af40c5 27
+scripts/remote_install.sh
+  s_021a783b1c3d44::t_29558c93ff5176 48-52
+  s_021a783b1c3d44::t_7a033602592801 81
+  s_021a783b1c3d44::t_167636c30d17fe 141
+  s_021a783b1c3d44::t_bf6fab5516151a 23-25
+  s_021a783b1c3d44::t_4438c637d444a4 157,159,165,167,169,171-181,186,196,198,210-211
+  s_021a783b1c3d44::t_a5f899e76abe90 6-9
+  s_021a783b1c3d44::t_3c63ced78c0712 10
+  s_021a783b1c3d44::t_e16e0f68d1efdf 97
+  s_021a783b1c3d44::t_3c8fa46e174332 2-3
+README.md
+  s_021a783b1c3d44::t_0c2994bcb574d7 44-47
+src/settings/settings.module.scss
+  s_021a783b1c3d44::t_061cd48b6124ac 2,6,9-21,26-42,44-45,49-70,97-129
+src/func/oembed/url.ts
+  s_021a783b1c3d44::t_d6b20995f5027c 1-18
+src/func/oembed/style.ts
+  s_021a783b1c3d44::t_2740563a0a754d 1-135,138
+  s_021a783b1c3d44::t_cf4317668adbb8 136-137
+src/func/oembed/convert.ts
+  s_021a783b1c3d44::t_bd111cb66a6ef2 32
+  s_021a783b1c3d44::t_33b2e685f3644f 17-18
+  s_021a783b1c3d44::t_0d0c9ba1a7f771 88,90-91
+  s_021a783b1c3d44::t_7d3c2743e05d12 1-7,14-16,19-31,33-65,73,80-81,87,103-111,113,118-130
+  s_021a783b1c3d44::t_29bad810cd5f35 12-13
+  s_021a783b1c3d44::t_9e50868d738a0c 66-70,72,74-79
+  s_021a783b1c3d44::t_0c0c2395b8ddca 71
+  s_021a783b1c3d44::t_40f06202b4dd48 82-83,85-86,92-102
+  s_021a783b1c3d44::t_25c073cd0b25a7 84,89
+  s_021a783b1c3d44::t_fa58f0f7ebacba 116
+  s_021a783b1c3d44::t_f60884e359a6b0 8,10-11
+  s_021a783b1c3d44::t_1b73fb680b6b3f 9
+  s_021a783b1c3d44::t_d98b3465993256 112
+  s_021a783b1c3d44::t_28b231fd97c666 114-115,117
+scripts/tests/test-oembed-e2e.ts
+  s_021a783b1c3d44::t_8b7842f97463ec 82-85,87,96
+  s_021a783b1c3d44::t_acd15f01cd6273 86
+  s_021a783b1c3d44::t_f8c01cb086c986 231
+  s_021a783b1c3d44::t_63cd9104e99970 142
+  s_021a783b1c3d44::t_8671e84cd48e50 5-7
+  s_021a783b1c3d44::t_b905ceab32a452 230
+  s_021a783b1c3d44::t_826d999bd20a80 20
+  s_021a783b1c3d44::t_2bb8d699ca06b6 135-141,143-148
+  s_021a783b1c3d44::t_dc53a624cb2cbd 225
+  s_021a783b1c3d44::t_e648dea83a6fb5 13
+  s_021a783b1c3d44::t_b7c01a4722180e 212
+  s_021a783b1c3d44::t_a374a7eb7fb8f5 169-173
+  s_021a783b1c3d44::t_e73e29a03bfc5d 14
+  s_021a783b1c3d44::t_91cd16933ad252 224,226-229,232-233
+  s_021a783b1c3d44::t_0cdf3b16e75a90 235,237,241,246-247,250
+  s_021a783b1c3d44::t_fc9d635e71d3dc 207
+  s_021a783b1c3d44::t_13eea9f8d47e34 54
+  s_021a783b1c3d44::t_73a2b782b30ba1 88-95
+  s_021a783b1c3d44::t_b212463e4ff388 244
+  s_021a783b1c3d44::t_b2f98c2a50ce16 1-4,8-12,15-19,22-53,55-81,97-134,149-168,174-206,208-211,213-223,234,238-240,242-243,245,248-249,251-275
+  s_021a783b1c3d44::t_c2617d4d310419 21
+  s_021a783b1c3d44::t_1a20529e6f1eb2 236
+.gitignore
+  s_021a783b1c3d44::t_43c699e551809a 21-22
+src/settings/module-card.tsx
+  s_021a783b1c3d44::t_3f4689e72b3c92 2,4,16,28-51,63,84
+scripts/siyuan_proxy.py
+  h_cf037dcb817b82 1-339,342-354,356-378,410-638
+  s_232275720eb589::t_63453bac465b62 379-409
+  s_232275720eb589::t_c1486048d18f16 340-341
+  s_232275720eb589::t_f1aada01a62685 355
+src/settings/settings.tsx
+  s_021a783b1c3d44::t_4d7fd9596b71db 2,15-19,22,41-51,54-82
+  s_021a783b1c3d44::t_327bcb1facdce2 4
+src/func/oembed/oembed.ts
+  s_021a783b1c3d44::t_bdfce55dba5560 28
+  s_021a783b1c3d44::t_c9d26e02ca3302 1-27,29-49
+src/func/oembed/html.ts
+  s_021a783b1c3d44::t_b265b8693ab4fc 1-7,9-32,34,36-68
+  s_021a783b1c3d44::t_e3978309008d02 8
+  s_021a783b1c3d44::t_0127388ba7f3e1 33,35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.12",
+  "base_commit_sha": "7ebb2095b0f0dffa6e6b98c08c95bc5520ee613b",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_021a783b1c3d44": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d45bad65-adf2-429e-92e3-0b7339bc38e0",
+        "model": "grok-4.7"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    },
+    "s_232275720eb589": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c32b70b3-07f5-480f-bf08-27c89376a349",
+        "model": "grok-4.7"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
