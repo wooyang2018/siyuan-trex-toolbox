@@ -1,7 +1,6 @@
 // ==========修改插件菜单栏==========
 // 定义一个字典，键是菜单项，值是替换字符串，空值表示隐藏该菜单项
 const matchTextReplacements = {
-    'Oembed': '切换Oembed',
     '复习此处闪卡': '复习闪卡',
 };
 // 定义一个字典，键是匹配开头的字符串，值是替换开头的字符串
@@ -55,11 +54,9 @@ whenElementExist(menuItemsSelector).then((menuItemsElement) => {
 // 1. 普通字符串：按 label 文本精确匹配
 // 2. "data-id:xxx"：按 button 的 data-id 属性匹配
 const replaceTextMap = {
-    "(伪)文档面包屑": "文档面包屑",
     "Query&View": "Query View",
     "书签+": "书签增强",
     "搜 easy": "搜索",
-    "data-id:siyuan-plugins-mcp-sisyphus": "思源MCP",
     "data-id:siyuan-embed-excalidraw": "嵌入Excalidraw",
     "data-id:plugin_siyuan-plugin-text-process_0": "粘贴文本处理",
 };
