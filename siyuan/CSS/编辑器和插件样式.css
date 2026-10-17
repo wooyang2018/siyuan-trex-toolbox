@@ -37,7 +37,13 @@ body:not(.body--mobile, .body--window)>#toolbar {
     overflow: clip !important;
 }
 
-/* 轻语内容 */
+/* 插件 - 文本朗读 */
 #tts-content {
     font-size: 12px;
+}
+
+.tts-voice-chip {
+    border: none;
+    border-radius: 0;
+    background: transparent;
 }
