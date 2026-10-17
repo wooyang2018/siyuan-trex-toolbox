@@ -1,0 +1,25 @@
+siyuan/CSS/编辑器和插件样式.css
+  h_cf037dcb817b82 40
+  s_5de9e3b8ac6472::t_7eed12cbc1ba10 44-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.12",
+  "base_commit_sha": "f935fca5c90801c9e8c81a43df2cb3824bbcf347",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_5de9e3b8ac6472": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0b6d5269-d106-4e96-8ca8-457f55c955d1",
+        "model": "grok-4.7"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
