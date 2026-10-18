@@ -45,6 +45,11 @@ A feature-rich SiYuan Note plugin that integrates various practical tools to enh
 - 把链接转成 oEmbed 嵌入，或 Ghost 风格的书签卡片；再执行一次还原成普通链接
 - 入口：斜杠命令（`/oembed`、`/card`）、块菜单、编辑器工具栏
 
+### 🔊 文本朗读 (TTS)
+- 桌面端在线朗读当前选中的块、从当前块读到文末，或整篇文档
+- 入口：块菜单（朗读选块、朗读到文末）、文档标题菜单（朗读整篇）、顶栏按钮和快捷键 `⌥⌘W`
+- 需要联网；可在顶栏切换声源和播放速率
+
 ### 📌 固定图片 (Pin Image)
 - 图片固定和预览功能
 - 支持图片缩放和位置调整

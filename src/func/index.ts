@@ -17,17 +17,17 @@ import * as rn from './random-note';
 import * as tp from './typography';
 import * as cv from './convert-inline';
 import * as ii from './insert-index';
-import * as srp from './sireader-patch';
 import * as ab from './ai-bridge';
 import * as an from './audit-note/module';
 import * as srs from './srs/module';
 import * as oe from './oembed';
+import * as tts from './tts/module';
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, an, srs, oe];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, an, srs, oe, tts];
 
 /** 始终启用的功能模块列表 */
-const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq, srp];
+const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
 
 /** 过滤出可用的模块 */
 export const ModulesToEnable = _ModulesToEnable.filter(
