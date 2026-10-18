@@ -1,0 +1,61 @@
+src/func/tts/index.scss
+  s_2c948df5f884ea::t_c45e22fbe2b68c 1-7
+src/func/tts/sec-ms-gec.ts
+  s_2c948df5f884ea::t_eb3ebf7df9e6a6 1-283
+src/func/tts/module.ts
+  s_2c948df5f884ea::t_31b02c6b04b34f 1-24,26-50
+  s_2c948df5f884ea::t_b9269946ff92da 25
+src/func/tts/engine.ts
+  s_2c948df5f884ea::t_6690ea9e3aab7b 649
+  s_2c948df5f884ea::t_9706737073e93b 299,301
+  s_2c948df5f884ea::t_75731979c9d979 591,595
+  s_2c948df5f884ea::t_4ef123b56b25d8 670
+  s_2c948df5f884ea::t_509aa6bf58635f 9-10,14
+  s_2c948df5f884ea::t_d4820f144b86d6 372
+  s_2c948df5f884ea::t_accbcc2791498f 655-657
+  s_2c948df5f884ea::t_cd3803ab698ddf 700
+  s_2c948df5f884ea::t_4cbd5c98aec687 407,409-410
+  s_2c948df5f884ea::t_6a7282a2ec0a20 708
+  s_2c948df5f884ea::t_97de97ec521d01 724
+  s_2c948df5f884ea::t_16554849dce76e 1-8,11-13,15-298,300,302-371,373-406,408,411-590,592-594,596-648,650-654,658-669,671-699,701-707,709-723,725-742
+src/func/tts/plugin-entry.ts
+  s_2c948df5f884ea::t_a6d06fa7afc6b7 59-61,63
+  s_2c948df5f884ea::t_b4d9cfa6cb1b0e 62,64-65
+  s_2c948df5f884ea::t_891a8e14f3375f 2,4-5,7-8,10-11,13-18,20,22-28,30-34,36-51,55-58,66,68-123,125-128,130-132,134-143,145-154,156-157,160-174,176-243,246-249,251,254-280,282-295
+  s_2c948df5f884ea::t_26562f6fc743c6 175
+src/func/index.ts
+  s_905a40fd6770f4::t_722d8e96a575fa 30
+  s_2c948df5f884ea::t_f9a281247fca3e 27
+  s_2c948df5f884ea::t_d85e6e87ce9b9d 24
+README.md
+  s_2c948df5f884ea::t_b6580dba214634 48-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.12",
+  "base_commit_sha": "c90f17b702abf1cbda77c545b97ef972a7269447",
+  "prompts": {},
+  "humans": {
+    "h_cf037dcb817b82": {
+      "author": "weyoungli <weyoungli@tencent.com>"
+    }
+  },
+  "sessions": {
+    "s_2c948df5f884ea": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bf68aa3f-8abf-4deb-ae5a-7334f5b5ef02",
+        "model": "grok-4.7"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    },
+    "s_905a40fd6770f4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6d4f8110-14c8-4fc7-8d4f-54f3f4e5688d",
+        "model": "grok-4.7"
+      },
+      "human_author": "weyoungli <weyoungli@tencent.com>"
+    }
+  }
+}
