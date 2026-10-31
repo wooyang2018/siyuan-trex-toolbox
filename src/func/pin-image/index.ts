@@ -10,7 +10,7 @@ import type FMiscPlugin from "@/index";
 
 export let name = "PinImagePreview";
 export let enabled = false;
-export const category: SettingCategory = 'ui';
+export const category: SettingCategory = 'toggles';
 let pluginInstance: PluginSample | null = null;
 
 /**

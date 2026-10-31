@@ -74,6 +74,31 @@
     margin-bottom: 12px;
 }
 
+.contentHint {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--b3-theme-on-surface, #888);
+    margin: -6px 0 12px;
+}
+
+/* 「功能开关」页内的视觉分组：只有分隔标题，不需要点击 */
+.group + .group {
+    margin-top: 20px;
+}
+
+.groupTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--b3-theme-on-surface, #888);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--b3-border-color);
+}
+
 .moduleList {
     display: flex;
     flex-direction: column;

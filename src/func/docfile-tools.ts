@@ -10,7 +10,8 @@ import { floatingContainer } from "@/libs/components/floating-container";
 export let name: string = "InboxFunctions";
 export let enabled: boolean = false;
 
-export const category: SettingCategory = 'document';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'documents';
 export const declareSetting = {
     title: '文档工具',
     description: '一些文档管理相关的工具',

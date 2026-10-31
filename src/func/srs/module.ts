@@ -25,7 +25,8 @@ export function openSourceBlock(blockId: string): void {
     openTab({ app, doc: { id: blockId, zoomIn: true } });
 }
 
-export const category: SettingCategory = 'document';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'learning';
 export const declareSetting = {
     title: "SRS 学习复习",
     description: "统一提供提取练习和闪卡地图两个核心功能，底层复用思源原生闪卡调度。",

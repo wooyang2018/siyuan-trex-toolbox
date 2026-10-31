@@ -11,7 +11,7 @@ export let name = "LinkIcon";
 export let enabled = false;
 let pluginInstance: LinkIconPlugin | null = null;
 
-export const category: SettingCategory = 'ui';
+export const category: SettingCategory = 'toggles';
 
 /**
  * 加载链接图标插件

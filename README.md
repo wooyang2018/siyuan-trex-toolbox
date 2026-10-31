@@ -73,6 +73,13 @@ A feature-rich SiYuan Note plugin that integrates various practical tools to enh
 - 自定义快捷键配置
 - 状态栏快速访问
 
+### 🍅 番茄钟 (Pomodoro)
+- 状态栏按钮紧邻「快捷键」，空闲显示计划时长，运行时显示倒计时
+- 点击按钮弹出浮层：环形进度、开始/暂停/跳过/放弃、内置任务切换、今日番茄数与专注时长
+- 经典周期：25 分钟专注 + 5 分钟短休，每 4 个番茄后 20 分钟长休；时长与间隔可在设置中调整
+- 「查看统计」打开弹窗：历史记录表（可筛选、导出 CSV）、近 7/30 天柱状图、按任务与按文档聚合
+- 阶段结束用提示音 + 状态栏闪动 + 思源气泡提醒；记录只存本机设备存储，不写入文档
+
 ## 🚀 使用说明 / Usage
 
 ### 启用功能模块
@@ -109,7 +116,8 @@ siyuan-trex-toolbox/
 │   │   ├── bq-callout/         # 引用块标注
 │   │   ├── websocket/          # WebSocket
 │   │   ├── docfile-tools.ts    # 文档工具
-│   │   └── keymap.ts           # 快捷键
+│   │   ├── keymap.ts           # 快捷键
+│   │   └── pomodoro/           # 番茄钟（引擎/存储/浮层/统计）
 │   ├── libs/              # 共享组件库
 │   ├── settings/          # 设置界面
 │   ├── types/             # 类型定义

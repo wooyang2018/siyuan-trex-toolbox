@@ -15,7 +15,8 @@ import "./index.scss";
 export const name = "AuditNote";
 export let enabled = false;
 
-export const category: SettingCategory = 'editing';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'learning';
 export const declareSetting = {
     title: "Audit Note",
     description:

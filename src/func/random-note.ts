@@ -5,7 +5,8 @@ import { sql } from "@/api";
 export let name = "RandomNote";
 export let enabled = false;
 
-export const category: SettingCategory = 'document';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'documents';
 export const declareSetting = {
     title: '随机浏览',
     description: '点击顶栏图标随机跳转到一篇文档或块',

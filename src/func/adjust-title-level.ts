@@ -6,7 +6,8 @@ import type { doOperation } from "@/types";
 export let name = "AdjustTitleLevel";
 export let enabled = false;
 
-export const category: SettingCategory = 'editing';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'writing';
 export const declareSetting = {
     title: '调整标题层级',
     description: '在块菜单/文档菜单中批量转换标题层级',

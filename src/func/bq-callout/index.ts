@@ -16,7 +16,7 @@ let pluginInstance: BqCalloutPlugin | null = null;
 const SettingName = 'setting.json';
 export let name = "BQCallout";
 export let enabled = false;
-export const category: SettingCategory = 'ui';
+export const category: SettingCategory = 'toggles';
 
 /**
  * 加载 Callout 插件

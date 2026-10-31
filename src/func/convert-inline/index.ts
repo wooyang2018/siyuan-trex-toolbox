@@ -8,7 +8,8 @@ import type { BlockId } from "@/types";
 export let name = "ConvertInline";
 export let enabled = false;
 
-export const category: SettingCategory = 'editing';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'writing';
 export const declareSetting = {
     title: '行内元素转换',
     description: '块菜单中增加行内元素转文本的功能（加粗、斜体、标注、标签、链接、块引等）',

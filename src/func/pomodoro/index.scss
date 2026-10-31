@@ -1,0 +1,524 @@
+/**
+ * 番茄钟样式
+ *
+ * @description 颜色全部取自思源主题变量，浅色/深色主题自动适配。
+ */
+
+/* ==================== 状态栏按钮 ==================== */
+
+.trex-pomodoro-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    height: 100%;
+    transition: color 200ms ease;
+
+    /*
+     * 尺寸：思源原生 .toolbar__item svg 是 15.5px。秒表是圆形，外接框相同的时候
+     * 视觉面积比键盘那种矩形小一圈，所以放到 18px。
+     * 表冠会把整颗图标的视觉重心抬高，几何居中后表盘仍显得偏上，
+     * 因此再 translateY(1px) 做光学下移。只动图标，数字保持原位。
+     */
+    .trex-pomodoro-status__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+
+        svg {
+            height: 18px;
+            width: 18px;
+            fill: none;
+            display: block;
+            transform: translateY(1px);
+        }
+    }
+
+    .trex-pomodoro-status__time {
+        font-size: 12px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    &.pomodoro--idle {
+        color: var(--b3-toolbar-color, var(--b3-theme-on-surface));
+    }
+
+    &.pomodoro--running {
+        color: var(--b3-theme-primary);
+        font-weight: 600;
+    }
+
+    &.pomodoro--paused {
+        color: var(--b3-theme-on-surface);
+        opacity: 0.7;
+    }
+
+    &.pomodoro--break {
+        color: var(--b3-theme-secondary, #67c23a);
+    }
+
+    &.pomodoro--flash {
+        animation: trex-pomodoro-flash 700ms ease-in-out 3;
+    }
+}
+
+@keyframes trex-pomodoro-flash {
+    0%,
+    100% {
+        color: inherit;
+        opacity: 1;
+    }
+    50% {
+        color: var(--b3-theme-error, #d23f31);
+        opacity: 0.25;
+    }
+}
+
+/* ==================== 浮层 ==================== */
+
+.trex-pomodoro-popover {
+    display: contents;
+
+    .trex-pomodoro-panel {
+        position: fixed;
+        z-index: 1002;
+        width: 268px;
+        box-sizing: border-box;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: var(--b3-theme-background);
+        border: 1px solid var(--b3-border-color);
+        border-radius: 10px;
+        box-shadow: var(--b3-dialog-shadow);
+        color: var(--b3-theme-on-background);
+        font-size: 13px;
+        /* 先隐藏，等 JS 把底边钉到状态栏上方再显示，避免闪现到左上角 */
+        visibility: hidden;
+    }
+
+    .trex-pomodoro-panel__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .trex-pomodoro-panel__phase {
+        font-weight: 600;
+        font-size: 13px;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+    }
+
+    .trex-pomodoro-panel__hint {
+        font-weight: 400;
+        font-size: 11px;
+        color: var(--b3-theme-on-surface);
+        opacity: 0.75;
+    }
+
+    .trex-pomodoro-panel__cycle {
+        font-size: 11px;
+        color: var(--b3-theme-on-surface);
+        white-space: nowrap;
+    }
+
+    /* 环形进度：外层用 conic-gradient 画弧，内层圆盖住中心 */
+    .trex-pomodoro-panel__ring {
+        align-self: center;
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 300ms linear;
+    }
+
+    .trex-pomodoro-panel__ring-inner {
+        width: 112px;
+        height: 112px;
+        border-radius: 50%;
+        background: var(--b3-theme-background);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+    }
+
+    .trex-pomodoro-panel__time {
+        font-size: 26px;
+        font-weight: 600;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.5px;
+    }
+
+    .trex-pomodoro-panel__state {
+        font-size: 11px;
+        color: var(--b3-theme-on-surface);
+    }
+
+    .trex-pomodoro-panel__task {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .trex-pomodoro-panel__task-input {
+        flex: 1;
+        min-width: 0;
+        height: 28px;
+        font-size: 12px;
+        box-sizing: border-box;
+    }
+
+    .trex-pomodoro-panel__task-toggle {
+        flex-shrink: 0;
+        height: 28px;
+        width: 28px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 列表在卡片内部往下排。浮层底边钉住，多出来的高度只把上沿往上推 */
+    .trex-pomodoro-panel__caret {
+        width: 0;
+        height: 0;
+        border-top: 5px solid currentColor;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        transition: transform 150ms ease;
+    }
+
+    .trex-pomodoro-panel__caret--open {
+        transform: rotate(180deg);
+    }
+
+    .trex-pomodoro-panel__tasks {
+        max-height: 132px;
+        overflow-y: auto;
+        border: 1px solid var(--b3-border-color);
+        border-radius: 6px;
+        padding: 2px;
+        background: var(--b3-theme-background);
+    }
+
+    .trex-pomodoro-panel__task-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+
+        &:hover {
+            background: var(--b3-list-hover);
+        }
+    }
+
+    .trex-pomodoro-panel__task-item--current {
+        color: var(--b3-theme-primary);
+    }
+
+    .trex-pomodoro-panel__task-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .trex-pomodoro-panel__task-count {
+        flex-shrink: 0;
+        font-size: 11px;
+        color: var(--b3-theme-on-surface);
+    }
+
+    .trex-pomodoro-panel__task-remove {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--b3-theme-on-surface);
+        font-size: 14px;
+        line-height: 16px;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--b3-theme-error, #d23f31);
+            background: var(--b3-list-hover);
+        }
+    }
+
+    .trex-pomodoro-panel__actions {
+        display: flex;
+        gap: 6px;
+
+        .b3-button {
+            height: 28px;
+            padding: 0 12px;
+            font-size: 12px;
+            line-height: 26px;
+        }
+    }
+
+    .trex-pomodoro-panel__primary {
+        flex: 1;
+    }
+
+    .trex-pomodoro-panel__abandon {
+        color: var(--b3-theme-error, #d23f31);
+    }
+
+    .trex-pomodoro-panel__footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+
+        .b3-button {
+            height: 26px;
+            padding: 0 10px;
+            font-size: 12px;
+            line-height: 24px;
+        }
+    }
+}
+
+/* ==================== 统计弹窗 ==================== */
+
+/*
+ * solidDialog 的宿主是 display:contents 容器，其父 .dialog-content 是 flex，
+ * 所以必须显式 flex:1 + width:100%，否则宽度会收缩到内容宽度（右侧留大片空白）。
+ * 内边距也要自己给：它不走思源 .b3-dialog__content 那套 16px。
+ */
+.trex-pomodoro-stats {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+    gap: 14px;
+    padding: 18px 22px 20px;
+    font-size: 13px;
+    color: var(--b3-theme-on-background);
+    overflow-y: auto;
+
+    /* ---- 顶部：今日概览 + 区间切换 ---- */
+    .trex-pomodoro-stats__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .trex-pomodoro-stats__summary {
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+
+        strong {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--b3-theme-on-background);
+            margin: 0 2px;
+        }
+    }
+
+    .trex-pomodoro-stats__seg {
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        border-radius: 8px;
+        background: var(--b3-theme-surface-lighter);
+    }
+
+    .trex-pomodoro-stats__seg-item {
+        margin: 0;
+        padding: 4px 14px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--b3-theme-on-surface);
+        font: inherit;
+        font-size: 12px;
+        line-height: 1.5;
+        cursor: pointer;
+        transition: background 150ms ease, color 150ms ease;
+
+        &:hover {
+            color: var(--b3-theme-on-background);
+        }
+    }
+
+    .trex-pomodoro-stats__seg-item--active {
+        background: var(--b3-theme-background);
+        color: var(--b3-theme-on-background);
+        font-weight: 600;
+    }
+
+    /* ---- 指标卡 ---- */
+    .trex-pomodoro-stats__kpis {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .trex-pomodoro-stats__kpi {
+        padding: 12px 14px;
+        border: 1px solid var(--b3-border-color);
+        border-radius: 8px;
+        background: var(--b3-theme-surface);
+        min-width: 0;
+    }
+
+    .trex-pomodoro-stats__kpi-value {
+        font-size: 19px;
+        font-weight: 600;
+        line-height: 1.3;
+        font-variant-numeric: tabular-nums;
+        color: var(--b3-theme-on-background);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .trex-pomodoro-stats__kpi-label {
+        margin-top: 3px;
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--b3-theme-on-surface);
+    }
+
+    /* ---- 通用卡片 ---- */
+    .trex-pomodoro-stats__card {
+        border: 1px solid var(--b3-border-color);
+        border-radius: 8px;
+        background: var(--b3-theme-surface);
+        box-sizing: border-box;
+    }
+
+    .trex-pomodoro-stats__empty-block {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .trex-pomodoro-stats__empty {
+        padding: 40px 16px;
+        text-align: center;
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--b3-theme-on-surface);
+    }
+
+    .trex-pomodoro-stats__muted {
+        color: var(--b3-theme-on-surface);
+    }
+
+    /* ---- 图表卡片 ---- */
+    .trex-pomodoro-stats__chart-card {
+        flex: 1;
+        min-height: 130px;
+        display: flex;
+        flex-direction: column;
+        padding: 12px 16px 10px;
+    }
+
+    .trex-pomodoro-stats__chart-title {
+        flex-shrink: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.5;
+        margin-bottom: 10px;
+
+        .trex-pomodoro-stats__muted {
+            font-weight: 400;
+            font-size: 11px;
+        }
+    }
+
+    .trex-pomodoro-stats__chart {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .trex-pomodoro-stats__bar-slot {
+        flex: 1 1 0;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .trex-pomodoro-stats__bar-value {
+        flex-shrink: 0;
+        font-size: 10px;
+        line-height: 1.2;
+        color: var(--b3-theme-on-surface);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* 柱子的可用高度轨道，让柱子从底部向上生长 */
+    .trex-pomodoro-stats__bar-track {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .trex-pomodoro-stats__bar {
+        width: 56%;
+        max-width: 34px;
+        border-radius: 3px 3px 0 0;
+        background: var(--b3-theme-primary);
+        transition: height 220ms ease;
+    }
+
+    .trex-pomodoro-stats__bar--alt {
+        background: color-mix(in srgb, var(--b3-theme-primary) 55%, var(--b3-theme-surface));
+    }
+
+    .trex-pomodoro-stats__bar--empty {
+        background: var(--b3-theme-surface-lighter);
+    }
+
+    .trex-pomodoro-stats__bar-label {
+        flex-shrink: 0;
+        font-size: 10px;
+        line-height: 1.3;
+        color: var(--b3-theme-on-surface);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+}

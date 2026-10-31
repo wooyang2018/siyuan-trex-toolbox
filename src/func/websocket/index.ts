@@ -13,7 +13,7 @@ import { Handlers } from "./handlers";
 export let name = "WebSocket";
 export let enabled = false;
 
-export const category: SettingCategory = 'advanced';
+export const category: SettingCategory = 'websocket';
 export const declareSetting = {
     title: 'WebSocket',
     description: '监听思源 WebSocket 消息并执行自定义操作',

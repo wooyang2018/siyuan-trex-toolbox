@@ -11,7 +11,8 @@ import "./index.scss";
 export const name = "TTS";
 export let enabled = false;
 
-export const category: SettingCategory = "document";
+export const category: SettingCategory = "toggles";
+export const toggleGroup: ToggleGroup = "learning";
 export const declareSetting = {
     title: "文本朗读",
     description: "桌面端在线朗读选中的块、从当前块读到文末，或整篇文档。需要联网。",

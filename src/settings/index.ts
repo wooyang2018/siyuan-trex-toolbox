@@ -5,14 +5,14 @@
  * @Description  : 设置初始化与持久化逻辑
  */
 import type FMiscPlugin from '@/index';
-import { toggleEnable, ModulesAlwaysEnable, ModulesToEnable } from '@/func';
+import { toggleEnable, ModulesWithSetting, ModulesToEnable } from '@/func';
 
 import Settings from "@/settings/settings";
 import { solidDialog } from '@/libs/dialog';
 import { debounce } from '@frostime/siyuan-plugin-kits';
 
 /** 所有有声明的设置模块（按声明顺序，后续在 UI 中按 category 分组） */
-const allModules = [...ModulesToEnable, ...ModulesAlwaysEnable].filter(
+const allModules = ModulesWithSetting.filter(
     module => module.declareSetting
 );
 

@@ -16,7 +16,8 @@ import { isSingleHttpUrl } from "./url.ts";
 
 export const name = "Oembed";
 export let enabled = false;
-export const category: SettingCategory = "editing";
+export const category: SettingCategory = "toggles";
+export const toggleGroup: ToggleGroup = "writing";
 
 const SLASH_OEMBED = "trex-oembed";
 const SLASH_BOOKMARK = "trex-bookmark-card";

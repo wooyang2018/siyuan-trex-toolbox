@@ -27,7 +27,8 @@ const I18n = {
 export let name: string = "DocContext";
 export let enabled: boolean = false;
 
-export const category: SettingCategory = 'document';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'documents';
 export const declareSetting = {
     title: '文档上下文',
     description: '快速跳转父文档和子文档',

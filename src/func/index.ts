@@ -22,12 +22,20 @@ import * as an from './audit-note/module';
 import * as srs from './srs/module';
 import * as oe from './oembed';
 import * as tts from './tts/module';
+import * as pomodoro from './pomodoro'
 
 /** 可切换的功能模块列表 */
-const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, an, srs, oe, tts];
+const _ModulesToEnable: IFuncModule[] = [mw, dft, dc, ws, atl, rn, tp, cv, ii, ab, an, srs, oe, tts, pomodoro];
 
 /** 始终启用的功能模块列表 */
-const _ModulesAlwaysEnable: IFuncModule[] = [sc, li, pi, bq];
+const _ModulesAlwaysEnable: IFuncModule[] = [li, pi, bq];
+
+/**
+ * 无需设置项、但需要在启动时执行逻辑的模块
+ * @description shared-configs 现在只剩代码里的常量和一个用户常量加载器，
+ *              没有开关也没有配置项，所以不进入设置界面，只在 load/unload 里调用。
+ */
+const _ModulesNoSetting = [sc];
 
 /** 过滤出可用的模块 */
 export const ModulesToEnable = _ModulesToEnable.filter(
@@ -36,6 +44,9 @@ export const ModulesToEnable = _ModulesToEnable.filter(
 export const ModulesAlwaysEnable = _ModulesAlwaysEnable.filter(
     module => !module.allowToUse || module.allowToUse()
 );
+
+/** 设置界面里展示的模块 = 可切换 + 始终启用 */
+export const ModulesWithSetting: IFuncModule[] = [...ModulesToEnable, ...ModulesAlwaysEnable];
 
 /** EnableKey 到模块的映射表 */
 const EnableKey2Module = Object.fromEntries(
@@ -46,6 +57,9 @@ const EnableKey2Module = Object.fromEntries(
  * 加载所有模块
  */
 export const load = (plugin: FMiscPlugin) => {
+    // 无设置项的内部模块（如共享常量加载器）
+    _ModulesNoSetting.forEach(module => module.load());
+
     // 加载始终启用的模块
     ModulesAlwaysEnable.forEach(module => module.load(plugin));
     
@@ -63,13 +77,16 @@ export const load = (plugin: FMiscPlugin) => {
 export const unload = (plugin: FMiscPlugin) => {
     ModulesToEnable.forEach(module => module.unload(plugin));
     ModulesAlwaysEnable.forEach(module => module.unload(plugin));
+    _ModulesNoSetting.forEach(module => module.unload());
 };
 
 /**
  * 添加状态栏图标
+ * @description 番茄钟紧跟「快捷键」右侧：先注册快捷键，再注册番茄钟
  */
 export const addStatus = (plugin: FMiscPlugin) => {
     km.addStatus(plugin);
+    pomodoro.addStatus(plugin);
 };
 
 type EnableKey = keyof FMiscPlugin['data']['configs']['Enable'];

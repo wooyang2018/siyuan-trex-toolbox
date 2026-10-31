@@ -2,7 +2,7 @@
  * 全局共享配置模块
  * @description 管理全局配置项和用户自定义常量
  */
-import { createSettingAdapter, importJavascriptFile, createJavascriptFile } from "@frostime/siyuan-plugin-kits";
+import { importJavascriptFile, createJavascriptFile } from "@frostime/siyuan-plugin-kits";
 
 export const name = "global-configs";
 export const enabled = true;
@@ -11,34 +11,18 @@ interface IDefaultConfigs {
     codeEditor: string;
 }
 
-/** 配置定义 */
-const configDefinitions = [
-    {
-        key: 'codeEditor',
-        type: 'textinput' as const,
-        value: 'code',
-        title: '打开代码编辑器',
-        description: '在本地打开代码文件的命令; 默认为 code, 表示使用 VS Code 打开',
-        devicewise: true
-    }
-];
-
-const configAdapter = createSettingAdapter(configDefinitions);
-
-export const category: SettingCategory = 'advanced';
-export const declareSetting = {
-    title: "公用配置",
-    description: "管理全局配置项和用户自定义常量",
-    configLoad: (itemValues: any) => configAdapter.init(itemValues),
-    configDump: () => configAdapter.dump(),
-    configs: configDefinitions.map(item => ({
-        ...item,
-        get: () => configAdapter.get(item.key),
-        set: (value: any) => configAdapter.set(item.key, value)
-    }))
+/**
+ * 全局配置常量
+ *
+ * @description 这些值很少需要改，所以不放进设置界面，直接在这里改源码即可。
+ *              改完需要重新构建插件（pnpm run build）。
+ */
+const CONFIGS: IDefaultConfigs = {
+    /** 在本地打开代码文件时调用的命令；默认用 VS Code 的 code */
+    codeEditor: 'code',
 };
 
-export const sharedConfigs = (key: keyof IDefaultConfigs) => configAdapter.get(key);
+export const sharedConfigs = (key: keyof IDefaultConfigs) => CONFIGS[key] ?? '';
 
 /** 用户自定义常量文件名 */
 export const userConstJsName = 'custom.user-constants.js';

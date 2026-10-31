@@ -1,7 +1,10 @@
 /*
- * 模块卡片：默认只显示标题、说明和开关。有配置时点标题展开。
+ * 模块卡片：标题、说明、开关，以及（如果有）直接展开的配置区。
+ *
+ * 不做折叠展开：一级菜单已经把"复杂配置"隔离出来了，
+ * 进入某一页就说明用户要看这一页的全部内容，再折叠只会多一次点击。
  */
-import { type Component, For, Show, createMemo, createSignal } from "solid-js";
+import { type Component, For, Show, createMemo } from "solid-js";
 import Form from "@/libs/components/Form";
 import css from "./settings.module.scss";
 
@@ -13,7 +16,16 @@ interface ModuleCardProps {
 
 const ModuleCard: Component<ModuleCardProps> = (props) => {
     const setting = () => props.module.declareSetting;
-    const [open, setOpen] = createSignal(false);
+
+    /**
+     * 只有"需要占满一行"的输入控件才拉满宽度。
+     * checkbox / slider / button 本身尺寸就合适，拉满会变成一条横杠
+     * （例如 b3-switch 被 width:100% 拉成整行，看起来完全不像开关）。
+     */
+    const FULL_WIDTH_TYPES = new Set(["textinput", "textarea", "select"]);
+
+    const needsFullWidth = (item: IConfigItem<any>): boolean =>
+        FULL_WIDTH_TYPES.has(item.type) || item.direction === "column";
 
     const hasBody = createMemo(() => {
         const s = setting();
@@ -25,30 +37,12 @@ const ModuleCard: Component<ModuleCardProps> = (props) => {
         <Show when={setting()}>
             <div class={css.card}>
                 <div class={css.cardHeader}>
-                    <Show
-                        when={hasBody()}
-                        fallback={
-                            <div class={css.cardMain}>
-                                <div class={css.cardTitleWrap}>
-                                    <div class={css.cardTitle}>{setting()!.title}</div>
-                                    <div class={css.cardDescription} innerHTML={setting()!.description} />
-                                </div>
-                            </div>
-                        }
-                    >
-                        <button
-                            type="button"
-                            class={`${css.cardMain} ${css.cardMainExpandable}`}
-                            aria-expanded={open()}
-                            onClick={() => setOpen(!open())}
-                        >
-                            <span class={css.chevron} classList={{ [css.chevronOpen]: open() }} />
-                            <div class={css.cardTitleWrap}>
-                                <div class={css.cardTitle}>{setting()!.title}</div>
-                                <div class={css.cardDescription} innerHTML={setting()!.description} />
-                            </div>
-                        </button>
-                    </Show>
+                    <div class={css.cardMain}>
+                        <div class={css.cardTitleWrap}>
+                            <div class={css.cardTitle}>{setting()!.title}</div>
+                            <div class={css.cardDescription} innerHTML={setting()!.description} />
+                        </div>
+                    </div>
                     <Show when={setting()!.toggle}>
                         <div class={css.cardToggle}>
                             <input
@@ -60,7 +54,7 @@ const ModuleCard: Component<ModuleCardProps> = (props) => {
                         </div>
                     </Show>
                 </div>
-                <Show when={hasBody() && open()}>
+                <Show when={hasBody()}>
                     <div class={css.cardBody}>
                         <Show when={setting()!.configs && setting()!.configs!.length > 0}>
                             <div class={css.configSection}>
@@ -81,7 +75,7 @@ const ModuleCard: Component<ModuleCardProps> = (props) => {
                                                 button={item?.button}
                                                 number={item?.number}
                                                 changed={(v) => item.set(v)}
-                                                style={item?.direction === "row" ? { width: "100%" } : null}
+                                                style={needsFullWidth(item) ? { width: "100%" } : null}
                                             />
                                         </Form.Wrap>
                                     )}

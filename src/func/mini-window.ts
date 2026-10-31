@@ -10,7 +10,8 @@ import type { BlockId } from "@/types";
 import { updateStyleDom } from "@frostime/siyuan-plugin-kits";
 
 
-export const category: SettingCategory = 'ui';
+export const category: SettingCategory = 'toggles';
+export const toggleGroup: ToggleGroup = 'window';
 export const declareSetting = {
     title: '中键小窗',
     description: '中键点击元素时打开独立小窗',
